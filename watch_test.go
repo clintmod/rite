@@ -27,11 +27,11 @@ func TestFileWatch(t *testing.T) {
 	_ = os.RemoveAll(filepathext.SmartJoin(dir, "src"))
 
 	expectedOutput := strings.TrimSpace(`
-task: Started watching for tasks: default
-task: [default] echo "Task running!"
+rite: Started watching for tasks: default
+rite: [default] echo "Task running!"
 Task running!
 task: task "default" finished running
-task: [default] echo "Task running!"
+rite: [default] echo "Task running!"
 Task running!
 task: task "default" finished running
 	`)

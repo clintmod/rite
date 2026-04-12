@@ -1763,7 +1763,7 @@ func TestDisplaysErrorOnVersion1Schema(t *testing.T) {
 	)
 	err := e.Setup()
 	require.Error(t, err)
-	assert.Regexp(t, regexp.MustCompile(`rite: Invalid schema version in Taskfile \".*testdata\/version\/v1\/Taskfile\.yml\":\nSchema version \(1\.0\.0\) no longer supported\. Please use v3 or above`), err.Error())
+	assert.Regexp(t, regexp.MustCompile(`rite: Invalid schema version in Ritefile \".*testdata\/version\/v1\/Ritefile\.yml\":\nSchema version \(1\.0\.0\) no longer supported\. Please use v3 or above`), err.Error())
 }
 
 func TestDisplaysErrorOnVersion2Schema(t *testing.T) {
@@ -1778,7 +1778,7 @@ func TestDisplaysErrorOnVersion2Schema(t *testing.T) {
 	)
 	err := e.Setup()
 	require.Error(t, err)
-	assert.Regexp(t, regexp.MustCompile(`rite: Invalid schema version in Taskfile \".*testdata\/version\/v2\/Taskfile\.yml\":\nSchema version \(2\.0\.0\) no longer supported\. Please use v3 or above`), err.Error())
+	assert.Regexp(t, regexp.MustCompile(`rite: Invalid schema version in Ritefile \".*testdata\/version\/v2\/Ritefile\.yml\":\nSchema version \(2\.0\.0\) no longer supported\. Please use v3 or above`), err.Error())
 }
 
 func TestShortTaskNotation(t *testing.T) {
@@ -2086,14 +2086,14 @@ func TestDeferredCmds(t *testing.T) {
 	require.NoError(t, e.Setup())
 
 	expectedOutputOrder := strings.TrimSpace(`
-task: [task-2] echo 'cmd ran'
+rite: [task-2] echo 'cmd ran'
 cmd ran
-task: [task-2] exit 1
-task: [task-2] echo 'failing' && exit 2
+rite: [task-2] exit 1
+rite: [task-2] echo 'failing' && exit 2
 failing
 echo ran
 task-1 ran successfully
-task: [task-1] echo 'task-1 ran successfully'
+rite: [task-1] echo 'task-1 ran successfully'
 task-1 ran successfully
 `)
 	require.Error(t, e.Run(t.Context(), &task.Call{Task: "task-2"}))
@@ -2179,11 +2179,11 @@ func TestOutputGroup(t *testing.T) {
 	require.NoError(t, e.Setup())
 
 	expectedOutputOrder := strings.TrimSpace(`
-task: [hello] echo 'Hello!'
+rite: [hello] echo 'Hello!'
 ::group::hello
 Hello!
 ::endgroup::
-task: [bye] echo 'Bye!'
+rite: [bye] echo 'Bye!'
 ::group::bye
 Bye!
 ::endgroup::
@@ -2241,17 +2241,17 @@ func TestIncludedVars(t *testing.T) {
 	require.NoError(t, e.Setup())
 
 	expectedOutputOrder := strings.TrimSpace(`
-task: [included1:task1] echo "VAR_1 is included1-var1"
+rite: [included1:task1] echo "VAR_1 is included1-var1"
 VAR_1 is included1-var1
-task: [included1:task1] echo "VAR_2 is included-default-var2"
+rite: [included1:task1] echo "VAR_2 is included-default-var2"
 VAR_2 is included-default-var2
-task: [included2:task1] echo "VAR_1 is included2-var1"
+rite: [included2:task1] echo "VAR_1 is included2-var1"
 VAR_1 is included2-var1
-task: [included2:task1] echo "VAR_2 is included-default-var2"
+rite: [included2:task1] echo "VAR_2 is included-default-var2"
 VAR_2 is included-default-var2
-task: [included3:task1] echo "VAR_1 is included-default-var1"
+rite: [included3:task1] echo "VAR_1 is included-default-var1"
 VAR_1 is included-default-var1
-task: [included3:task1] echo "VAR_2 is included-default-var2"
+rite: [included3:task1] echo "VAR_2 is included-default-var2"
 VAR_2 is included-default-var2
 `)
 	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "task1"}))
@@ -2285,11 +2285,11 @@ func TestIncludedVarsMultiLevel(t *testing.T) {
 	require.NoError(t, e.Setup())
 
 	expectedOutputOrder := strings.TrimSpace(`
-task: [lib:greet] echo 'Hello world'
+rite: [lib:greet] echo 'Hello world'
 Hello world
-task: [foo:lib:greet] echo 'Hello foo'
+rite: [foo:lib:greet] echo 'Hello foo'
 Hello foo
-task: [bar:lib:greet] echo 'Hello bar'
+rite: [bar:lib:greet] echo 'Hello bar'
 Hello bar
 `)
 	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "default"}))
@@ -2376,7 +2376,7 @@ func TestEvaluateSymlinksInPaths(t *testing.T) { // nolint:paralleltest // canno
 		{
 			name:     "reset",
 			task:     "reset",
-			expected: "rite: [reset] echo \"shared file source\" > src/shared/b\ntask: [reset] echo \"file source\" > src/a",
+			expected: "rite: [reset] echo \"shared file source\" > src/shared/b\nrite: [reset] echo \"file source\" > src/a",
 		},
 	}
 	for _, test := range tests { // nolint:paralleltest // cannot run in parallel

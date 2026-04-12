@@ -95,13 +95,14 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 			}
 			newVar := templater.ReplaceVar(v, cache)
 			// Preserve the Sh field on unevaluated dynamic vars so summary/listing
-			// can display them.
+			// can display them. Export is carried through so env filtering at
+			// shell-build time can honor `export: false`.
 			if !evaluateShVars && newVar.Value == nil {
-				result.Set(k, ast.Var{Value: "", Sh: newVar.Sh})
+				result.Set(k, ast.Var{Value: "", Sh: newVar.Sh, Export: newVar.Export})
 				return nil
 			}
 			if !evaluateShVars {
-				result.Set(k, ast.Var{Value: newVar.Value, Sh: newVar.Sh})
+				result.Set(k, ast.Var{Value: newVar.Value, Sh: newVar.Sh, Export: newVar.Export})
 				cache.Update(k, newVar.Value)
 				return nil
 			}
@@ -109,7 +110,7 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 				return err
 			}
 			if newVar.Value != nil || newVar.Sh == nil {
-				result.Set(k, ast.Var{Value: newVar.Value})
+				result.Set(k, ast.Var{Value: newVar.Value, Export: newVar.Export})
 				cache.Update(k, newVar.Value)
 				return nil
 			}
@@ -117,7 +118,7 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 			if err != nil {
 				return err
 			}
-			result.Set(k, ast.Var{Value: static})
+			result.Set(k, ast.Var{Value: static, Export: newVar.Export})
 			cache.Update(k, static)
 			return nil
 		}

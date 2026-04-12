@@ -182,16 +182,18 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		// SPEC §Dynamic Variables and HandleDynamicVar.
 		envShCache := make(map[string]string)
 		for k, v := range new.Env.All() {
-			// If the variable is not dynamic, we can set it and return
+			// If the variable is not dynamic, we can set it and return.
+			// Export is carried through so env.GetFromVars can honor
+			// `export: false` downstream.
 			if v.Value != nil || v.Sh == nil {
-				new.Env.Set(k, ast.Var{Value: v.Value})
+				new.Env.Set(k, ast.Var{Value: v.Value, Export: v.Export})
 				continue
 			}
 			static, err := e.Compiler.HandleDynamicVar(v, new.Dir, env.GetFromVars(new.Env), envShCache)
 			if err != nil {
 				return nil, err
 			}
-			new.Env.Set(k, ast.Var{Value: static})
+			new.Env.Set(k, ast.Var{Value: static, Export: v.Export})
 		}
 	}
 

@@ -36,8 +36,25 @@ func Get(t *ast.Task) []string {
 func GetFromVars(env *ast.Vars) []string {
 	environ := os.Environ()
 
-	for k, v := range env.ToCacheMap() {
-		if !isTypeAllowed(v) {
+	// Walk the underlying Vars so we can honor per-var Export metadata —
+	// ToCacheMap strips the ast.Var wrapper. SPEC §vars/env Unification
+	// lets users mark a var as `export: false` to keep it out of the cmd
+	// process environ while still being visible to Ritefile templating.
+	for k, v := range env.All() {
+		if !v.Exported() {
+			continue
+		}
+		// Match ToCacheMap's skip-for-unresolved-dynamic rule.
+		if v.Sh != nil && *v.Sh != "" && v.Value == nil {
+			continue
+		}
+		var value any
+		if v.Live != nil {
+			value = v.Live
+		} else {
+			value = v.Value
+		}
+		if !isTypeAllowed(value) {
 			continue
 		}
 		if !experiments.EnvPrecedence.Enabled() {
@@ -45,7 +62,7 @@ func GetFromVars(env *ast.Vars) []string {
 				continue
 			}
 		}
-		environ = append(environ, fmt.Sprintf("%s=%v", k, v))
+		environ = append(environ, fmt.Sprintf("%s=%v", k, value))
 	}
 
 	return environ

@@ -1,2 +1,2 @@
-entrypoint-global-dotenv
+shell
 entrypoint-global-dotenv

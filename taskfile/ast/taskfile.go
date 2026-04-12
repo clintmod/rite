@@ -67,9 +67,18 @@ func (t1 *Taskfile) Merge(t2 *Taskfile, include *Include) error {
 			}
 		}
 	}
-	t1.Vars.Merge(t2.Vars, include)
+	// Env still merges into the parent (vars/env unification is Phase 4 scope
+	// per SPEC; env precedence is last-in-wins until then).
 	t1.Env.Merge(t2.Env, include)
-	return t1.Tasks.Merge(t2.Tasks, include, t1.Vars)
+	// Vars intentionally do NOT merge into the parent: under rite's
+	// first-in-wins model (SPEC §Variable Precedence), an included file's
+	// top-level `vars:` are tier 6 — include-site vars (tier 5) must beat
+	// them, and tier 5 must in turn beat nothing at tier 4. Upstream's
+	// flattening merge here would leak t2's vars up into the parent's
+	// tier-4 TaskfileVars and pre-empt tier 5 entirely. Pass t2.Vars
+	// directly so each task's IncludedTaskfileVars reflects only that
+	// task's source file, not a union across all includes.
+	return t1.Tasks.Merge(t2.Tasks, include, t2.Vars)
 }
 
 func (tf *Taskfile) UnmarshalYAML(node *yaml.Node) error {

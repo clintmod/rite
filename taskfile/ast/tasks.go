@@ -170,13 +170,21 @@ func (t1 *Tasks) Merge(t2 *Tasks, include *Include, includedTaskfileVars *Vars) 
 			task.Task = taskName
 		}
 
+		// IncludedTaskfileVars captures the included file's own top-level vars
+		// (tier 6 in SPEC §Variable Precedence). We set this for every included
+		// task, not just AdvancedImport, because under first-in-wins each
+		// included file's vars must be reachable as a tier distinct from the
+		// parent's — the upstream flatten-into-parent model (Taskfile.Merge
+		// line 70) used to make this automatic via tier 4 but also pre-empted
+		// include-site vars at tier 5, which SPEC forbids.
+		task.IncludedTaskfileVars = includedTaskfileVars.DeepCopy()
+
 		if include.AdvancedImport {
 			task.Dir = filepathext.SmartJoin(include.Dir, task.Dir)
 			if task.IncludeVars == nil {
 				task.IncludeVars = NewVars()
 			}
 			task.IncludeVars.Merge(include.Vars, nil)
-			task.IncludedTaskfileVars = includedTaskfileVars.DeepCopy()
 		}
 
 		if _, ok := t1.Get(taskName); ok {

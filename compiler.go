@@ -125,18 +125,6 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 
 	rangeFunc := setIfAbsent(c.Dir)
 
-	var taskRangeFunc func(k string, v ast.Var) error
-	if t != nil {
-		// NOTE(@andreynering): We're manually joining these paths here because
-		// this is the raw task, not the compiled one.
-		dir := templater.Replace(t.Dir, cache)
-		if err := cache.Err(); err != nil {
-			return nil, err
-		}
-		dir = filepathext.SmartJoin(c.Dir, dir)
-		taskRangeFunc = setIfAbsent(dir)
-	}
-
 	// Tier 2: CLI / call vars.
 	if call != nil {
 		for k, v := range call.Vars.All() {
@@ -160,7 +148,21 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 		}
 	}
 
+	// Resolve the task's working dir AFTER tiers 1-4 have landed so templates
+	// like `dir: '{{.DIRECTORY}}'` can reference entrypoint vars. Upstream
+	// could do this earlier because it flattened all vars into one merged
+	// map; under first-in-wins we have to honor the tier ordering.
+	var taskRangeFunc func(k string, v ast.Var) error
 	if t != nil {
+		// NOTE(@andreynering): We're manually joining these paths here because
+		// this is the raw task, not the compiled one.
+		dir := templater.Replace(t.Dir, cache)
+		if err := cache.Err(); err != nil {
+			return nil, err
+		}
+		dir = filepathext.SmartJoin(c.Dir, dir)
+		taskRangeFunc = setIfAbsent(dir)
+
 		// Tier 5: include-site vars.
 		for k, v := range t.IncludeVars.All() {
 			if err := rangeFunc(k, v); err != nil {

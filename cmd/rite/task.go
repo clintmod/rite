@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/clintmod/rite"
+	task "github.com/clintmod/rite"
 	"github.com/clintmod/rite/args"
 	"github.com/clintmod/rite/errors"
 	"github.com/clintmod/rite/experiments"

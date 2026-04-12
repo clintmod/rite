@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/clintmod/rite"
+	task "github.com/clintmod/rite"
 	"github.com/clintmod/rite/internal/filepathext"
 )
 

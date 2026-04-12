@@ -177,9 +177,9 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 	// over task-scope env (first-in-wins within env tiers, mirroring vars).
 	// Merge is last-in-wins, so the higher-priority tier goes last.
 	new.Env = ast.NewVars()
-	new.Env.Merge(templater.ReplaceVars(origTask.Env, cache), nil)           // tier 7 — defaults
-	new.Env.Merge(templater.ReplaceVars(dotenvEnvs, cache), nil)             // task-level dotenv overlay
-	new.Env.Merge(templater.ReplaceVars(e.Taskfile.Env, cache), nil)         // tier 3/5 — entrypoint env wins
+	new.Env.Merge(templater.ReplaceVars(origTask.Env, cache), nil)   // tier 7 — defaults
+	new.Env.Merge(templater.ReplaceVars(dotenvEnvs, cache), nil)     // task-level dotenv overlay
+	new.Env.Merge(templater.ReplaceVars(e.Taskfile.Env, cache), nil) // tier 3/5 — entrypoint env wins
 	if evaluateShVars {
 		// Per-resolution dynamic-var dedupe for this task's env block; see
 		// SPEC §Dynamic Variables and HandleDynamicVar.

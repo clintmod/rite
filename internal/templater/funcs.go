@@ -8,13 +8,12 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
+	sprig "github.com/go-task/slim-sprig/v3"
+	"github.com/go-task/template"
 	"github.com/google/uuid"
 	"go.yaml.in/yaml/v3"
 	"mvdan.cc/sh/v3/shell"
 	"mvdan.cc/sh/v3/syntax"
-
-	sprig "github.com/go-task/slim-sprig/v3"
-	"github.com/go-task/template"
 )
 
 var templateFuncs template.FuncMap

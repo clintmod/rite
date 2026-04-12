@@ -171,8 +171,8 @@ func hasTaskfileDevSchemaPointer(s string) bool {
 // migrateDoc captures the minimal shape we need for warning detection.
 // Deliberately loose — unknown keys are ignored.
 type migrateDoc struct {
-	Vars  map[string]yaml.Node `yaml:"vars"`
-	Env   map[string]yaml.Node `yaml:"env"`
+	Vars  map[string]yaml.Node   `yaml:"vars"`
+	Env   map[string]yaml.Node   `yaml:"env"`
 	Tasks map[string]migrateTask `yaml:"tasks"`
 }
 

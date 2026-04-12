@@ -22,7 +22,7 @@ tasks:
   run:
     desc: Runs Task
     cmds:
-      - go run ./cmd/task {{.CLI_ARGS}}
+      - go run ./cmd/rite {{.CLI_ARGS}}
 
   install:
     desc: Installs Task
@@ -31,7 +31,7 @@ tasks:
       - './**/*.go'
       - go.mod
     cmds:
-      - go install -v ./cmd/task
+      - go install -v ./cmd/rite
 
   generate:
     aliases: [gen, g]

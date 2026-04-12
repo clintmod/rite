@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clintmod/rite"
+	task "github.com/clintmod/rite"
 )
 
 func TestMigrate(t *testing.T) {
@@ -73,10 +73,10 @@ tasks:
 	// Check warnings.
 	warnS := warn.String()
 	wantWarns := []string{
-		"OVERRIDE-VAR",  // GLOBAL shadowed
-		"OVERRIDE-ENV",  // NODE_ENV shadowed
-		"SECRET-VAR",    // GITHUB_TOKEN name pattern
-		"SCHEMA-URL",    // taskfile.dev pointer
+		"OVERRIDE-VAR", // GLOBAL shadowed
+		"OVERRIDE-ENV", // NODE_ENV shadowed
+		"SECRET-VAR",   // GITHUB_TOKEN name pattern
+		"SCHEMA-URL",   // taskfile.dev pointer
 	}
 	for _, w := range wantWarns {
 		if !strings.Contains(warnS, w) {

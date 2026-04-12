@@ -11,7 +11,7 @@ import (
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/clintmod/rite"
+	task "github.com/clintmod/rite"
 	"github.com/clintmod/rite/experiments"
 	"github.com/clintmod/rite/internal/filepathext"
 	"github.com/clintmod/rite/taskfile/ast"

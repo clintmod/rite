@@ -3,6 +3,7 @@ package templater
 import "testing"
 
 func TestExpandShell(t *testing.T) {
+	t.Parallel()
 	data := map[string]any{
 		"NAME":    "world",
 		"PORT":    8080,

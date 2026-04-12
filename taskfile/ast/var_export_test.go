@@ -7,6 +7,7 @@ import (
 )
 
 func TestVarExport(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name       string
 		yaml       string
@@ -46,6 +47,7 @@ func TestVarExport(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			var v Var
 			if err := yaml.Unmarshal([]byte(tc.yaml), &v); err != nil {
 				t.Fatalf("unmarshal: %v", err)

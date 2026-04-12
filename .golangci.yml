@@ -13,15 +13,15 @@ formatters:
         - pattern: interface{}
           replacement: any
     gofumpt:
-      module-path: github.com/go-task/task/v3
+      module-path: github.com/clintmod/rite
     goimports:
       local-prefixes:
-        - github.com/go-task
+        - github.com/clintmod
     gci:
       sections:
         - standard
         - default
-        - prefix(github.com/go-task)
+        - prefix(github.com/clintmod)
         - localmodule
   exclusions:
     generated: lax
@@ -50,7 +50,7 @@ linters:
             - '!**/errors/*.go'
           deny:
             - pkg: errors
-              desc: Use github.com/go-task/task/v3/errors instead
+              desc: Use github.com/clintmod/rite/errors instead
   exclusions:
     generated: lax
     presets:

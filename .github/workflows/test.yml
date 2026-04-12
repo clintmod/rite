@@ -27,4 +27,4 @@ jobs:
           go-version: ${{matrix.go-version}}
 
       - name: Test
-        run: go run ./cmd/task test
+        run: go run ./cmd/rite test

@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/clintmod/rite"
+	task "github.com/clintmod/rite"
 	"github.com/clintmod/rite/args"
 	"github.com/clintmod/rite/taskfile/ast"
 )

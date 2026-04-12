@@ -1,0 +1,15 @@
+rite
+Copyright (c) 2026 Clint Modien
+
+This project is a hard fork of go-task/task (https://github.com/go-task/task),
+originally authored by Andrey Nering and contributors, licensed under the MIT
+license. The git history of this repository is preserved from the upstream
+project for attribution purposes.
+
+rite diverges intentionally from go-task in variable precedence semantics,
+file format, and binary identity. It is not a compatibility fork and does not
+intend to merge upstream changes that conflict with its design contract.
+
+See SPEC.md for design rationale and LICENSE for the MIT license terms that
+apply to all code in this repository, including inherited upstream code and
+new rite contributions.

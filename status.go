@@ -35,7 +35,7 @@ func (e *Executor) Status(ctx context.Context, calls ...*Call) error {
 			return err
 		}
 		if !isUpToDate {
-			return fmt.Errorf(`task: Task "%s" is not up-to-date`, t.Name())
+			return fmt.Errorf(`rite: Task "%s" is not up-to-date`, t.Name())
 		}
 	}
 	return nil

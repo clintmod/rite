@@ -16,7 +16,7 @@ type InvalidValueError struct {
 
 func (err InvalidValueError) Error() string {
 	return fmt.Sprintf(
-		"task: Experiment %q has an invalid value %q (allowed values: %s)",
+		"rite: Experiment %q has an invalid value %q (allowed values: %s)",
 		err.Name,
 		err.Value,
 		strings.Join(slicesext.Convert(err.AllowedValues, strconv.Itoa), ", "),
@@ -29,7 +29,7 @@ type InactiveError struct {
 
 func (err InactiveError) Error() string {
 	return fmt.Sprintf(
-		"task: Experiment %q is inactive and cannot be enabled",
+		"rite: Experiment %q is inactive and cannot be enabled",
 		err.Name,
 	)
 }

@@ -18,13 +18,13 @@ type TaskNotFoundError struct {
 func (err *TaskNotFoundError) Error() string {
 	if err.DidYouMean != "" {
 		return fmt.Sprintf(
-			`task: Task %q does not exist. Did you mean %q?`,
+			`rite: Task %q does not exist. Did you mean %q?`,
 			err.TaskName,
 			err.DidYouMean,
 		)
 	}
 
-	return fmt.Sprintf(`task: Task %q does not exist`, err.TaskName)
+	return fmt.Sprintf(`rite: Task %q does not exist`, err.TaskName)
 }
 
 func (err *TaskNotFoundError) Code() int {
@@ -39,7 +39,7 @@ type TaskRunError struct {
 }
 
 func (err *TaskRunError) Error() string {
-	return fmt.Sprintf(`task: Failed to run task %q: %v`, err.TaskName, err.Err)
+	return fmt.Sprintf(`rite: Failed to run task %q: %v`, err.TaskName, err.Err)
 }
 
 func (err *TaskRunError) Code() int {
@@ -64,7 +64,7 @@ type TaskInternalError struct {
 }
 
 func (err *TaskInternalError) Error() string {
-	return fmt.Sprintf(`task: Task "%s" is internal`, err.TaskName)
+	return fmt.Sprintf(`rite: Task "%s" is internal`, err.TaskName)
 }
 
 func (err *TaskInternalError) Code() int {
@@ -79,7 +79,7 @@ type TaskNameConflictError struct {
 }
 
 func (err *TaskNameConflictError) Error() string {
-	return fmt.Sprintf(`task: Found multiple tasks (%s) that match %q`, strings.Join(err.TaskNames, ", "), err.Call)
+	return fmt.Sprintf(`rite: Found multiple tasks (%s) that match %q`, strings.Join(err.TaskNames, ", "), err.Call)
 }
 
 func (err *TaskNameConflictError) Code() int {
@@ -92,7 +92,7 @@ type TaskNameFlattenConflictError struct {
 }
 
 func (err *TaskNameFlattenConflictError) Error() string {
-	return fmt.Sprintf(`task: Found multiple tasks (%s) included by "%s""`, err.TaskName, err.Include)
+	return fmt.Sprintf(`rite: Found multiple tasks (%s) included by "%s""`, err.TaskName, err.Include)
 }
 
 func (err *TaskNameFlattenConflictError) Code() int {
@@ -108,7 +108,7 @@ type TaskCalledTooManyTimesError struct {
 
 func (err *TaskCalledTooManyTimesError) Error() string {
 	return fmt.Sprintf(
-		`task: Maximum task call exceeded (%d) for task %q: probably an cyclic dep or infinite loop`,
+		`rite: Maximum task call exceeded (%d) for task %q: probably an cyclic dep or infinite loop`,
 		err.MaximumTaskCall,
 		err.TaskName,
 	)
@@ -124,7 +124,7 @@ type TaskCancelledByUserError struct {
 }
 
 func (err *TaskCancelledByUserError) Error() string {
-	return fmt.Sprintf(`task: Task %q cancelled by user`, err.TaskName)
+	return fmt.Sprintf(`rite: Task %q cancelled by user`, err.TaskName)
 }
 
 func (err *TaskCancelledByUserError) Code() int {
@@ -138,7 +138,7 @@ type TaskCancelledNoTerminalError struct {
 
 func (err *TaskCancelledNoTerminalError) Error() string {
 	return fmt.Sprintf(
-		`task: Task %q cancelled because it has a prompt and the environment is not a terminal. Use --yes (-y) to run anyway.`,
+		`rite: Task %q cancelled because it has a prompt and the environment is not a terminal. Use --yes (-y) to run anyway.`,
 		err.TaskName,
 	)
 }
@@ -172,7 +172,7 @@ func (err *TaskMissingRequiredVarsError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		`task: Task %q cancelled because it is missing required variables: %s`,
+		`rite: Task %q cancelled because it is missing required variables: %s`,
 		err.TaskName,
 		strings.Join(vars, ", "))
 }
@@ -195,7 +195,7 @@ type TaskNotAllowedVarsError struct {
 func (err *TaskNotAllowedVarsError) Error() string {
 	var builder strings.Builder
 
-	builder.WriteString(fmt.Sprintf("task: Task %q cancelled because it is missing required variables:\n", err.TaskName)) //nolint:staticcheck
+	builder.WriteString(fmt.Sprintf("rite: Task %q cancelled because it is missing required variables:\n", err.TaskName)) //nolint:staticcheck
 	for _, s := range err.NotAllowedVars {
 		builder.WriteString(fmt.Sprintf("  - %s has an invalid value : '%s' (allowed values : %v)\n", s.Name, s.Value, s.Enum)) //nolint:staticcheck
 	}

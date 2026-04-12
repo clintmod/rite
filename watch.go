@@ -32,14 +32,14 @@ func (e *Executor) watchTasks(calls ...*Call) error {
 		tasks[i] = c.Task
 	}
 
-	e.Logger.Errf(logger.Green, "task: Started watching for tasks: %s\n", strings.Join(tasks, ", "))
+	e.Logger.Errf(logger.Green, "rite: Started watching for tasks: %s\n", strings.Join(tasks, ", "))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	for _, c := range calls {
 		go func() {
 			err := e.RunTask(ctx, c)
 			if err == nil {
-				e.Logger.Errf(logger.Green, "task: task \"%s\" finished running\n", c.Task)
+				e.Logger.Errf(logger.Green, "rite: task \"%s\" finished running\n", c.Task)
 			} else if !isContextError(err) {
 				e.Logger.Errf(logger.Red, "%v\n", err)
 			}
@@ -76,7 +76,7 @@ func (e *Executor) watchTasks(calls ...*Call) error {
 					cancel()
 					return
 				}
-				e.Logger.VerboseErrf(logger.Magenta, "task: received watch event: %v\n", event)
+				e.Logger.VerboseErrf(logger.Magenta, "rite: received watch event: %v\n", event)
 
 				cancel()
 				ctx, cancel = context.WithCancel(context.Background())
@@ -88,7 +88,7 @@ func (e *Executor) watchTasks(calls ...*Call) error {
 				for _, c := range calls {
 					go func() {
 						if ShouldIgnore(event.Name) {
-							e.Logger.VerboseErrf(logger.Magenta, "task: event skipped for being an ignored dir: %s\n", event.Name)
+							e.Logger.VerboseErrf(logger.Magenta, "rite: event skipped for being an ignored dir: %s\n", event.Name)
 							return
 						}
 						t, err := e.GetTask(c)
@@ -105,12 +105,12 @@ func (e *Executor) watchTasks(calls ...*Call) error {
 
 						if !event.Has(fsnotify.Remove) && !slices.Contains(files, event.Name) {
 							relPath, _ := filepath.Rel(baseDir, event.Name)
-							e.Logger.VerboseErrf(logger.Magenta, "task: skipped for file not in sources: %s\n", relPath)
+							e.Logger.VerboseErrf(logger.Magenta, "rite: skipped for file not in sources: %s\n", relPath)
 							return
 						}
 						err = e.RunTask(ctx, c)
 						if err == nil {
-							e.Logger.Errf(logger.Green, "task: task \"%s\" finished running\n", c.Task)
+							e.Logger.Errf(logger.Green, "rite: task \"%s\" finished running\n", c.Task)
 						} else if !isContextError(err) {
 							e.Logger.Errf(logger.Red, "%v\n", err)
 						}
@@ -182,7 +182,7 @@ func (e *Executor) registerWatchedDirs(w *fsnotify.Watcher, calls ...*Call) erro
 		}
 		e.watchedDirs.Store(d, true)
 		relPath, _ := filepath.Rel(e.Dir, d)
-		e.Logger.VerboseOutf(logger.Green, "task: watching new dir: %v\n", relPath)
+		e.Logger.VerboseOutf(logger.Green, "rite: watching new dir: %v\n", relPath)
 	}
 	return nil
 }

@@ -84,7 +84,7 @@ func (tfg *TaskfileGraph) Merge() (*Taskfile, error) {
 				// Get the merge options
 				includes, ok := edge.Properties.Data.([]*Include)
 				if !ok {
-					return fmt.Errorf("task: Failed to get merge options")
+					return fmt.Errorf("rite: Failed to get merge options")
 				}
 
 				// Merge the included Taskfiles into the parent Taskfile

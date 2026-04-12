@@ -471,8 +471,8 @@ func TestGenerates(t *testing.T) {
 
 	for _, theTask := range []string{relTask, absTask, fileWithSpaces} {
 		destFile := filepathext.SmartJoin(dir, theTask)
-		upToDate := fmt.Sprintf("task: Task \"%s\" is up to date\n", srcTask) +
-			fmt.Sprintf("task: Task \"%s\" is up to date\n", theTask)
+		upToDate := fmt.Sprintf("rite: Task \"%s\" is up to date\n", srcTask) +
+			fmt.Sprintf("rite: Task \"%s\" is up to date\n", theTask)
 
 		// Run task for the first time.
 		require.NoError(t, e.Run(t.Context(), &task.Call{Task: theTask}))
@@ -546,7 +546,7 @@ func TestStatusChecksum(t *testing.T) { // nolint:paralleltest // cannot run in 
 
 			buff.Reset()
 			require.NoError(t, e.Run(t.Context(), &task.Call{Task: test.task}))
-			assert.Equal(t, `task: Task "`+test.task+`" is up to date`+"\n", buff.String())
+			assert.Equal(t, `rite: Task "`+test.task+`" is up to date`+"\n", buff.String())
 
 			s, err = os.Stat(filepathext.SmartJoin(tempDir.Fingerprint, "checksum/"+test.task))
 			require.NoError(t, err)
@@ -588,7 +588,7 @@ func TestStatusTimestamp(t *testing.T) { // nolint:paralleltest // cannot run in
 
 	// Second run: task should be up to date.
 	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "build"}))
-	assert.Equal(t, `task: Task "build" is up to date`+"\n", buff.String())
+	assert.Equal(t, `rite: Task "build" is up to date`+"\n", buff.String())
 	buff.Reset()
 
 	// Delete the generated file (simulate a clean), but leave the timestamp file.
@@ -637,7 +637,7 @@ func TestStatusChecksumMissingGenerated(t *testing.T) { // nolint:paralleltest /
 
 	// Second run: task should be up to date.
 	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "build"}))
-	assert.Equal(t, `task: Task "build" is up to date`+"\n", buff.String())
+	assert.Equal(t, `rite: Task "build" is up to date`+"\n", buff.String())
 	buff.Reset()
 
 	// Delete the generated file (simulate a clean), but leave the checksum file.
@@ -834,7 +834,7 @@ func TestDry(t *testing.T) {
 	require.NoError(t, e.Setup())
 	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "build"}))
 
-	assert.Equal(t, "task: [build] touch file.txt", strings.TrimSpace(buff.String()))
+	assert.Equal(t, "rite: [build] touch file.txt", strings.TrimSpace(buff.String()))
 	if _, err := os.Stat(file); err == nil {
 		t.Errorf("File should not exist %s", file)
 	}
@@ -1061,7 +1061,7 @@ func TestIncludeCycle(t *testing.T) {
 
 	err := e.Setup()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "task: include cycle detected between")
+	assert.Contains(t, err.Error(), "rite: include cycle detected between")
 }
 
 func TestIncludesIncorrect(t *testing.T) {
@@ -1243,7 +1243,7 @@ func TestIncludesOptionalImplicitFalse(t *testing.T) {
 	const dir = "testdata/includes_optional_implicit_false"
 	wd, _ := os.Getwd()
 
-	message := "task: No Taskfile found at \"%s/%s/TaskfileOptional.yml\""
+	message := "rite: No Taskfile found at \"%s/%s/TaskfileOptional.yml\""
 	expected := fmt.Sprintf(message, filepath.ToSlash(wd), dir)
 
 	e := task.NewExecutor(
@@ -1263,7 +1263,7 @@ func TestIncludesOptionalExplicitFalse(t *testing.T) {
 	const dir = "testdata/includes_optional_explicit_false"
 	wd, _ := os.Getwd()
 
-	message := "task: No Taskfile found at \"%s/%s/TaskfileOptional.yml\""
+	message := "rite: No Taskfile found at \"%s/%s/TaskfileOptional.yml\""
 	expected := fmt.Sprintf(message, filepath.ToSlash(wd), dir)
 
 	e := task.NewExecutor(
@@ -1331,7 +1331,7 @@ func TestIncludesInternal(t *testing.T) {
 	}{
 		{"included internal task via task", "task-1", false, "Hello, World!\n"},
 		{"included internal task via dep", "task-2", false, "Hello, World!\n"},
-		{"included internal direct", "included:task-3", true, "task: No tasks with description available. Try --list-all to list all tasks\n"},
+		{"included internal direct", "included:task-3", true, "rite: No tasks with description available. Try --list-all to list all tasks\n"},
 	}
 
 	for _, test := range tests {
@@ -1374,7 +1374,7 @@ func TestIncludesFlatten(t *testing.T) {
 		{name: "included flatten can call entrypoint tasks", taskfile: "Taskfile.yml", task: "from_entrypoint", expectedOutput: "from entrypoint\n"},
 		{name: "included flatten with deps", taskfile: "Taskfile.yml", task: "with_deps", expectedOutput: "gen from included\nwith_deps from included\n"},
 		{name: "included flatten nested", taskfile: "Taskfile.yml", task: "from_nested", expectedOutput: "from nested\n"},
-		{name: "included flatten multiple same task", taskfile: "Taskfile.multiple.yml", task: "gen", expectedErr: true, expectedOutput: "task: Found multiple tasks (gen) included by \"included\"\""},
+		{name: "included flatten multiple same task", taskfile: "Taskfile.multiple.yml", task: "gen", expectedErr: true, expectedOutput: "rite: Found multiple tasks (gen) included by \"included\"\""},
 	}
 
 	for _, test := range tests {
@@ -1763,7 +1763,7 @@ func TestDisplaysErrorOnVersion1Schema(t *testing.T) {
 	)
 	err := e.Setup()
 	require.Error(t, err)
-	assert.Regexp(t, regexp.MustCompile(`task: Invalid schema version in Taskfile \".*testdata\/version\/v1\/Taskfile\.yml\":\nSchema version \(1\.0\.0\) no longer supported\. Please use v3 or above`), err.Error())
+	assert.Regexp(t, regexp.MustCompile(`rite: Invalid schema version in Taskfile \".*testdata\/version\/v1\/Taskfile\.yml\":\nSchema version \(1\.0\.0\) no longer supported\. Please use v3 or above`), err.Error())
 }
 
 func TestDisplaysErrorOnVersion2Schema(t *testing.T) {
@@ -1778,7 +1778,7 @@ func TestDisplaysErrorOnVersion2Schema(t *testing.T) {
 	)
 	err := e.Setup()
 	require.Error(t, err)
-	assert.Regexp(t, regexp.MustCompile(`task: Invalid schema version in Taskfile \".*testdata\/version\/v2\/Taskfile\.yml\":\nSchema version \(2\.0\.0\) no longer supported\. Please use v3 or above`), err.Error())
+	assert.Regexp(t, regexp.MustCompile(`rite: Invalid schema version in Taskfile \".*testdata\/version\/v2\/Taskfile\.yml\":\nSchema version \(2\.0\.0\) no longer supported\. Please use v3 or above`), err.Error())
 }
 
 func TestShortTaskNotation(t *testing.T) {
@@ -2043,11 +2043,11 @@ func TestRunOnceSharedDeps(t *testing.T) {
 	require.NoError(t, e.Setup())
 	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "build"}))
 
-	rx := regexp.MustCompile(`task: \[service-[a,b]:library:build\] echo "build library"`)
+	rx := regexp.MustCompile(`rite: \[service-[a,b]:library:build\] echo "build library"`)
 	matches := rx.FindAllStringSubmatch(buff.String(), -1)
 	assert.Len(t, matches, 1)
-	assert.Contains(t, buff.String(), `task: [service-a:build] echo "build a"`)
-	assert.Contains(t, buff.String(), `task: [service-b:build] echo "build b"`)
+	assert.Contains(t, buff.String(), `rite: [service-a:build] echo "build a"`)
+	assert.Contains(t, buff.String(), `rite: [service-b:build] echo "build b"`)
 }
 
 func TestRunWhenChanged(t *testing.T) {
@@ -2356,27 +2356,27 @@ func TestEvaluateSymlinksInPaths(t *testing.T) { // nolint:paralleltest // canno
 		{
 			name:     "default (1)",
 			task:     "default",
-			expected: "task: [default] echo \"some job\"\nsome job",
+			expected: "rite: [default] echo \"some job\"\nsome job",
 		},
 		{
 			name:     "test-sym (1)",
 			task:     "test-sym",
-			expected: "task: [test-sym] echo \"shared file source changed\" > src/shared/b",
+			expected: "rite: [test-sym] echo \"shared file source changed\" > src/shared/b",
 		},
 		{
 			name:     "default (2)",
 			task:     "default",
-			expected: "task: [default] echo \"some job\"\nsome job",
+			expected: "rite: [default] echo \"some job\"\nsome job",
 		},
 		{
 			name:     "default (3)",
 			task:     "default",
-			expected: `task: Task "default" is up to date`,
+			expected: `rite: Task "default" is up to date`,
 		},
 		{
 			name:     "reset",
 			task:     "reset",
-			expected: "task: [reset] echo \"shared file source\" > src/shared/b\ntask: [reset] echo \"file source\" > src/a",
+			expected: "rite: [reset] echo \"shared file source\" > src/shared/b\ntask: [reset] echo \"file source\" > src/a",
 		},
 	}
 	for _, test := range tests { // nolint:paralleltest // cannot run in parallel
@@ -2482,7 +2482,7 @@ func TestPlatforms(t *testing.T) {
 	)
 	require.NoError(t, e.Setup())
 	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "build-" + runtime.GOOS}))
-	assert.Equal(t, fmt.Sprintf("task: [build-%s] echo 'Running task on %s'\nRunning task on %s\n", runtime.GOOS, runtime.GOOS, runtime.GOOS), buff.String())
+	assert.Equal(t, fmt.Sprintf("rite: [build-%s] echo 'Running task on %s'\nRunning task on %s\n", runtime.GOOS, runtime.GOOS, runtime.GOOS), buff.String())
 }
 
 func TestPOSIXShellOptsGlobalLevel(t *testing.T) {

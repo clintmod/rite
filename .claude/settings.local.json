@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go build:*)",
+      "Bash(go install:*)",
+      "Bash(mkdir -p /tmp/rite-phase2)",
+      "Read(//tmp/**)",
+      "Bash(rite deploy:*)",
+      "Bash(ENV=prod rite deploy)",
+      "Bash(rite)",
+      "Read(//private/tmp/rite-phase2/**)",
+      "Bash(rite a:*)",
+      "Bash(rite b:*)",
+      "Bash(grep -rn --include='*.go' '\"task: \\\\|`task: ')",
+      "Bash(grep -rn --include='*.go' '\"task: \\\\|`task: ' _test.go_dummy)",
+      "Bash(grep -rln --include='*.go' '\"task: \\\\|`task: ')",
+      "Bash(find . -name '*.go' ! -path './website/*' ! -path './testdata/*' -exec sed -i '' -e 's/\"task: /\"rite: /g' -e 's/`task: /`rite: /g' {} +)"
+    ]
+  }
+}

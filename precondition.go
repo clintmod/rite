@@ -11,7 +11,7 @@ import (
 )
 
 // ErrPreconditionFailed is returned when a precondition fails
-var ErrPreconditionFailed = errors.New("task: precondition not met")
+var ErrPreconditionFailed = errors.New("rite: precondition not met")
 
 func (e *Executor) areTaskPreconditionsMet(ctx context.Context, t *ast.Task) (bool, error) {
 	for _, p := range t.Preconditions {
@@ -22,7 +22,7 @@ func (e *Executor) areTaskPreconditionsMet(ctx context.Context, t *ast.Task) (bo
 		})
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
-				e.Logger.Errf(logger.Magenta, "task: %s\n", p.Msg)
+				e.Logger.Errf(logger.Magenta, "rite: %s\n", p.Msg)
 			}
 			return false, ErrPreconditionFailed
 		}

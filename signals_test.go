@@ -42,12 +42,12 @@ func TestSignalSentToProcessGroup(t *testing.T) {
 			want: []string{
 				"sleepit: ready\n",
 				"sleepit: work started\n",
-				"task: Signal received: \"interrupt\"\n",
+				"rite: Signal received: \"interrupt\"\n",
 				// 130 = 128 + SIGINT
-				"task: Failed to run task \"default\": exit status 130\n",
+				"rite: Failed to run task \"default\": exit status 130\n",
 			},
 			notWant: []string{
-				"task: Failed to run task \"default\": context canceled\n",
+				"rite: Failed to run task \"default\": context canceled\n",
 			},
 		},
 		// 2 regressions:
@@ -61,16 +61,16 @@ func TestSignalSentToProcessGroup(t *testing.T) {
 			want: []string{
 				"sleepit: ready\n",
 				"sleepit: work started\n",
-				"task: Signal received: \"interrupt\"\n",
+				"rite: Signal received: \"interrupt\"\n",
 				"sleepit: got signal=interrupt count=1\n",
 				"sleepit: work canceled\n",
 				"sleepit: cleanup started\n",
 				"sleepit: cleanup done\n",
-				"task: Failed to run task \"default\": exit status 3\n",
+				"rite: Failed to run task \"default\": exit status 3\n",
 			},
 			notWant: []string{
 				"sleepit: got signal=interrupt count=2\n",
-				"task: Failed to run task \"default\": context canceled\n",
+				"rite: Failed to run task \"default\": context canceled\n",
 			},
 		},
 		// regression: child receives 2 signal instead of 1 and thus terminates abruptly
@@ -80,17 +80,17 @@ func TestSignalSentToProcessGroup(t *testing.T) {
 			want: []string{
 				"sleepit: ready\n",
 				"sleepit: work started\n",
-				"task: Signal received: \"interrupt\"\n",
+				"rite: Signal received: \"interrupt\"\n",
 				"sleepit: got signal=interrupt count=1\n",
 				"sleepit: work canceled\n",
 				"sleepit: cleanup started\n",
 				"sleepit: cleanup done\n",
-				"task: Failed to run task \"default\": exit status 3\n",
+				"rite: Failed to run task \"default\": exit status 3\n",
 			},
 			notWant: []string{
 				"sleepit: got signal=interrupt count=2\n",
 				"sleepit: cleanup canceled\n",
-				"task: Failed to run task \"default\": exit status 4\n",
+				"rite: Failed to run task \"default\": exit status 4\n",
 			},
 		},
 	}
@@ -196,7 +196,7 @@ func getTaskPath() (string, error) {
 		return path, nil
 	}
 
-	return "", errors.New("task: \"task\" binary was not found!")
+	return "", errors.New("rite: \"task\" binary was not found!")
 }
 
 // Return the difference of the two lists: the elements that are present in the first

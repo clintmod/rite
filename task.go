@@ -144,7 +144,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 		return err
 	}
 	if !shouldRunOnCurrentPlatform(t.Platforms) {
-		e.Logger.VerboseOutf(logger.Yellow, `task: %q not for current platform - ignored\n`, call.Task)
+		e.Logger.VerboseOutf(logger.Yellow, `rite: %q not for current platform - ignored\n`, call.Task)
 		return nil
 	}
 
@@ -168,7 +168,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 			Dir:     t.Dir,
 			Env:     env.Get(t),
 		}); err != nil {
-			e.Logger.VerboseOutf(logger.Yellow, "task: if condition not met - skipped: %q\n", call.Task)
+			e.Logger.VerboseOutf(logger.Yellow, "rite: if condition not met - skipped: %q\n", call.Task)
 			return nil
 		}
 	}
@@ -205,7 +205,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 	defer release()
 
 	if err = e.startExecution(ctx, t, func(ctx context.Context) error {
-		e.Logger.VerboseErrf(logger.Magenta, "task: %q started\n", call.Task)
+		e.Logger.VerboseErrf(logger.Magenta, "rite: %q started\n", call.Task)
 		if err := e.runDeps(ctx, t); err != nil {
 			return err
 		}
@@ -242,7 +242,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 					if e.OutputStyle.Name == "prefixed" {
 						name = t.Prefix
 					}
-					e.Logger.Errf(logger.Magenta, "task: Task %q is up to date\n", name)
+					e.Logger.Errf(logger.Magenta, "rite: Task %q is up to date\n", name)
 				}
 				return nil
 			}
@@ -261,7 +261,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 		}
 
 		if err := e.mkdir(t); err != nil {
-			e.Logger.Errf(logger.Red, "task: cannot make directory %q: %v\n", t.Dir, err)
+			e.Logger.Errf(logger.Red, "rite: cannot make directory %q: %v\n", t.Dir, err)
 		}
 
 		var deferredExitCode uint8
@@ -274,13 +274,13 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 
 			if err := e.runCommand(ctx, t, call, i); err != nil {
 				if err2 := e.statusOnError(t); err2 != nil {
-					e.Logger.VerboseErrf(logger.Yellow, "task: error cleaning status on error: %v\n", err2)
+					e.Logger.VerboseErrf(logger.Yellow, "rite: error cleaning status on error: %v\n", err2)
 				}
 
 				var exitCode interp.ExitStatus
 				if errors.As(err, &exitCode) {
 					if t.IgnoreError {
-						e.Logger.VerboseErrf(logger.Yellow, "task: task error ignored: %v\n", err)
+						e.Logger.VerboseErrf(logger.Yellow, "rite: task error ignored: %v\n", err)
 						continue
 					}
 					deferredExitCode = uint8(exitCode)
@@ -289,7 +289,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 				return err
 			}
 		}
-		e.Logger.VerboseErrf(logger.Magenta, "task: %q finished\n", call.Task)
+		e.Logger.VerboseErrf(logger.Magenta, "rite: %q finished\n", call.Task)
 		return nil
 	}); err != nil {
 		return &errors.TaskRunError{TaskName: t.Name(), Err: err}
@@ -355,7 +355,7 @@ func (e *Executor) runDeferred(t *ast.Task, call *Call, i int, vars *ast.Vars, d
 	cmd.Vars = templater.ReplaceVarsWithExtra(cmd.Vars, cache, extra)
 
 	if err := e.runCommand(ctx, t, call, i); err != nil {
-		e.Logger.VerboseErrf(logger.Yellow, "task: ignored error in deferred cmd: %s\n", err.Error())
+		e.Logger.VerboseErrf(logger.Yellow, "rite: ignored error in deferred cmd: %s\n", err.Error())
 	}
 }
 
@@ -369,7 +369,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			Dir:     t.Dir,
 			Env:     env.Get(t),
 		}); err != nil {
-			e.Logger.VerboseOutf(logger.Yellow, "task: [%s] if condition not met - skipped\n", t.Name())
+			e.Logger.VerboseOutf(logger.Yellow, "rite: [%s] if condition not met - skipped\n", t.Name())
 			return nil
 		}
 	}
@@ -382,18 +382,18 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		err := e.RunTask(ctx, &Call{Task: cmd.Task, Vars: cmd.Vars, Silent: cmd.Silent, Indirect: true})
 		var exitCode interp.ExitStatus
 		if errors.As(err, &exitCode) && cmd.IgnoreError {
-			e.Logger.VerboseErrf(logger.Yellow, "task: [%s] task error ignored: %v\n", t.Name(), err)
+			e.Logger.VerboseErrf(logger.Yellow, "rite: [%s] task error ignored: %v\n", t.Name(), err)
 			return nil
 		}
 		return err
 	case cmd.Cmd != "":
 		if !shouldRunOnCurrentPlatform(cmd.Platforms) {
-			e.Logger.VerboseOutf(logger.Yellow, "task: [%s] %s not for current platform - ignored\n", t.Name(), cmd.Cmd)
+			e.Logger.VerboseOutf(logger.Yellow, "rite: [%s] %s not for current platform - ignored\n", t.Name(), cmd.Cmd)
 			return nil
 		}
 
 		if e.Verbose || (!call.Silent && !cmd.Silent && !t.IsSilent() && !e.Taskfile.Silent && !e.Silent) {
-			e.Logger.Errf(logger.Green, "task: [%s] %s\n", t.Name(), cmd.Cmd)
+			e.Logger.Errf(logger.Green, "rite: [%s] %s\n", t.Name(), cmd.Cmd)
 		}
 
 		if e.Dry {
@@ -407,7 +407,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		vars, err := e.Compiler.FastGetVariables(t, call)
 		outputTemplater := &templater.Cache{Vars: vars}
 		if err != nil {
-			return fmt.Errorf("task: failed to get variables: %w", err)
+			return fmt.Errorf("rite: failed to get variables: %w", err)
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
@@ -422,11 +422,11 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			Stderr:    stdErr,
 		})
 		if closeErr := closer(err); closeErr != nil {
-			e.Logger.Errf(logger.Red, "task: unable to close writer: %v\n", closeErr)
+			e.Logger.Errf(logger.Red, "rite: unable to close writer: %v\n", closeErr)
 		}
 		var exitCode interp.ExitStatus
 		if errors.As(err, &exitCode) && cmd.IgnoreError {
-			e.Logger.VerboseErrf(logger.Yellow, "task: [%s] command error ignored: %v\n", t.Name(), err)
+			e.Logger.VerboseErrf(logger.Yellow, "rite: [%s] command error ignored: %v\n", t.Name(), err)
 			return nil
 		}
 		return err
@@ -449,7 +449,7 @@ func (e *Executor) startExecution(ctx context.Context, t *ast.Task, execute func
 
 	if otherExecutionCtx, ok := e.executionHashes[h]; ok {
 		e.executionHashesMutex.Unlock()
-		e.Logger.VerboseErrf(logger.Magenta, "task: skipping execution of task: %s\n", h)
+		e.Logger.VerboseErrf(logger.Magenta, "rite: skipping execution of task: %s\n", h)
 
 		// Release our execution slot to avoid blocking other tasks while we wait
 		reacquire := e.releaseConcurrencyLimit()

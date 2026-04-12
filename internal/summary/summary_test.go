@@ -62,7 +62,7 @@ func TestPrintTaskName(t *testing.T) {
 
 	summary.PrintTask(&l, task)
 
-	assert.Contains(t, buffer.String(), "task: my-task-name\n")
+	assert.Contains(t, buffer.String(), "rite: my-task-name\n")
 }
 
 func TestPrintTaskCommandsIfPresent(t *testing.T) {
@@ -119,7 +119,7 @@ func TestLayout(t *testing.T) {
 }
 
 func expectedOutput() string {
-	expected := `task: sample-task
+	expected := `rite: sample-task
 
 line1
 line2
@@ -182,7 +182,7 @@ func TestPrintAllWithSpaces(t *testing.T) {
 		[]string{"t1", "t2", "t3"},
 	)
 
-	assert.True(t, strings.HasPrefix(buffer.String(), "task: t1"))
+	assert.True(t, strings.HasPrefix(buffer.String(), "rite: t1"))
 	assert.Contains(t, buffer.String(), "\n(task does not have description or summary)\n\n\ntask: t2")
 	assert.Contains(t, buffer.String(), "\n(task does not have description or summary)\n\n\ntask: t3")
 }

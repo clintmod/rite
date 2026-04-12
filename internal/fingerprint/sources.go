@@ -11,6 +11,6 @@ func NewSourcesChecker(method, tempDir string, dry bool) (SourcesCheckable, erro
 	case "none":
 		return NoneChecker{}, nil
 	default:
-		return nil, fmt.Errorf(`task: invalid method "%s"`, method)
+		return nil, fmt.Errorf(`rite: invalid method "%s"`, method)
 	}
 }

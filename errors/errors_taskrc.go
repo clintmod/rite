@@ -12,7 +12,7 @@ func (err TaskRCNotFoundError) Error() string {
 	if err.Walk {
 		walkText = " (or any of the parent directories)"
 	}
-	return fmt.Sprintf(`task: No Task config file found at %q%s`, err.URI, walkText)
+	return fmt.Sprintf(`rite: No Task config file found at %q%s`, err.URI, walkText)
 }
 
 func (err TaskRCNotFoundError) Code() int {

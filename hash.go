@@ -19,7 +19,7 @@ func (e *Executor) GetHash(t *ast.Task) (string, error) {
 	case "when_changed":
 		h = hash.Hash
 	default:
-		return "", fmt.Errorf(`task: invalid run "%s"`, r)
+		return "", fmt.Errorf(`rite: invalid run "%s"`, r)
 	}
 	return h(t)
 }

@@ -26,9 +26,9 @@ func (err TaskfileNotFoundError) Error() string {
 		walkText = " (or any of the parent directories)."
 	}
 	if err.AskInit {
-		walkText += " Run `task --init` to create a new Taskfile."
+		walkText += " Run `rite --init` to create a new Ritefile."
 	}
-	return fmt.Sprintf(`task: No Taskfile found at %q%s`, filepath.ToSlash(err.URI), walkText)
+	return fmt.Sprintf(`rite: No Ritefile found at %q%s`, filepath.ToSlash(err.URI), walkText)
 }
 
 func (err TaskfileNotFoundError) Code() int {
@@ -40,7 +40,7 @@ func (err TaskfileNotFoundError) Code() int {
 type TaskfileAlreadyExistsError struct{}
 
 func (err TaskfileAlreadyExistsError) Error() string {
-	return "task: A Taskfile already exists"
+	return "rite: A Ritefile already exists"
 }
 
 func (err TaskfileAlreadyExistsError) Code() int {
@@ -55,7 +55,7 @@ type TaskfileInvalidError struct {
 }
 
 func (err TaskfileInvalidError) Error() string {
-	return fmt.Sprintf("task: Failed to parse %s:\n%v", filepath.ToSlash(err.URI), err.Err)
+	return fmt.Sprintf("rite: Failed to parse %s:\n%v", filepath.ToSlash(err.URI), err.Err)
 }
 
 func (err TaskfileInvalidError) Code() int {
@@ -74,7 +74,7 @@ func (err TaskfileFetchFailedError) Error() string {
 	if err.HTTPStatusCode != 0 {
 		statusText = fmt.Sprintf(" with status code %d (%s)", err.HTTPStatusCode, http.StatusText(err.HTTPStatusCode))
 	}
-	return fmt.Sprintf(`task: Download of %q failed%s`, filepath.ToSlash(err.URI), statusText)
+	return fmt.Sprintf(`rite: Download of %q failed%s`, filepath.ToSlash(err.URI), statusText)
 }
 
 func (err TaskfileFetchFailedError) Code() int {
@@ -89,7 +89,7 @@ type TaskfileNotTrustedError struct {
 
 func (err *TaskfileNotTrustedError) Error() string {
 	return fmt.Sprintf(
-		`task: Taskfile %q not trusted by user`,
+		`rite: Ritefile %q not trusted by user`,
 		filepath.ToSlash(err.URI),
 	)
 }
@@ -106,7 +106,7 @@ type TaskfileNotSecureError struct {
 
 func (err *TaskfileNotSecureError) Error() string {
 	return fmt.Sprintf(
-		`task: Taskfile %q cannot be downloaded over an insecure connection. You can override this by using the --insecure flag`,
+		`rite: Ritefile %q cannot be downloaded over an insecure connection. You can override this by using the --insecure flag`,
 		filepath.ToSlash(err.URI),
 	)
 }
@@ -123,7 +123,7 @@ type TaskfileCacheNotFoundError struct {
 
 func (err *TaskfileCacheNotFoundError) Error() string {
 	return fmt.Sprintf(
-		`task: Taskfile %q was not found in the cache. Remove the --offline flag to use a remote copy or download it using the --download flag`,
+		`rite: Ritefile %q was not found in the cache. Remove the --offline flag to use a remote copy or download it using the --download flag`,
 		filepath.ToSlash(err.URI),
 	)
 }
@@ -144,12 +144,12 @@ type TaskfileVersionCheckError struct {
 func (err *TaskfileVersionCheckError) Error() string {
 	if err.SchemaVersion == nil {
 		return fmt.Sprintf(
-			`task: Missing schema version in Taskfile %q`,
+			`rite: Missing schema version in Ritefile %q`,
 			filepath.ToSlash(err.URI),
 		)
 	}
 	return fmt.Sprintf(
-		"task: Invalid schema version in Taskfile %q:\nSchema version (%s) %s",
+		"rite: Invalid schema version in Ritefile %q:\nSchema version (%s) %s",
 		filepath.ToSlash(err.URI),
 		err.SchemaVersion.String(),
 		err.Message,
@@ -169,7 +169,7 @@ type TaskfileNetworkTimeoutError struct {
 
 func (err *TaskfileNetworkTimeoutError) Error() string {
 	return fmt.Sprintf(
-		`task: Network connection timed out after %s while attempting to download Taskfile %q`,
+		`rite: Network connection timed out after %s while attempting to download Ritefile %q`,
 		err.Timeout, filepath.ToSlash(err.URI),
 	)
 }
@@ -186,7 +186,7 @@ type TaskfileCycleError struct {
 }
 
 func (err TaskfileCycleError) Error() string {
-	return fmt.Sprintf("task: include cycle detected between %s <--> %s",
+	return fmt.Sprintf("rite: include cycle detected between %s <--> %s",
 		filepath.ToSlash(err.Source),
 		filepath.ToSlash(err.Destination),
 	)
@@ -206,7 +206,7 @@ type TaskfileDoesNotMatchChecksum struct {
 
 func (err *TaskfileDoesNotMatchChecksum) Error() string {
 	return fmt.Sprintf(
-		"task: The checksum of the Taskfile at %q does not match!\ngot: %q\nwant: %q",
+		"rite: The checksum of the Ritefile at %q does not match!\ngot: %q\nwant: %q",
 		filepath.ToSlash(err.URI),
 		err.ActualChecksum,
 		err.ExpectedChecksum,

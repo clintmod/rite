@@ -224,7 +224,7 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string, cache map
 		Env:     e,
 	}
 	if err := execext.RunCommand(context.Background(), opts); err != nil {
-		return "", fmt.Errorf(`task: Command "%s" failed: %s`, opts.Command, err)
+		return "", fmt.Errorf(`rite: Command "%s" failed: %s`, opts.Command, err)
 	}
 
 	result := strings.TrimSuffix(stdout.String(), "\r\n")
@@ -233,7 +233,7 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string, cache map
 	if cache != nil {
 		cache[*v.Sh] = result
 	}
-	c.Logger.VerboseErrf(logger.Magenta, "task: dynamic variable: %q result: %q\n", *v.Sh, result)
+	c.Logger.VerboseErrf(logger.Magenta, "rite: dynamic variable: %q result: %q\n", *v.Sh, result)
 
 	return result, nil
 }

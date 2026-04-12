@@ -35,13 +35,13 @@ func BuildFor(o *ast.Output, logger *logger.Logger) (Output, error) {
 		}
 		return NewPrefixed(logger), nil
 	default:
-		return nil, fmt.Errorf(`task: output style %q not recognized`, o.Name)
+		return nil, fmt.Errorf(`rite: output style %q not recognized`, o.Name)
 	}
 }
 
 func checkOutputGroupUnset(o *ast.Output) error {
 	if o.Group.IsSet() {
-		return fmt.Errorf("task: output style %q does not support the group begin/end parameter", o.Name)
+		return fmt.Errorf("rite: output style %q does not support the group begin/end parameter", o.Name)
 	}
 	return nil
 }

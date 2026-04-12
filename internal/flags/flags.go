@@ -203,48 +203,48 @@ func isCI() bool {
 
 func Validate() error {
 	if Download && Offline {
-		return errors.New("task: You can't set both --download and --offline flags")
+		return errors.New("rite: You can't set both --download and --offline flags")
 	}
 
 	if Download && ClearCache {
-		return errors.New("task: You can't set both --download and --clear-cache flags")
+		return errors.New("rite: You can't set both --download and --clear-cache flags")
 	}
 
 	if Global && Dir != "" {
-		return errors.New("task: You can't set both --global and --dir")
+		return errors.New("rite: You can't set both --global and --dir")
 	}
 
 	if Output.Name != "group" {
 		if Output.Group.Begin != "" {
-			return errors.New("task: You can't set --output-group-begin without --output=group")
+			return errors.New("rite: You can't set --output-group-begin without --output=group")
 		}
 		if Output.Group.End != "" {
-			return errors.New("task: You can't set --output-group-end without --output=group")
+			return errors.New("rite: You can't set --output-group-end without --output=group")
 		}
 		if Output.Group.ErrorOnly {
-			return errors.New("task: You can't set --output-group-error-only without --output=group")
+			return errors.New("rite: You can't set --output-group-error-only without --output=group")
 		}
 	}
 
 	if List && ListAll {
-		return errors.New("task: cannot use --list and --list-all at the same time")
+		return errors.New("rite: cannot use --list and --list-all at the same time")
 	}
 
 	if ListJson && !List && !ListAll {
-		return errors.New("task: --json only applies to --list or --list-all")
+		return errors.New("rite: --json only applies to --list or --list-all")
 	}
 
 	if NoStatus && !ListJson {
-		return errors.New("task: --no-status only applies to --json with --list or --list-all")
+		return errors.New("rite: --no-status only applies to --json with --list or --list-all")
 	}
 
 	if Nested && !ListJson {
-		return errors.New("task: --nested only applies to --json with --list or --list-all")
+		return errors.New("rite: --nested only applies to --json with --list or --list-all")
 	}
 
 	// Validate certificate flags
 	if (Cert != "" && CertKey == "") || (Cert == "" && CertKey != "") {
-		return errors.New("task: --cert and --cert-key must be provided together")
+		return errors.New("rite: --cert and --cert-key must be provided together")
 	}
 
 	return nil

@@ -182,6 +182,23 @@ type migrateTask struct {
 	Dotenv []string             `yaml:"dotenv"`
 }
 
+// UnmarshalYAML accepts the three task-definition shapes upstream supports
+// (full mapping, bare list of cmds, single-string cmd) and silently drops
+// the list/string shorthands — there's nothing to warn about on those since
+// they can't declare vars/env/dotenv by definition.
+func (t *migrateTask) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return nil
+	}
+	type alias migrateTask
+	var a alias
+	if err := node.Decode(&a); err != nil {
+		return err
+	}
+	*t = migrateTask(a)
+	return nil
+}
+
 var secretNameRx = regexp.MustCompile(`(?i)(TOKEN|SECRET|PASSWORD|PASSWD|APIKEY|API_KEY|PRIVATE_KEY|ACCESS_KEY)`)
 
 func (d *migrateDoc) emitWarnings(srcPath string, warn io.Writer) {

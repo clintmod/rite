@@ -27,6 +27,38 @@ func (r *Cache) ResetCache() {
 	r.cacheMap = r.Vars.ToCacheMap()
 }
 
+// Seed adds fallback entries to the templater's view that aren't part of the
+// underlying Vars. Existing keys are preserved. Used to make built-in vars
+// visible to template resolution while keeping them out of the canonical
+// variable set until lowest-priority merge time.
+func (r *Cache) Seed(m map[string]any) {
+	if r.cacheMap == nil {
+		if r.Vars != nil {
+			r.cacheMap = r.Vars.ToCacheMap()
+		} else {
+			r.cacheMap = make(map[string]any)
+		}
+	}
+	for k, v := range m {
+		if _, exists := r.cacheMap[k]; !exists {
+			r.cacheMap[k] = v
+		}
+	}
+}
+
+// Update records a key/value pair that was just added to the underlying Vars
+// so the templater's view stays consistent without rebuilding from scratch.
+func (r *Cache) Update(k string, v any) {
+	if r.cacheMap == nil {
+		if r.Vars != nil {
+			r.cacheMap = r.Vars.ToCacheMap()
+		} else {
+			r.cacheMap = make(map[string]any)
+		}
+	}
+	r.cacheMap[k] = v
+}
+
 func (r *Cache) Err() error {
 	return r.err
 }

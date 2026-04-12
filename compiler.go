@@ -44,102 +44,147 @@ func (c *Compiler) FastGetVariables(t *ast.Task, call *Call) (*ast.Vars, error) 
 	return c.getVariables(t, call, false)
 }
 
+// getVariables resolves the full variable set for a task invocation using
+// first-in-wins precedence (SPEC §Variable Precedence). Tiers are processed
+// highest-priority first and each tier uses set-if-absent: once a key is set
+// by a higher-priority tier, no lower tier can overwrite it.
+//
+// Precedence (highest → lowest):
+//  1. Shell environment
+//  2. CLI / call.Vars (FOO=bar rite build, --set FOO=bar)
+//  3. Entrypoint env block (TaskfileEnv — dotenv files are merged here upstream)
+//  4. Entrypoint vars block (TaskfileVars)
+//  5. Include-site vars (t.IncludeVars)
+//  6. Included-file top-level vars (t.IncludedTaskfileVars)
+//  7. Task-scope vars (t.Vars) — defaults only
+//  8. Built-in/special vars (RITE_EXE, RITEFILE, TASK, ...)
+//
+// Built-in vars are made visible to the templater throughout resolution via
+// cache.Seed so higher tiers can reference e.g. {{.RITEFILE}} in their
+// templates, but they only land in the returned *Vars at the lowest-priority
+// merge step — so a user-declared var of the same name would still win.
+// (Two-cache templater; see CLAUDE.md Phase 2 notes, option B.)
 func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*ast.Vars, error) {
 	result := env.GetEnviron()
+
 	specialVars, err := c.getSpecialVars(t, call)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range specialVars {
-		result.Set(k, ast.Var{Value: v})
-	}
 
-	getRangeFunc := func(dir string) func(k string, v ast.Var) error {
+	// Single persistent cache. cacheMap starts as shell env (from result) and
+	// we keep it in sync manually as each tier lands.
+	cache := &templater.Cache{Vars: result}
+	cache.ResetCache()
+	// Built-ins: visible to the templater for every tier's rendering, but not
+	// yet part of result — they get added to result last, with set-if-absent,
+	// so any user-declared name wins per SPEC §Variable Precedence tier 8.
+	specialsAny := make(map[string]any, len(specialVars))
+	for k, v := range specialVars {
+		specialsAny[k] = v
+	}
+	cache.Seed(specialsAny)
+
+	setIfAbsent := func(dir string) func(k string, v ast.Var) error {
 		return func(k string, v ast.Var) error {
-			cache := &templater.Cache{Vars: result}
-			// Replace values
+			if _, exists := result.Get(k); exists {
+				// A higher-priority tier already set this key.
+				return nil
+			}
 			newVar := templater.ReplaceVar(v, cache)
-			// If the variable should not be evaluated, but is nil, set it to an empty string
-			// This stops empty interface errors when using the templater to replace values later
-			// Preserve the Sh field so it can be displayed in summary
+			// Preserve the Sh field on unevaluated dynamic vars so summary/listing
+			// can display them.
 			if !evaluateShVars && newVar.Value == nil {
 				result.Set(k, ast.Var{Value: "", Sh: newVar.Sh})
 				return nil
 			}
-			// If the variable should not be evaluated and it is set, we can set it and return
 			if !evaluateShVars {
 				result.Set(k, ast.Var{Value: newVar.Value, Sh: newVar.Sh})
+				cache.Update(k, newVar.Value)
 				return nil
 			}
-			// Now we can check for errors since we've handled all the cases when we don't want to evaluate
 			if err := cache.Err(); err != nil {
 				return err
 			}
-			// If the variable is already set, we can set it and return
 			if newVar.Value != nil || newVar.Sh == nil {
 				result.Set(k, ast.Var{Value: newVar.Value})
+				cache.Update(k, newVar.Value)
 				return nil
 			}
-			// If the variable is dynamic, we need to resolve it first
 			static, err := c.HandleDynamicVar(newVar, dir, env.GetFromVars(result))
 			if err != nil {
 				return err
 			}
 			result.Set(k, ast.Var{Value: static})
+			cache.Update(k, static)
 			return nil
 		}
 	}
-	rangeFunc := getRangeFunc(c.Dir)
+
+	rangeFunc := setIfAbsent(c.Dir)
 
 	var taskRangeFunc func(k string, v ast.Var) error
 	if t != nil {
 		// NOTE(@andreynering): We're manually joining these paths here because
 		// this is the raw task, not the compiled one.
-		cache := &templater.Cache{Vars: result}
 		dir := templater.Replace(t.Dir, cache)
 		if err := cache.Err(); err != nil {
 			return nil, err
 		}
 		dir = filepathext.SmartJoin(c.Dir, dir)
-		taskRangeFunc = getRangeFunc(dir)
+		taskRangeFunc = setIfAbsent(dir)
 	}
 
+	// Tier 2: CLI / call vars.
+	if call != nil {
+		for k, v := range call.Vars.All() {
+			if err := rangeFunc(k, v); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// Tier 3: entrypoint env (dotenv merged in upstream).
 	for k, v := range c.TaskfileEnv.All() {
 		if err := rangeFunc(k, v); err != nil {
 			return nil, err
 		}
 	}
+
+	// Tier 4: entrypoint vars.
 	for k, v := range c.TaskfileVars.All() {
 		if err := rangeFunc(k, v); err != nil {
 			return nil, err
 		}
 	}
+
 	if t != nil {
+		// Tier 5: include-site vars.
 		for k, v := range t.IncludeVars.All() {
 			if err := rangeFunc(k, v); err != nil {
 				return nil, err
 			}
 		}
+		// Tier 6: included file top-level vars.
 		for k, v := range t.IncludedTaskfileVars.All() {
+			if err := taskRangeFunc(k, v); err != nil {
+				return nil, err
+			}
+		}
+		// Tier 7: task-scope vars — defaults only.
+		for k, v := range t.Vars.All() {
 			if err := taskRangeFunc(k, v); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	if t == nil || call == nil {
-		return result, nil
-	}
-
-	for k, v := range call.Vars.All() {
-		if err := rangeFunc(k, v); err != nil {
-			return nil, err
+	// Tier 8: built-ins last, set-if-absent.
+	for k, v := range specialVars {
+		if _, exists := result.Get(k); exists {
+			continue
 		}
-	}
-	for k, v := range t.Vars.All() {
-		if err := taskRangeFunc(k, v); err != nil {
-			return nil, err
-		}
+		result.Set(k, ast.Var{Value: v})
 	}
 
 	return result, nil

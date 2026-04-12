@@ -211,19 +211,26 @@ func run() error {
 	// Merge CLI variables first (e.g. FOO=bar) so they take priority over Taskfile defaults
 	e.Taskfile.Vars.Merge(globals, nil)
 
-	// Then ReverseMerge special variables so they're available for templating
+	// Then ReverseMerge special variables so they're available for templating.
+	// CLI_* specials are rite-internal — marked export: false so they don't
+	// leak into cmd shell environments alongside user vars. Phase 4 wave 3
+	// auto-exports vars by default; without this opt-out, a nested
+	// `rite` invocation (or any test that inherits os.Environ and then
+	// passes its own CLI_ARGS via call.Vars) would see the outer CLI_ARGS=""
+	// win at SPEC tier 1, defeating the test's intent.
 	cliArgsPostDashQuoted, err := args.ToQuotedString(cliArgsPostDash)
 	if err != nil {
 		return err
 	}
+	noExport := false
 	specialVars := ast.NewVars()
-	specialVars.Set("CLI_ARGS", ast.Var{Value: cliArgsPostDashQuoted})
-	specialVars.Set("CLI_ARGS_LIST", ast.Var{Value: cliArgsPostDash})
-	specialVars.Set("CLI_FORCE", ast.Var{Value: flags.Force || flags.ForceAll})
-	specialVars.Set("CLI_SILENT", ast.Var{Value: flags.Silent})
-	specialVars.Set("CLI_VERBOSE", ast.Var{Value: flags.Verbose})
-	specialVars.Set("CLI_OFFLINE", ast.Var{Value: flags.Offline})
-	specialVars.Set("CLI_ASSUME_YES", ast.Var{Value: flags.AssumeYes})
+	specialVars.Set("CLI_ARGS", ast.Var{Value: cliArgsPostDashQuoted, Export: &noExport})
+	specialVars.Set("CLI_ARGS_LIST", ast.Var{Value: cliArgsPostDash, Export: &noExport})
+	specialVars.Set("CLI_FORCE", ast.Var{Value: flags.Force || flags.ForceAll, Export: &noExport})
+	specialVars.Set("CLI_SILENT", ast.Var{Value: flags.Silent, Export: &noExport})
+	specialVars.Set("CLI_VERBOSE", ast.Var{Value: flags.Verbose, Export: &noExport})
+	specialVars.Set("CLI_OFFLINE", ast.Var{Value: flags.Offline, Export: &noExport})
+	specialVars.Set("CLI_ASSUME_YES", ast.Var{Value: flags.AssumeYes, Export: &noExport})
 	e.Taskfile.Vars.ReverseMerge(specialVars, nil)
 	if !flags.Watch {
 		e.InterceptInterruptSignals()

@@ -242,7 +242,9 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 						extra["KEY"] = keys[i]
 					}
 					newCmd := cmd.DeepCopy()
-					newCmd.Cmd = templater.ReplaceWithExtra(cmd.Cmd, cache, extra)
+					// Cmd is shell-bound — skip ExpandShell until Phase 4 wave 3
+					// unifies vars/env. Non-shell fields still get full treatment.
+					newCmd.Cmd = templater.ReplaceNoShellWithExtra(cmd.Cmd, cache, extra)
 					newCmd.Task = templater.ReplaceWithExtra(cmd.Task, cache, extra)
 					newCmd.If = templater.ReplaceWithExtra(cmd.If, cache, extra)
 					newCmd.Vars = templater.ReplaceVarsWithExtra(cmd.Vars, cache, extra)
@@ -257,7 +259,8 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 				continue
 			}
 			newCmd := cmd.DeepCopy()
-			newCmd.Cmd = templater.Replace(cmd.Cmd, cache)
+			// Cmd is shell-bound — skip ExpandShell (see ReplaceNoShell doc).
+			newCmd.Cmd = templater.ReplaceNoShell(cmd.Cmd, cache)
 			newCmd.Task = templater.Replace(cmd.Task, cache)
 			newCmd.If = templater.Replace(cmd.If, cache)
 			newCmd.Vars = templater.ReplaceVars(cmd.Vars, cache)
@@ -311,14 +314,16 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 				continue
 			}
 			newPrecondition := precondition.DeepCopy()
-			newPrecondition.Sh = templater.Replace(precondition.Sh, cache)
+			// Sh is shell-bound — skip ExpandShell (see ReplaceNoShell doc).
+			newPrecondition.Sh = templater.ReplaceNoShell(precondition.Sh, cache)
 			newPrecondition.Msg = templater.Replace(precondition.Msg, cache)
 			new.Preconditions = append(new.Preconditions, newPrecondition)
 		}
 	}
 
 	if len(origTask.Status) > 0 {
-		new.Status = templater.Replace(origTask.Status, cache)
+		// Status entries are shell commands — skip ExpandShell.
+		new.Status = templater.ReplaceNoShell(origTask.Status, cache)
 	}
 
 	// We only care about templater errors if we are evaluating shell variables

@@ -1,0 +1,17 @@
+version: '3'
+
+includes:
+  included:
+    taskfile: ./included/Ritefile.yml
+    excludes:
+        - foo
+  included_flatten:
+    taskfile: ./included/Ritefile.yml
+    flatten: true
+    excludes:
+      - bar
+
+tasks:
+  default:
+    cmds:
+      - echo "called_dep" > called_dep.txt

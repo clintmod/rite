@@ -1,0 +1,9 @@
+version: '3'
+
+includes:
+  included: RitefileOptional.yml
+
+tasks:
+  default:
+    cmds:
+      - echo "Hello, world!"

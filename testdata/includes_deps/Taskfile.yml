@@ -1,9 +1,0 @@
-version: '3'
-
-includes:
-  included: Taskfile2.yml
-
-tasks:
-  default:
-    cmds:
-      - task: included:default

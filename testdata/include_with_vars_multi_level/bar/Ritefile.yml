@@ -1,0 +1,7 @@
+version: "3"
+
+includes:
+  lib:
+    taskfile: ../lib/Ritefile.yml
+    vars:
+      RECEIVER: "bar"

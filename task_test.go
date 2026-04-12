@@ -928,12 +928,12 @@ func TestIncludesRemote(t *testing.T) {
 		secondRemote string
 	}{
 		{
-			firstRemote:  srv.URL + "/first/Taskfile.yml",
-			secondRemote: srv.URL + "/first/second/Taskfile.yml",
+			firstRemote:  srv.URL + "/first/Ritefile.yml",
+			secondRemote: srv.URL + "/first/second/Ritefile.yml",
 		},
 		{
-			firstRemote:  srv.URL + "/first/Taskfile.yml",
-			secondRemote: "./second/Taskfile.yml",
+			firstRemote:  srv.URL + "/first/Ritefile.yml",
+			secondRemote: "./second/Ritefile.yml",
 		},
 		{
 			firstRemote:  srv.URL + "/first/",
@@ -1243,7 +1243,7 @@ func TestIncludesOptionalImplicitFalse(t *testing.T) {
 	const dir = "testdata/includes_optional_implicit_false"
 	wd, _ := os.Getwd()
 
-	message := "rite: No Taskfile found at \"%s/%s/TaskfileOptional.yml\""
+	message := "rite: No Ritefile found at \"%s/%s/RitefileOptional.yml\""
 	expected := fmt.Sprintf(message, filepath.ToSlash(wd), dir)
 
 	e := task.NewExecutor(
@@ -1263,7 +1263,7 @@ func TestIncludesOptionalExplicitFalse(t *testing.T) {
 	const dir = "testdata/includes_optional_explicit_false"
 	wd, _ := os.Getwd()
 
-	message := "rite: No Taskfile found at \"%s/%s/TaskfileOptional.yml\""
+	message := "rite: No Ritefile found at \"%s/%s/RitefileOptional.yml\""
 	expected := fmt.Sprintf(message, filepath.ToSlash(wd), dir)
 
 	e := task.NewExecutor(
@@ -1369,12 +1369,12 @@ func TestIncludesFlatten(t *testing.T) {
 		expectedErr    bool
 		expectedOutput string
 	}{
-		{name: "included flatten", taskfile: "Taskfile.yml", task: "gen", expectedOutput: "gen from included\n"},
-		{name: "included flatten with default", taskfile: "Taskfile.yml", task: "default", expectedOutput: "default from included flatten\n"},
-		{name: "included flatten can call entrypoint tasks", taskfile: "Taskfile.yml", task: "from_entrypoint", expectedOutput: "from entrypoint\n"},
-		{name: "included flatten with deps", taskfile: "Taskfile.yml", task: "with_deps", expectedOutput: "gen from included\nwith_deps from included\n"},
-		{name: "included flatten nested", taskfile: "Taskfile.yml", task: "from_nested", expectedOutput: "from nested\n"},
-		{name: "included flatten multiple same task", taskfile: "Taskfile.multiple.yml", task: "gen", expectedErr: true, expectedOutput: "rite: Found multiple tasks (gen) included by \"included\"\""},
+		{name: "included flatten", taskfile: "Ritefile.yml", task: "gen", expectedOutput: "gen from included\n"},
+		{name: "included flatten with default", taskfile: "Ritefile.yml", task: "default", expectedOutput: "default from included flatten\n"},
+		{name: "included flatten can call entrypoint tasks", taskfile: "Ritefile.yml", task: "from_entrypoint", expectedOutput: "from entrypoint\n"},
+		{name: "included flatten with deps", taskfile: "Ritefile.yml", task: "with_deps", expectedOutput: "gen from included\nwith_deps from included\n"},
+		{name: "included flatten nested", taskfile: "Ritefile.yml", task: "from_nested", expectedOutput: "from nested\n"},
+		{name: "included flatten multiple same task", taskfile: "Ritefile.multiple.yml", task: "gen", expectedErr: true, expectedOutput: "rite: Found multiple tasks (gen) included by \"included\"\""},
 	}
 
 	for _, test := range tests {
@@ -1576,10 +1576,10 @@ func TestSupportedFileNames(t *testing.T) {
 	t.Parallel()
 
 	fileNames := []string{
-		"Taskfile.yml",
-		"Taskfile.yaml",
-		"Taskfile.dist.yml",
-		"Taskfile.dist.yaml",
+		"Ritefile.yml",
+		"Ritefile.yaml",
+		"Ritefile.dist.yml",
+		"Ritefile.dist.yaml",
 	}
 	for _, fileName := range fileNames {
 		t.Run(fileName, func(t *testing.T) {

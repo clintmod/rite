@@ -1,0 +1,20 @@
+version: "3"
+
+includes:
+  included1:
+    taskfile: include/Ritefile.include1.yml
+    vars:
+      VAR_1: included1-var1
+  included2:
+    taskfile: include/Ritefile.include2.yml
+    vars:
+      VAR_1: included2-var1
+  included3:
+    taskfile: include/Ritefile.include3.yml
+
+tasks:
+  task1:
+    cmds:
+      - task: included1:task1
+      - task: included2:task1
+      - task: included3:task1

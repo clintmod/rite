@@ -1,0 +1,9 @@
+version: '3'
+
+includes:
+  'two': ./two/Ritefile.yml
+
+tasks:
+  level2:
+    cmds:
+      - echo "hello level 2"

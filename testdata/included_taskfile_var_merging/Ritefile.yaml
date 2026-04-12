@@ -1,0 +1,12 @@
+version: "3"
+
+includes:
+  foo:
+    taskfile: ./foo/Ritefile.yaml
+  bar:
+    taskfile: ./bar/Ritefile.yaml
+
+tasks:
+  stub:
+    cmds:
+      - echo 0

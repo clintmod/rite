@@ -1,0 +1,13 @@
+version: '3'
+
+includes:
+  inc: Ritefile-inc.yml
+
+tasks:
+  default:
+    cmds:
+      - echo "Hello from root Ritefile"
+      - task: inc:hello
+      - task: inc:hello-silent
+      - task: inc:hello-silent-not-set
+      - task: inc:hello-silent-set-false

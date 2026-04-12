@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clintmod/rite/experiments"
 	"github.com/clintmod/rite/taskfile/ast"
 )
 
@@ -26,11 +25,24 @@ func GetEnviron() *ast.Vars {
 }
 
 func Get(t *ast.Task) []string {
-	if t.Env == nil {
+	// SPEC §vars/env Unification: every declared variable exports to the
+	// process environment unless marked export: false. We union t.Vars and
+	// t.Env here so a user's top-level `vars:` block reaches the cmd shell
+	// just like the `env:` block does. env: values override vars: values
+	// on name conflict — the env block remains the explicit way to say
+	// "this is for export," while vars: is the default "export unless
+	// export: false" surface.
+	combined := ast.NewVars()
+	if t.Vars != nil {
+		combined.Merge(t.Vars, nil)
+	}
+	if t.Env != nil {
+		combined.Merge(t.Env, nil)
+	}
+	if combined.Len() == 0 {
 		return nil
 	}
-
-	return GetFromVars(t.Env)
+	return GetFromVars(combined)
 }
 
 func GetFromVars(env *ast.Vars) []string {
@@ -57,10 +69,12 @@ func GetFromVars(env *ast.Vars) []string {
 		if !isTypeAllowed(value) {
 			continue
 		}
-		if !experiments.EnvPrecedence.Enabled() {
-			if _, alreadySet := os.LookupEnv(k); alreadySet {
-				continue
-			}
+		// Shell env always wins per SPEC §Variable Precedence tier 1 —
+		// "never overridden by anything in a Ritefile." The upstream
+		// EnvPrecedence experiment let users flip this; rite hard-wires
+		// shell-wins because the SPEC admits no opt-out.
+		if _, alreadySet := os.LookupEnv(k); alreadySet {
+			continue
 		}
 		environ = append(environ, fmt.Sprintf("%s=%v", k, value))
 	}

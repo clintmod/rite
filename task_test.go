@@ -1913,12 +1913,16 @@ func TestTaskDotenvParseErrorMessage(t *testing.T) {
 func TestTaskDotenv(t *testing.T) {
 	t.Parallel()
 
+	// SPEC §Variable Precedence tier 7: task-scope vars/env (including task-
+	// level dotenv) are defaults only. The entrypoint env block sets
+	// FOO=global (tier 5), so the task's dotenv FOO=foo is ignored. This is
+	// a deliberate break from upstream go-task, where task-level overrode.
 	tt := fileContentTest{
 		Dir:       "testdata/dotenv_task/default",
 		Target:    "dotenv",
 		TrimSpace: true,
 		Files: map[string]string{
-			"dotenv.txt": "foo",
+			"dotenv.txt": "global",
 		},
 	}
 	t.Run("", func(t *testing.T) {
@@ -1947,12 +1951,17 @@ func TestTaskDotenvFail(t *testing.T) {
 func TestTaskDotenvOverriddenByEnv(t *testing.T) {
 	t.Parallel()
 
+	// Under SPEC first-in-wins the task-level env AND task-level dotenv are
+	// both tier-7 defaults — entrypoint env FOO=global wins over both. Test
+	// name is preserved for git history but the assertion now reflects
+	// rite's semantic (`overridden` would have meant upstream's
+	// task-env-beats-task-dotenv, which is moot when entrypoint wins first).
 	tt := fileContentTest{
 		Dir:       "testdata/dotenv_task/default",
 		Target:    "dotenv-overridden-by-env",
 		TrimSpace: true,
 		Files: map[string]string{
-			"dotenv-overridden-by-env.txt": "overridden",
+			"dotenv-overridden-by-env.txt": "global",
 		},
 	}
 	t.Run("", func(t *testing.T) {
@@ -1964,12 +1973,13 @@ func TestTaskDotenvOverriddenByEnv(t *testing.T) {
 func TestTaskDotenvWithVarName(t *testing.T) {
 	t.Parallel()
 
+	// Same SPEC tier 7 rule as TestTaskDotenv — entrypoint env wins.
 	tt := fileContentTest{
 		Dir:       "testdata/dotenv_task/default",
 		Target:    "dotenv-with-var-name",
 		TrimSpace: true,
 		Files: map[string]string{
-			"dotenv-with-var-name.txt": "foo",
+			"dotenv-with-var-name.txt": "global",
 		},
 	}
 	t.Run("", func(t *testing.T) {

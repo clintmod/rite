@@ -184,12 +184,16 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 		}
 	}
 
-	// Tier 8: built-ins last, set-if-absent.
+	// Tier 8: built-ins last, set-if-absent. Specials are marked export:false
+	// — they're visible to Ritefile templating (RITEFILE, TASK, ROOT_DIR, ...)
+	// but don't leak into the cmd shell environ alongside user vars. Users
+	// can still pass them through explicitly with `env: { FOO: "{{.RITEFILE}}" }`.
+	specialNoExport := false
 	for k, v := range specialVars {
 		if _, exists := result.Get(k); exists {
 			continue
 		}
-		result.Set(k, ast.Var{Value: v})
+		result.Set(k, ast.Var{Value: v, Export: &specialNoExport})
 	}
 
 	return result, nil

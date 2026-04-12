@@ -173,10 +173,13 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		}
 	}
 
+	// Env-block Merge order inverted in Phase 4 wave 3 so entrypoint env wins
+	// over task-scope env (first-in-wins within env tiers, mirroring vars).
+	// Merge is last-in-wins, so the higher-priority tier goes last.
 	new.Env = ast.NewVars()
-	new.Env.Merge(templater.ReplaceVars(e.Taskfile.Env, cache), nil)
-	new.Env.Merge(templater.ReplaceVars(dotenvEnvs, cache), nil)
-	new.Env.Merge(templater.ReplaceVars(origTask.Env, cache), nil)
+	new.Env.Merge(templater.ReplaceVars(origTask.Env, cache), nil)           // tier 7 — defaults
+	new.Env.Merge(templater.ReplaceVars(dotenvEnvs, cache), nil)             // task-level dotenv overlay
+	new.Env.Merge(templater.ReplaceVars(e.Taskfile.Env, cache), nil)         // tier 3/5 — entrypoint env wins
 	if evaluateShVars {
 		// Per-resolution dynamic-var dedupe for this task's env block; see
 		// SPEC §Dynamic Variables and HandleDynamicVar.
@@ -244,9 +247,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 						extra["KEY"] = keys[i]
 					}
 					newCmd := cmd.DeepCopy()
-					// Cmd is shell-bound — skip ExpandShell until Phase 4 wave 3
-					// unifies vars/env. Non-shell fields still get full treatment.
-					newCmd.Cmd = templater.ReplaceNoShellWithExtra(cmd.Cmd, cache, extra)
+					newCmd.Cmd = templater.ReplaceWithExtra(cmd.Cmd, cache, extra)
 					newCmd.Task = templater.ReplaceWithExtra(cmd.Task, cache, extra)
 					newCmd.If = templater.ReplaceWithExtra(cmd.If, cache, extra)
 					newCmd.Vars = templater.ReplaceVarsWithExtra(cmd.Vars, cache, extra)
@@ -261,8 +262,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 				continue
 			}
 			newCmd := cmd.DeepCopy()
-			// Cmd is shell-bound — skip ExpandShell (see ReplaceNoShell doc).
-			newCmd.Cmd = templater.ReplaceNoShell(cmd.Cmd, cache)
+			newCmd.Cmd = templater.Replace(cmd.Cmd, cache)
 			newCmd.Task = templater.Replace(cmd.Task, cache)
 			newCmd.If = templater.Replace(cmd.If, cache)
 			newCmd.Vars = templater.ReplaceVars(cmd.Vars, cache)
@@ -316,16 +316,14 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 				continue
 			}
 			newPrecondition := precondition.DeepCopy()
-			// Sh is shell-bound — skip ExpandShell (see ReplaceNoShell doc).
-			newPrecondition.Sh = templater.ReplaceNoShell(precondition.Sh, cache)
+			newPrecondition.Sh = templater.Replace(precondition.Sh, cache)
 			newPrecondition.Msg = templater.Replace(precondition.Msg, cache)
 			new.Preconditions = append(new.Preconditions, newPrecondition)
 		}
 	}
 
 	if len(origTask.Status) > 0 {
-		// Status entries are shell commands — skip ExpandShell.
-		new.Status = templater.ReplaceNoShell(origTask.Status, cache)
+		new.Status = templater.Replace(origTask.Status, cache)
 	}
 
 	// We only care about templater errors if we are evaluating shell variables

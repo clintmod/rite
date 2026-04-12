@@ -13,7 +13,7 @@ import (
 func TestNew(t *testing.T) {
 	const (
 		exampleExperiment    = "EXAMPLE"
-		exampleExperimentEnv = "TASK_X_EXAMPLE"
+		exampleExperimentEnv = "RITE_X_EXAMPLE"
 	)
 	tests := []struct {
 		name          string

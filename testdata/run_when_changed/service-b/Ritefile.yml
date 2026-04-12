@@ -11,8 +11,8 @@ tasks:
       - task: library:login
         vars:
           SERVER: fubar
-          USER: fubar
+          UNAME: fubar
       - task: library:login
         vars:
           SERVER: bar
-          USER: bar
+          UNAME: bar

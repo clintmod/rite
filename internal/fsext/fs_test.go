@@ -111,11 +111,11 @@ func TestSearch(t *testing.T) {
 			expectedEntrypoint: filepath.Join(wd, "fs.go"),
 		},
 		{
-			name:               "find ../../Taskfile.yml using no entrypoint or dir by walking",
+			name:               "find ../../Ritefile.yml using no entrypoint or dir by walking",
 			entrypoint:         "",
 			dir:                "",
-			possibleFilenames:  []string{"Taskfile.yml"},
-			expectedEntrypoint: filepath.Join(wd, "..", "..", "Taskfile.yml"),
+			possibleFilenames:  []string{"Ritefile.yml"},
+			expectedEntrypoint: filepath.Join(wd, "..", "..", "Ritefile.yml"),
 		},
 		{
 			name:               "find foo.txt first if listed first in possible filenames",
@@ -193,9 +193,9 @@ func TestResolveDir(t *testing.T) {
 			expectedDir:        wd,
 		},
 		{
-			name:               "find ../../Taskfile.yml using no entrypoint or dir by walking",
+			name:               "find ../../Ritefile.yml using no entrypoint or dir by walking",
 			entrypoint:         "",
-			resolvedEntrypoint: filepath.Join(wd, "..", "..", "Taskfile.yml"),
+			resolvedEntrypoint: filepath.Join(wd, "..", "..", "Ritefile.yml"),
 			dir:                "",
 			expectedDir:        filepath.Join(wd, "..", ".."),
 		},

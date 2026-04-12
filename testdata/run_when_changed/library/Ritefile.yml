@@ -4,4 +4,4 @@ tasks:
   login:
     run: when_changed
     cmds:
-      - echo "login server={{.SERVER}} user={{.USER}}"
+      - echo "login server={{.SERVER}} user={{.UNAME}}"

@@ -10,9 +10,9 @@
       "location": {
         "line": 4,
         "column": 3,
-        "taskfile": "{{.TEST_DIR}}/testdata/json_list_format/Taskfile.yml"
+        "taskfile": "/Users/clint/code/github/clintmod/rite/testdata/json_list_format/Ritefile.yml"
       }
     }
   ],
-  "location": "{{.TEST_DIR}}/testdata/json_list_format/Taskfile.yml"
+  "location": "/Users/clint/code/github/clintmod/rite/testdata/json_list_format/Ritefile.yml"
 }

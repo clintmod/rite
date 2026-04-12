@@ -1,1 +1,1 @@
-rite: Missing schema version in Taskfile "{{.TEST_DIR}}/testdata/empty_taskfile/Taskfile.yml"
+rite: Missing schema version in Ritefile "/Users/clint/code/github/clintmod/rite/testdata/empty_taskfile/Ritefile.yml"

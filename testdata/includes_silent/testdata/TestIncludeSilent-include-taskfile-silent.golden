@@ -1,5 +1,5 @@
-rite: [default] echo "Hello from root Taskfile"
-Hello from root Taskfile
+rite: [default] echo "Hello from root Ritefile"
+Hello from root Ritefile
 Hello from include
 Hello from include silent task
 Hello from include silent not set task

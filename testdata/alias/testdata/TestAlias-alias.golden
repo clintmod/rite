@@ -1,6 +1,6 @@
-task: [foo] echo "foo"
+rite: [foo] echo "foo"
 foo
-task: [bar] echo "bar"
+rite: [bar] echo "bar"
 bar
-task: [included:qux] echo "qux"
+rite: [included:qux] echo "qux"
 qux

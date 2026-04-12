@@ -1,2 +1,2 @@
-task: [missing-var] echo "bar"
+rite: [missing-var] echo "bar"
 bar

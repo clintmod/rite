@@ -1,1 +1,1 @@
-task: Task "foobar" is not up-to-date
+rite: Task "foobar" is not up-to-date

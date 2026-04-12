@@ -1,2 +1,2 @@
-task: "gen-silent-baz" started
-task: Task "gen-silent-baz" is up to date
+rite: "gen-silent-baz" started
+rite: Task "gen-silent-baz" is up to date

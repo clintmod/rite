@@ -1,2 +1,2 @@
-task: [validation-var-ref] echo "dev"
+rite: [validation-var-ref] echo "dev"
 dev

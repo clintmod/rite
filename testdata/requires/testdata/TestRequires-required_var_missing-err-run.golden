@@ -1,1 +1,1 @@
-task: Task "missing-var" cancelled because it is missing required variables: FOO
+rite: Task "missing-var" cancelled because it is missing required variables: FOO

@@ -30,10 +30,10 @@ func TestFileWatch(t *testing.T) {
 rite: Started watching for tasks: default
 rite: [default] echo "Task running!"
 Task running!
-task: task "default" finished running
+rite: task "default" finished running
 rite: [default] echo "Task running!"
 Task running!
-task: task "default" finished running
+rite: task "default" finished running
 	`)
 
 	var buff bytes.Buffer

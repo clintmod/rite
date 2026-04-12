@@ -1,4 +1,4 @@
-task: with-sh-var
+rite: with-sh-var
 
 Task with shell variable
 

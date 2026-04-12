@@ -1,4 +1,4 @@
-task: task-with-summary
+rite: task-with-summary
 
 summary of task-with-summary - line 1
 line 2
@@ -14,7 +14,7 @@ commands:
  - exit 0
 
 
-task: other-task-with-summary
+rite: other-task-with-summary
 
 summary of other-task-with-summary
 

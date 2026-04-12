@@ -183,6 +183,6 @@ func TestPrintAllWithSpaces(t *testing.T) {
 	)
 
 	assert.True(t, strings.HasPrefix(buffer.String(), "rite: t1"))
-	assert.Contains(t, buffer.String(), "\n(task does not have description or summary)\n\n\ntask: t2")
-	assert.Contains(t, buffer.String(), "\n(task does not have description or summary)\n\n\ntask: t3")
+	assert.Contains(t, buffer.String(), "\n(task does not have description or summary)\n\n\nrite: t2")
+	assert.Contains(t, buffer.String(), "\n(task does not have description or summary)\n\n\nrite: t3")
 }

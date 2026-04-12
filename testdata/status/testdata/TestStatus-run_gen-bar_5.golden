@@ -1,1 +1,1 @@
-task: [gen-bar] touch bar.txt
+rite: [gen-bar] touch bar.txt

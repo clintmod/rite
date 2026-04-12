@@ -112,7 +112,7 @@ func run() error {
 			if flags.Verbose {
 				log.Outf(logger.Default, "%s\n", task.DefaultTaskfile)
 			}
-			log.Outf(logger.Green, "Taskfile created: %s\n", filepathext.TryAbsToRel(finalPath))
+			log.Outf(logger.Green, "Ritefile created: %s\n", filepathext.TryAbsToRel(finalPath))
 		}
 		return nil
 	}

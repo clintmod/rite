@@ -9,7 +9,7 @@ import (
 	"github.com/clintmod/rite/taskfile"
 )
 
-const defaultFilename = "Taskfile.yml"
+const defaultFilename = "Ritefile.yml"
 
 //go:embed taskfile/templates/default.yml
 var DefaultTaskfile string

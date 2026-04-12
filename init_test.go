@@ -12,11 +12,11 @@ func TestInitDir(t *testing.T) {
 	t.Parallel()
 
 	const dir = "testdata/init"
-	file := filepathext.SmartJoin(dir, "Taskfile.yml")
+	file := filepathext.SmartJoin(dir, "Ritefile.yml")
 
 	_ = os.Remove(file)
 	if _, err := os.Stat(file); err == nil {
-		t.Errorf("Taskfile.yml should not exist")
+		t.Errorf("Ritefile.yml should not exist")
 	}
 
 	if _, err := task.InitTaskfile(dir); err != nil {
@@ -24,7 +24,7 @@ func TestInitDir(t *testing.T) {
 	}
 
 	if _, err := os.Stat(file); err != nil {
-		t.Errorf("Taskfile.yml should exist")
+		t.Errorf("Ritefile.yml should exist")
 	}
 
 	_ = os.Remove(file)

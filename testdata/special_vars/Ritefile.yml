@@ -11,10 +11,10 @@ tasks:
     cmds:
       - echo {{.TASK}}
   print-root-dir: echo {{.ROOT_DIR}}
-  print-root-taskfile: echo {{.ROOT_TASKFILE}}
-  print-taskfile: echo {{.TASKFILE}}
-  print-taskfile-dir: echo {{.TASKFILE_DIR}}
-  print-task-version: echo {{.TASK_VERSION}}
+  print-root-taskfile: echo {{.ROOT_RITEFILE}}
+  print-taskfile: echo {{.RITEFILE}}
+  print-taskfile-dir: echo {{.RITEFILE_DIR}}
+  print-task-version: echo {{.RITE_VERSION}}
   print-task-alias:
     aliases: [echo-task-alias]
     cmds:

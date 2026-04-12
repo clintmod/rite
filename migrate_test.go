@@ -87,15 +87,20 @@ tasks:
 
 func TestMigrateRitefilePath(t *testing.T) {
 	t.Parallel()
+	// filepath.Join on Windows normalizes to backslash separators, so express
+	// expected paths via filepath.Join rather than hand-writing Unix literals.
+	// The helper itself uses filepath.Split/Join so it's platform-correct;
+	// this just makes the test's expected values match the runtime idiom.
+	join := func(parts ...string) string { return filepath.Join(parts...) }
 	cases := []struct {
 		src, want string
 	}{
-		{"/a/b/Taskfile.yml", "/a/b/Ritefile.yml"},
-		{"/a/b/Taskfile.yaml", "/a/b/Ritefile.yaml"},
-		{"/a/b/Taskfile.dist.yml", "/a/b/Ritefile.dist.yml"},
-		{"/a/b/Taskfile-inc.yml", "/a/b/Ritefile-inc.yml"},
-		{"/a/b/taskfile.yml", "/a/b/ritefile.yml"},
-		{"/a/b/something.yml", "/a/b/Ritefile.yml"},
+		{join("a", "b", "Taskfile.yml"), join("a", "b", "Ritefile.yml")},
+		{join("a", "b", "Taskfile.yaml"), join("a", "b", "Ritefile.yaml")},
+		{join("a", "b", "Taskfile.dist.yml"), join("a", "b", "Ritefile.dist.yml")},
+		{join("a", "b", "Taskfile-inc.yml"), join("a", "b", "Ritefile-inc.yml")},
+		{join("a", "b", "taskfile.yml"), join("a", "b", "ritefile.yml")},
+		{join("a", "b", "something.yml"), join("a", "b", "Ritefile.yml")},
 	}
 	for _, c := range cases {
 		got := task.RitefilePathForTest(c.src)

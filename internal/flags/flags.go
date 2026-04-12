@@ -47,6 +47,7 @@ var (
 	Version             bool
 	Help                bool
 	Init                bool
+	Migrate             bool
 	Completion          string
 	List                bool
 	ListAll             bool
@@ -121,7 +122,8 @@ func init() {
 
 	pflag.BoolVar(&Version, "version", false, "Show Task version.")
 	pflag.BoolVarP(&Help, "help", "h", false, "Shows Task usage.")
-	pflag.BoolVarP(&Init, "init", "i", false, "Creates a new Taskfile.yml in the current folder.")
+	pflag.BoolVarP(&Init, "init", "i", false, "Creates a new Ritefile.yml in the current folder.")
+	pflag.BoolVar(&Migrate, "migrate", false, "Converts a go-task Taskfile to a Ritefile. Takes a file path as a positional arg, or autodetects in the current directory.")
 	pflag.StringVar(&Completion, "completion", "", "Generates shell completion script.")
 	pflag.BoolVarP(&List, "list", "l", false, "Lists tasks with description of current Taskfile.")
 	pflag.BoolVarP(&ListAll, "list-all", "a", false, "Lists tasks with or without a description.")

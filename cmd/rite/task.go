@@ -87,6 +87,42 @@ func run() error {
 		return log.PrintExperiments()
 	}
 
+	if flags.Migrate {
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		args, _, err := args.Get()
+		if err != nil {
+			return err
+		}
+		src := ""
+		if len(args) > 0 {
+			src = args[0]
+		} else {
+			// Autodetect: first existing Taskfile* in cwd.
+			for _, name := range []string{"Taskfile.yml", "Taskfile.yaml", "Taskfile.dist.yml", "Taskfile.dist.yaml"} {
+				p := filepathext.SmartJoin(wd, name)
+				if _, err := os.Stat(p); err == nil {
+					src = p
+					break
+				}
+			}
+			if src == "" {
+				return fmt.Errorf("rite: no Taskfile found in %s; pass a path as the first argument", wd)
+			}
+		}
+		if !filepath.IsAbs(src) {
+			src = filepathext.SmartJoin(wd, src)
+		}
+		dst, err := task.Migrate(src, os.Stderr)
+		if err != nil {
+			return err
+		}
+		log.Outf(logger.Green, "Ritefile written: %s\n", filepathext.TryAbsToRel(dst))
+		return nil
+	}
+
 	if flags.Init {
 		wd, err := os.Getwd()
 		if err != nil {

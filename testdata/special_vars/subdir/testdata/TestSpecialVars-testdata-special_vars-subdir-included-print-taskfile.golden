@@ -1,1 +1,1 @@
-/Users/clint/code/github/clintmod/rite/testdata/special_vars/included/Ritefile.yml
+{{.TEST_DIR}}/testdata/special_vars/included/Ritefile.yml

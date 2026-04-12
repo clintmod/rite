@@ -81,7 +81,9 @@ func (e *Executor) watchTasks(calls ...*Call) error {
 				cancel()
 				ctx, cancel = context.WithCancel(context.Background())
 
-				e.Compiler.ResetCache()
+				// Dynamic-var caches are per-resolution now (SPEC §Dynamic
+				// Variables), so there's no compiler-global cache to clear
+				// between watch iterations.
 
 				for _, c := range calls {
 					go func() {

@@ -178,13 +178,16 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 	new.Env.Merge(templater.ReplaceVars(dotenvEnvs, cache), nil)
 	new.Env.Merge(templater.ReplaceVars(origTask.Env, cache), nil)
 	if evaluateShVars {
+		// Per-resolution dynamic-var dedupe for this task's env block; see
+		// SPEC §Dynamic Variables and HandleDynamicVar.
+		envShCache := make(map[string]string)
 		for k, v := range new.Env.All() {
 			// If the variable is not dynamic, we can set it and return
 			if v.Value != nil || v.Sh == nil {
 				new.Env.Set(k, ast.Var{Value: v.Value})
 				continue
 			}
-			static, err := e.Compiler.HandleDynamicVar(v, new.Dir, env.GetFromVars(new.Env))
+			static, err := e.Compiler.HandleDynamicVar(v, new.Dir, env.GetFromVars(new.Env), envShCache)
 			if err != nil {
 				return nil, err
 			}

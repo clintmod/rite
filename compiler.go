@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/clintmod/rite/internal/env"
 	"github.com/clintmod/rite/internal/execext"
@@ -27,9 +26,6 @@ type Compiler struct {
 	TaskfileVars *ast.Vars
 
 	Logger *logger.Logger
-
-	dynamicCache   map[string]string
-	muDynamicCache sync.Mutex
 }
 
 func (c *Compiler) GetTaskfileVariables() (*ast.Vars, error) {
@@ -72,6 +68,12 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 		return nil, err
 	}
 
+	// Per-resolution dynamic-var cache (SPEC §Dynamic Variables: "cached within
+	// a single resolution, not cached across tasks by command string"). A
+	// single getVariables call resolves each `sh:` expression at most once;
+	// separate calls with different environments each evaluate independently.
+	shCache := make(map[string]string)
+
 	// Single persistent cache. cacheMap starts as shell env (from result) and
 	// we keep it in sync manually as each tier lands.
 	cache := &templater.Cache{Vars: result}
@@ -111,7 +113,7 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 				cache.Update(k, newVar.Value)
 				return nil
 			}
-			static, err := c.HandleDynamicVar(newVar, dir, env.GetFromVars(result))
+			static, err := c.HandleDynamicVar(newVar, dir, env.GetFromVars(result), shCache)
 			if err != nil {
 				return err
 			}
@@ -190,20 +192,22 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 	return result, nil
 }
 
-func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, error) {
-	c.muDynamicCache.Lock()
-	defer c.muDynamicCache.Unlock()
-
-	// If the variable is not dynamic or it is empty, return an empty string
+// HandleDynamicVar resolves a `sh:` variable. The optional cache argument is
+// the per-resolution dedupe map: within one getVariables / compiledTask
+// invocation, an identical `sh:` string resolves once. Across invocations
+// (different tasks, different environments) each call evaluates independently,
+// which is what SPEC §Dynamic Variables mandates — the upstream
+// muDynamicCache keyed globally by command string caused cross-task
+// pollution. Pass nil to disable caching entirely.
+func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string, cache map[string]string) (string, error) {
 	if v.Sh == nil || *v.Sh == "" {
 		return "", nil
 	}
 
-	if c.dynamicCache == nil {
-		c.dynamicCache = make(map[string]string, 30)
-	}
-	if result, ok := c.dynamicCache[*v.Sh]; ok {
-		return result, nil
+	if cache != nil {
+		if result, ok := cache[*v.Sh]; ok {
+			return result, nil
+		}
 	}
 
 	// NOTE(@andreynering): If a var have a specific dir, use this instead
@@ -223,23 +227,15 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 		return "", fmt.Errorf(`task: Command "%s" failed: %s`, opts.Command, err)
 	}
 
-	// Trim a single trailing newline from the result to make most command
-	// output easier to use in shell commands.
 	result := strings.TrimSuffix(stdout.String(), "\r\n")
 	result = strings.TrimSuffix(result, "\n")
 
-	c.dynamicCache[*v.Sh] = result
+	if cache != nil {
+		cache[*v.Sh] = result
+	}
 	c.Logger.VerboseErrf(logger.Magenta, "task: dynamic variable: %q result: %q\n", *v.Sh, result)
 
 	return result, nil
-}
-
-// ResetCache clear the dynamic variables cache
-func (c *Compiler) ResetCache() {
-	c.muDynamicCache.Lock()
-	defer c.muDynamicCache.Unlock()
-
-	c.dynamicCache = nil
 }
 
 func (c *Compiler) getSpecialVars(t *ast.Task, call *Call) (map[string]string, error) {

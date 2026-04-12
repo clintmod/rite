@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/go-task/task/v3/taskrc/ast"
+	"github.com/clintmod/rite/taskrc/ast"
 )
 
 type Experiment struct {

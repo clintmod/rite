@@ -1,7 +1,7 @@
 package taskrc
 
 import (
-	"github.com/go-task/task/v3/internal/fsext"
+	"github.com/clintmod/rite/internal/fsext"
 )
 
 type Node struct {

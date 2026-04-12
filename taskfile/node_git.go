@@ -13,10 +13,10 @@ import (
 	giturls "github.com/chainguard-dev/git-urls"
 	"github.com/hashicorp/go-getter"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/execext"
-	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/fsext"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/execext"
+	"github.com/clintmod/rite/internal/filepathext"
+	"github.com/clintmod/rite/internal/fsext"
 )
 
 // An GitNode is a node that reads a Taskfile from a remote location via Git.

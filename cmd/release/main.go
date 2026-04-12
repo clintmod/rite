@@ -10,7 +10,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/pflag"
 
-	"github.com/go-task/task/v3/errors"
+	"github.com/clintmod/rite/errors"
 )
 
 const (

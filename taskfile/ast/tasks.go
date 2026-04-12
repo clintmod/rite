@@ -10,9 +10,9 @@ import (
 	"github.com/elliotchance/orderedmap/v3"
 	"go.yaml.in/yaml/v3"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/sort"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/filepathext"
+	"github.com/clintmod/rite/internal/sort"
 )
 
 type (

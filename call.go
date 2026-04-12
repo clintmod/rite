@@ -1,6 +1,6 @@
 package task
 
-import "github.com/go-task/task/v3/taskfile/ast"
+import "github.com/clintmod/rite/taskfile/ast"
 
 // Call is the parameters to a task call
 type Call struct {

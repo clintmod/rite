@@ -4,9 +4,9 @@ import (
 	_ "embed"
 	"os"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/taskfile"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/filepathext"
+	"github.com/clintmod/rite/taskfile"
 )
 
 const defaultFilename = "Taskfile.yml"

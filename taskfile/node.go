@@ -7,9 +7,9 @@ import (
 
 	giturls "github.com/chainguard-dev/git-urls"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/experiments"
-	"github.com/go-task/task/v3/internal/fsext"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/experiments"
+	"github.com/clintmod/rite/internal/fsext"
 )
 
 type Node interface {

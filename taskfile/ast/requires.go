@@ -3,8 +3,8 @@ package ast
 import (
 	"go.yaml.in/yaml/v3"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/deepcopy"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/deepcopy"
 )
 
 // Requires represents a set of required variables necessary for a task to run

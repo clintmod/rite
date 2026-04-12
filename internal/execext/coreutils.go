@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/go-task/task/v3/internal/env"
+	"github.com/clintmod/rite/internal/env"
 )
 
 var useGoCoreUtils bool

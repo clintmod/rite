@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-task/task/v3/experiments"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/experiments"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
-const taskVarPrefix = "TASK_"
+const taskVarPrefix = "RITE_"
 
 // GetEnviron the all return all environment variables encapsulated on a
 // ast.Vars

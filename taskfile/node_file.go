@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/execext"
-	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/fsext"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/execext"
+	"github.com/clintmod/rite/internal/filepathext"
+	"github.com/clintmod/rite/internal/fsext"
 )
 
 // A FileNode is a node that reads a taskfile from the local filesystem.

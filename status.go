@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-task/task/v3/internal/fingerprint"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/internal/fingerprint"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 // Status returns an error if any the of given tasks is not up-to-date

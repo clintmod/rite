@@ -8,20 +8,21 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/go-task/task/v3/errors"
+	"github.com/clintmod/rite/errors"
 )
 
 var (
-	// DefaultTaskfiles is the list of Taskfile file names supported by default.
+	// DefaultTaskfiles is the list of Ritefile file names supported by default.
 	DefaultTaskfiles = []string{
-		"Taskfile.yml",
-		"taskfile.yml",
-		"Taskfile.yaml",
-		"taskfile.yaml",
-		"Taskfile.dist.yml",
-		"taskfile.dist.yml",
-		"Taskfile.dist.yaml",
-		"taskfile.dist.yaml",
+		"Ritefile",
+		"Ritefile.yml",
+		"ritefile.yml",
+		"Ritefile.yaml",
+		"ritefile.yaml",
+		"Ritefile.dist.yml",
+		"ritefile.dist.yml",
+		"Ritefile.dist.yaml",
+		"ritefile.dist.yaml",
 	}
 	allowedContentTypes = []string{
 		"text/plain",

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-task/task/v3/internal/execext"
-	"github.com/go-task/task/v3/internal/filepathext"
+	"github.com/clintmod/rite/internal/execext"
+	"github.com/clintmod/rite/internal/filepathext"
 )
 
 // A StdinNode is a node that reads a taskfile from the standard input stream.

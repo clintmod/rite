@@ -3,11 +3,11 @@ package task
 import (
 	"context"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/env"
-	"github.com/go-task/task/v3/internal/execext"
-	"github.com/go-task/task/v3/internal/logger"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/env"
+	"github.com/clintmod/rite/internal/execext"
+	"github.com/clintmod/rite/internal/logger"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 // ErrPreconditionFailed is returned when a precondition fails

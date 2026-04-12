@@ -12,17 +12,17 @@ import (
 	"golang.org/x/sync/errgroup"
 	"mvdan.cc/sh/v3/interp"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/env"
-	"github.com/go-task/task/v3/internal/execext"
-	"github.com/go-task/task/v3/internal/fingerprint"
-	"github.com/go-task/task/v3/internal/logger"
-	"github.com/go-task/task/v3/internal/output"
-	"github.com/go-task/task/v3/internal/slicesext"
-	"github.com/go-task/task/v3/internal/sort"
-	"github.com/go-task/task/v3/internal/summary"
-	"github.com/go-task/task/v3/internal/templater"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/env"
+	"github.com/clintmod/rite/internal/execext"
+	"github.com/clintmod/rite/internal/fingerprint"
+	"github.com/clintmod/rite/internal/logger"
+	"github.com/clintmod/rite/internal/output"
+	"github.com/clintmod/rite/internal/slicesext"
+	"github.com/clintmod/rite/internal/sort"
+	"github.com/clintmod/rite/internal/summary"
+	"github.com/clintmod/rite/internal/templater"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 const (

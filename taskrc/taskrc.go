@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/fsext"
-	"github.com/go-task/task/v3/taskrc/ast"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/fsext"
+	"github.com/clintmod/rite/taskrc/ast"
 )
 
 var (

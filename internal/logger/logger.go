@@ -10,10 +10,10 @@ import (
 	"github.com/Ladicle/tabwriter"
 	"github.com/fatih/color"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/experiments"
-	"github.com/go-task/task/v3/internal/env"
-	"github.com/go-task/task/v3/internal/term"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/experiments"
+	"github.com/clintmod/rite/internal/env"
+	"github.com/clintmod/rite/internal/term"
 )
 
 var (

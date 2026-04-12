@@ -12,11 +12,11 @@ import (
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/env"
-	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/templater"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/env"
+	"github.com/clintmod/rite/internal/filepathext"
+	"github.com/clintmod/rite/internal/templater"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 const (

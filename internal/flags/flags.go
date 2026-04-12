@@ -11,14 +11,14 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 
-	"github.com/go-task/task/v3"
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/experiments"
-	"github.com/go-task/task/v3/internal/env"
-	"github.com/go-task/task/v3/internal/sort"
-	"github.com/go-task/task/v3/taskfile/ast"
-	"github.com/go-task/task/v3/taskrc"
-	taskrcast "github.com/go-task/task/v3/taskrc/ast"
+	"github.com/clintmod/rite"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/experiments"
+	"github.com/clintmod/rite/internal/env"
+	"github.com/clintmod/rite/internal/sort"
+	"github.com/clintmod/rite/taskfile/ast"
+	"github.com/clintmod/rite/taskrc"
+	taskrcast "github.com/clintmod/rite/taskrc/ast"
 )
 
 const usage = `Usage: task [flags...] [task...]

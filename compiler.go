@@ -9,13 +9,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/go-task/task/v3/internal/env"
-	"github.com/go-task/task/v3/internal/execext"
-	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/logger"
-	"github.com/go-task/task/v3/internal/templater"
-	"github.com/go-task/task/v3/internal/version"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/internal/env"
+	"github.com/clintmod/rite/internal/execext"
+	"github.com/clintmod/rite/internal/filepathext"
+	"github.com/clintmod/rite/internal/logger"
+	"github.com/clintmod/rite/internal/templater"
+	"github.com/clintmod/rite/internal/version"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 type Compiler struct {
@@ -202,22 +202,22 @@ func (c *Compiler) getSpecialVars(t *ast.Task, call *Call) (map[string]string, e
 	// across platforms. This prevents issues with backslashes being interpreted
 	// as escape sequences when paths are used in shell commands on Windows.
 	allVars := map[string]string{
-		"TASK_EXE":         filepath.ToSlash(os.Args[0]),
-		"ROOT_TASKFILE":    filepath.ToSlash(filepathext.SmartJoin(c.Dir, c.Entrypoint)),
+		"RITE_EXE":         filepath.ToSlash(os.Args[0]),
+		"ROOT_RITEFILE":    filepath.ToSlash(filepathext.SmartJoin(c.Dir, c.Entrypoint)),
 		"ROOT_DIR":         filepath.ToSlash(c.Dir),
 		"USER_WORKING_DIR": filepath.ToSlash(c.UserWorkingDir),
-		"TASK_VERSION":     version.GetVersion(),
+		"RITE_VERSION":     version.GetVersion(),
 	}
 	if t != nil {
 		allVars["TASK"] = t.Task
 		allVars["TASK_DIR"] = filepath.ToSlash(filepathext.SmartJoin(c.Dir, t.Dir))
-		allVars["TASKFILE"] = filepath.ToSlash(t.Location.Taskfile)
-		allVars["TASKFILE_DIR"] = filepath.ToSlash(filepath.Dir(t.Location.Taskfile))
+		allVars["RITEFILE"] = filepath.ToSlash(t.Location.Taskfile)
+		allVars["RITEFILE_DIR"] = filepath.ToSlash(filepath.Dir(t.Location.Taskfile))
 	} else {
 		allVars["TASK"] = ""
 		allVars["TASK_DIR"] = ""
-		allVars["TASKFILE"] = ""
-		allVars["TASKFILE_DIR"] = ""
+		allVars["RITEFILE"] = ""
+		allVars["RITEFILE_DIR"] = ""
 	}
 	if call != nil {
 		allVars["ALIAS"] = call.Task

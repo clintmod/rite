@@ -8,11 +8,11 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/go-task/task/v3/taskrc"
-	"github.com/go-task/task/v3/taskrc/ast"
+	"github.com/clintmod/rite/taskrc"
+	"github.com/clintmod/rite/taskrc/ast"
 )
 
-const envPrefix = "TASK_X_"
+const envPrefix = "RITE_X_"
 
 // Active experiments.
 var (

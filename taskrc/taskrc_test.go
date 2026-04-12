@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/go-task/task/v3/taskrc/ast"
+	"github.com/clintmod/rite/taskrc/ast"
 )
 
 const (

@@ -9,15 +9,15 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/go-task/task/v3"
-	"github.com/go-task/task/v3/args"
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/experiments"
-	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/flags"
-	"github.com/go-task/task/v3/internal/logger"
-	"github.com/go-task/task/v3/internal/version"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite"
+	"github.com/clintmod/rite/args"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/experiments"
+	"github.com/clintmod/rite/internal/filepathext"
+	"github.com/clintmod/rite/internal/flags"
+	"github.com/clintmod/rite/internal/logger"
+	"github.com/clintmod/rite/internal/version"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 func main() {

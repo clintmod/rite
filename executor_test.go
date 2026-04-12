@@ -11,10 +11,10 @@ import (
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/go-task/task/v3"
-	"github.com/go-task/task/v3/experiments"
-	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite"
+	"github.com/clintmod/rite/experiments"
+	"github.com/clintmod/rite/internal/filepathext"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 type (

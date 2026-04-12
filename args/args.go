@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/pflag"
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/go-task/task/v3"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 // Get fetches the remaining arguments after CLI parsing and splits them into

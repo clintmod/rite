@@ -1,6 +1,6 @@
 package fingerprint
 
-import "github.com/go-task/task/v3/taskfile/ast"
+import "github.com/clintmod/rite/taskfile/ast"
 
 // NoneChecker is a no-op Checker.
 // It will always report that the task is not up-to-date.

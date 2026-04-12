@@ -3,7 +3,7 @@ package output
 import (
 	"io"
 
-	"github.com/go-task/task/v3/internal/templater"
+	"github.com/clintmod/rite/internal/templater"
 )
 
 type Interleaved struct{}

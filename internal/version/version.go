@@ -44,7 +44,7 @@ func getCommit(info *debug.BuildInfo) string {
 // GetVersion returns the version of Task. By default, this is retrieved from
 // the embedded version.txt file which is kept up-to-date by our release script.
 // However, it can also be overridden at build time using:
-// -ldflags="-X 'github.com/go-task/task/v3/internal/version.version=vX.X.X'".
+// -ldflags="-X 'github.com/clintmod/rite/internal/version.version=vX.X.X'".
 func GetVersion() string {
 	return version
 }

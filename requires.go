@@ -3,10 +3,10 @@ package task
 import (
 	"slices"
 
-	"github.com/go-task/task/v3/errors"
-	"github.com/go-task/task/v3/internal/input"
-	"github.com/go-task/task/v3/internal/term"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/errors"
+	"github.com/clintmod/rite/internal/input"
+	"github.com/clintmod/rite/internal/term"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 func (e *Executor) canPrompt() bool {

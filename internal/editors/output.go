@@ -1,7 +1,7 @@
 package editors
 
 import (
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 type (

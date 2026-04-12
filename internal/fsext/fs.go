@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/sysinfo"
+	"github.com/clintmod/rite/internal/filepathext"
+	"github.com/clintmod/rite/internal/sysinfo"
 )
 
 // DefaultDir will return the default directory given an entrypoint or

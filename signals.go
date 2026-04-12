@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-task/task/v3/internal/logger"
+	"github.com/clintmod/rite/internal/logger"
 )
 
 const maxInterruptSignals = 3

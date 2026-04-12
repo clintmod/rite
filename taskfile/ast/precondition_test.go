@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
 
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 func TestPreconditionParse(t *testing.T) {

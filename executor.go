@@ -10,10 +10,10 @@ import (
 	"github.com/puzpuzpuz/xsync/v4"
 	"github.com/sajari/fuzzy"
 
-	"github.com/go-task/task/v3/internal/logger"
-	"github.com/go-task/task/v3/internal/output"
-	"github.com/go-task/task/v3/internal/sort"
-	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/clintmod/rite/internal/logger"
+	"github.com/clintmod/rite/internal/output"
+	"github.com/clintmod/rite/internal/sort"
+	"github.com/clintmod/rite/taskfile/ast"
 )
 
 type (

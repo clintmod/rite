@@ -2,7 +2,26 @@
 
 > An idempotent task runner with Unix-native variable precedence.
 
-**Status: design phase.** Spec is drafted. No `rite` binary yet. See [`SPEC.md`](./SPEC.md).
+**Status: pre-1.0, usable.** Binary builds, test suite is green, SPEC's variable precedence model and `${VAR}` shell-native preprocessor are both live. `rite migrate` converts a `Taskfile.yml` to a `Ritefile.yml` and flags anything that changes meaning under the new semantics. Docs site and v1.0.0 tag are still to come. See [`SPEC.md`](./SPEC.md) for the design contract.
+
+## Install
+
+From source (requires Go 1.25+):
+
+```
+go install github.com/clintmod/rite/cmd/rite@latest
+```
+
+## Use
+
+```
+rite --init                 # writes Ritefile.yml
+rite <task>                 # runs a task
+rite --list-all             # show all tasks
+rite --migrate Taskfile.yml # convert a go-task Taskfile to a Ritefile
+```
+
+The five-second mental model: variables are first-in-wins. Shell env beats CLI args beats `Ritefile` defaults. Task-scope `vars:` are defaults only; if any higher tier sets the name, the task value is ignored.
 
 ---
 
@@ -48,9 +67,22 @@ MIT. See [`LICENSE`](./LICENSE). Original copyright © 2016 Andrey Nering; fork 
 
 ## Roadmap
 
-- **Phase 0 (done):** Repo set up, spec drafted.
-- **Phase 1:** Rebrand — module path, binary name, file format discovery.
-- **Phase 2:** Rewrite `getVariables()` for first-in-wins precedence; add provenance-preserving scope traversal.
-- **Phase 3:** Test fixture audit and rewrite.
-- **Phase 4:** `vars` / `env` unification, `${VAR}` preprocessor.
-- **Phase 5:** `rite migrate` from Taskfiles; docs site; v1.0.0 release.
+- [x] **Phase 0:** Repo set up, spec drafted.
+- [x] **Phase 1:** Rebrand — module path, binary name, file format discovery.
+- [x] **Phase 1.5:** Cosmetic polish — log prefix, error strings, `rite --init`.
+- [x] **Phase 2:** First-in-wins `getVariables()`, per-resolution dynamic-var cache.
+- [x] **Phase 3:** Test fixture audit and rewrite; include-site var precedence fix.
+- [x] **Phase 4:** `${VAR}` preprocessor, `export: false` opt-out, vars/env unified.
+- [ ] **Phase 5 (in progress):** `rite migrate` tool ✅ · docs site · v1.0.0 release.
+
+## Migrating from go-task
+
+`rite` is an intentional semantic break from `go-task`, not a drop-in replacement. The five user-visible changes:
+
+1. **Task-scope `vars:` are defaults only.** If the entrypoint sets `FOO`, a task-scope `FOO` is ignored. Upstream's last-in-wins model is inverted.
+2. **Task-scope `env:` is also defaults only.** Same rule, applied to env blocks.
+3. **Task-level `dotenv:` files don't override entrypoint env.** Same rule.
+4. **`vars:` auto-exports to the cmd shell environ.** Add `export: false` on any var holding a secret that shouldn't leak.
+5. **Shell env always wins over Ritefile env:** SPEC tier 1 has no opt-out.
+
+Run `rite --migrate <path/to/Taskfile.yml>` and it will: (a) write a `Ritefile.yml` with include-paths rewritten, and (b) emit warnings to stderr for every site where the old and new meanings differ (OVERRIDE-VAR, OVERRIDE-ENV, DOTENV-ENTRY, SECRET-VAR, SCHEMA-URL).

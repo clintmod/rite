@@ -2,6 +2,65 @@
 
 ## Unreleased
 
+### rite fork (Phases 1–5 wave 1)
+
+- **Rebrand (Phase 1):** module path `github.com/clintmod/rite`, binary
+  `rite`, file discovery `Ritefile` / `Ritefile.yml` / `Ritefile.yaml` /
+  `Ritefile.dist.yml` / `Ritefile.dist.yaml`, env var prefix `RITE_*`,
+  special vars `RITEFILE` / `RITE_VERSION` / `ROOT_RITEFILE` / etc.
+  `rite --init` writes a `Ritefile.yml`.
+- **Log prefix and error strings (Phase 1.5):** user-visible strings say
+  `rite:` / `Ritefile` throughout. Internal struct names
+  (`TaskfileNotFoundError` et al.) preserved for rename-scope reasons.
+- **First-in-wins variable precedence (Phase 2):** SPEC §Variable
+  Precedence is now the implementation. Shell env always beats CLI beats
+  entrypoint `vars:` beats include-site vars beats included-file top vars
+  beats task-scope `vars:` beats built-ins. Task-scope `vars:` are
+  defaults only — if any higher tier sets the name, the task value is
+  ignored. Upstream's `go-task/task#2035` is intentionally not adopted.
+- **Per-resolution dynamic-var cache (Phase 2):** `sh:` variables no
+  longer share a compiler-global cache keyed by command string. Two
+  tasks with identical `sh: pwd` in different dirs each evaluate
+  independently, fixing the upstream cross-task pollution bug that
+  SPEC §Dynamic Variables calls out.
+- **Include-site vars honor first-in-wins (Phase 3):** `Taskfile.Merge`
+  no longer flattens included-file top vars into the parent's
+  `TaskfileVars` tier-4. Each file keeps its own vars; the pipeline
+  resolves per-tier correctly including for nested X→Y→Z includes.
+- **${VAR} shell-native preprocessor (Phase 4 wave 1):** `${NAME}`,
+  `$NAME`, and `$$` → `$` are recognized in every templated string.
+  Unknown refs pass through literal so the shell can still resolve
+  `$?`, `$1`, env-only vars, etc. Interchangeable with `{{.VAR}}`.
+- **`export: false` opt-out (Phase 4 wave 2):** any var declaration can
+  take the map form `FOO: { value: x, export: false }` to keep the
+  value visible inside Ritefile templating but out of the cmd shell
+  environ.
+- **vars/env unified (Phase 4 wave 3):** `vars:` and `env:` now use the
+  same first-in-wins precedence model and both export by default.
+  Shell env always beats the Ritefile env block (SPEC tier 1 has no
+  opt-out; old `EnvPrecedence` experiment is a no-op). Built-ins
+  (`RITEFILE`, `TASK`, `ROOT_DIR`, …) are marked `export: false` so
+  they don't leak into cmd shells.
+- **`rite migrate` subcommand (Phase 5 wave 1):** converts a go-task
+  `Taskfile.yml` to a `Ritefile.yml` and emits warnings for every site
+  the semantics would silently change under first-in-wins:
+  OVERRIDE-VAR, OVERRIDE-ENV, DOTENV-ENTRY, SECRET-VAR, SCHEMA-URL.
+
+#### Breaking changes from upstream go-task
+
+1. Task-scope `vars:` / `env:` are defaults; they no longer override an
+   entrypoint-level declaration with the same key.
+2. Task-level `dotenv:` files don't override entrypoint `env:`.
+3. `vars:` auto-exports to the cmd shell environ — add `export: false`
+   for secrets.
+4. Shell env always wins over Ritefile env (no opt-out).
+5. File format is `Ritefile`, not `Taskfile`. No compatibility shim.
+
+Use `rite --migrate <path>` to get site-specific warnings on your own
+Taskfiles.
+
+### inherited from upstream v3.49.x Unreleased
+
 - Added `enum.ref` support in `requires`: enum constraints can now reference
   variables or template pipelines (e.g., `ref: .ALLOWED_ENVS`) instead of
   duplicating static lists. Combined with `sh:` variables, this enables fully

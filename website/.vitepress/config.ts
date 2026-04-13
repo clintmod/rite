@@ -21,8 +21,8 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Docs', link: '/getting-started' },
+      { text: 'Schema', link: '/schema' },
       { text: 'Migration', link: '/migration' },
-      { text: 'Precedence', link: '/precedence' },
       { text: 'SPEC', link: 'https://github.com/clintmod/rite/blob/main/SPEC.md' },
     ],
 
@@ -35,10 +35,22 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Features',
+        items: [
+          { text: 'Dependencies', link: '/deps' },
+          { text: 'Incremental builds', link: '/sources-and-generates' },
+          { text: 'Includes', link: '/includes' },
+          { text: 'Run modes', link: '/run-modes' },
+          { text: 'Preconditions & requires', link: '/preconditions' },
+          { text: 'For-loops & matrices', link: '/for-loops' },
+        ],
+      },
+      {
         text: 'Reference',
         items: [
           { text: 'Variable precedence', link: '/precedence' },
           { text: 'Syntax', link: '/syntax' },
+          { text: 'Schema', link: '/schema' },
           { text: 'CLI', link: '/cli' },
         ],
       },

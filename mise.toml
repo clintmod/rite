@@ -3,4 +3,14 @@
 # means `rite lint` can pass locally while failing CI (gci rules tighten
 # between versions).
 [tools]
-golangci-lint = "2.11.4"
+# Correctness-sensitive: compilation, site build, dep resolution.
+# Bump in lock-step with .github/workflows/{lint,test,release,pages}.yml.
+go = "1.26"             # CI matrix: [1.25.x, 1.26.x]; release uses 1.26.x
+node = "22"             # pages.yml pins node-version: '22'
+pnpm = "latest"         # website/pnpm-lock.yaml is the authoritative lockfile
+golangci-lint = "2.11.4" # lint.yml action `version:` input
+
+# Deliberately NOT in mise:
+# - mockery: Ritefile pins via MOCKERY_VERSION + status: reinstall guard
+# - goreleaser: CI uses `version: latest`, so a local pin guarantees mismatch
+# - gotestsum, gorelease: output/diagnostic tools, @latest via `go install` is fine

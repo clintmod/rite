@@ -37,3 +37,7 @@ tags
 /tmp
 node_modules
 website/.netlify/
+
+# pnpm is authoritative for the docs site; prevent stray `npm install`
+# output from being committed
+website/package-lock.json

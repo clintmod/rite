@@ -2845,6 +2845,54 @@ func TestWildcard(t *testing.T) {
 	}
 }
 
+// TestCoexistenceCacheDir locks in the SPEC "On-disk Paths" guarantee:
+// rite writes its fingerprint state to .rite/ and MUST NOT touch .task/.
+// A user checking in a Ritefile alongside a Taskfile.yml should be able to
+// run both tools without either clobbering or silently reading the other's
+// cache. Regressions here would merge our bookkeeping into go-task's and
+// vice-versa.
+func TestCoexistenceCacheDir(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "source.txt"), []byte("hello"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	const ritefile = `version: '3'
+tasks:
+  default:
+    cmds:
+      - echo working
+    sources:
+      - source.txt
+    method: checksum
+`
+	if err := os.WriteFile(filepath.Join(dir, "Ritefile.yml"), []byte(ritefile), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(io.Discard),
+		task.WithStderr(io.Discard),
+		task.WithSilent(true),
+	)
+	require.NoError(t, e.Setup())
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "default"}))
+
+	// rite must have created .rite/checksum/default — the SPEC-named path.
+	checksumPath := filepath.Join(dir, ".rite", "checksum", "default")
+	if _, err := os.Stat(checksumPath); err != nil {
+		t.Fatalf("expected .rite checksum at %q: %v", checksumPath, err)
+	}
+
+	// rite must NOT have created a .task/ directory — that namespace
+	// belongs to go-task and coexistence requires we never write there.
+	if _, err := os.Stat(filepath.Join(dir, ".task")); !os.IsNotExist(err) {
+		t.Fatalf(".task/ was created (err=%v); rite must not write into go-task's cache namespace", err)
+	}
+}
+
 // enableExperimentForTest enables the experiment behind pointer e for the duration of test t and sub-tests,
 // with the experiment being restored to its previous state when tests complete.
 //

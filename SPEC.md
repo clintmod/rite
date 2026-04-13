@@ -147,6 +147,17 @@ Literal `$` in a command: `$$` escapes to `$`. Literal `{{`: `{{"{{"}}`.
 
 ---
 
+## On-disk Paths
+
+rite owns its own filenames end-to-end. The paths below are **SPEC-level guarantees** — they are the contract between rite and the filesystem, and coexistence with go-task in the same repo or home directory is a design goal. A project may check in a `Ritefile` alongside a `Taskfile.yml` and both tools will operate without ever reading or writing each other's files.
+
+- **Fingerprint / cache directory:** `.rite/` in the project root. Holds per-task checksums, timestamps, remote-ritefile cache, and other ephemeral state rite derives from `sources:` / `generates:`. Override with `RITE_TEMP_DIR`. The directory should be `.gitignore`d. rite **never** reads or writes `.task/` — that path is go-task's and is left untouched.
+- **Project config:** `.riterc.yml` or `.riterc.yaml` in the project root (or any ancestor up to `$HOME`). Controls rite-level defaults (experiments, output, color, remote-ritefile trust list, etc.). rite **never** reads `.taskrc.yml`.
+- **User-global config:** `$XDG_CONFIG_HOME/rite/riterc.yml` (falling back to `$HOME/.riterc.yml`). Merged under project config — project wins on conflict.
+- **Schema / code completions:** embedded in the `rite` binary; schema also published at `clintmod.github.io/rite/schema.json`.
+
+---
+
 ## Compatibility with go-task
 
 **None.** This is the intentional-break option. No flag enables Taskfile mode. No drop-in binary behavior.

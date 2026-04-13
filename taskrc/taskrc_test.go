@@ -307,3 +307,39 @@ remote:
 		assert.Equal(t, []string{"github.com", "gitlab.com"}, base.Remote.TrustedHosts)
 	})
 }
+
+// TestGetConfig_CoexistenceWithTaskfile locks in the SPEC "On-disk Paths"
+// guarantee: rite MUST only read .riterc.yml, never .taskrc.yml. A project
+// checking in both files alongside each other exercises both tools; rite
+// must ignore go-task's config entirely. Regressions here would quietly
+// merge a user's go-task settings into rite and vice-versa — the whole
+// point of the fork is to keep those contracts separate.
+func TestGetConfig_CoexistenceWithTaskfile(t *testing.T) { //nolint:paralleltest // uses t.Setenv
+	_, _, localDir := setupDirs(t)
+
+	// A .taskrc.yml with distinctive content rite must NOT read.
+	taskrcYAML := `
+experiments:
+  SHOULD_NOT_APPEAR: 99
+`
+	writeFile(t, localDir, ".taskrc.yml", taskrcYAML)
+
+	// With only .taskrc.yml present, GetConfig should find no rite config.
+	cfg, err := GetConfig(localDir)
+	assert.NoError(t, err)
+	assert.Nil(t, cfg, "rite read .taskrc.yml; coexistence is broken")
+
+	// Now add a .riterc.yml beside it — rite reads its own, still ignores
+	// the go-task file.
+	writeFile(t, localDir, ".riterc.yml", localConfigYAML)
+
+	cfg, err = GetConfig(localDir)
+	assert.NoError(t, err)
+	require.NotNil(t, cfg)
+	assert.Equal(t, &ast.TaskRC{
+		Version: nil,
+		Experiments: map[string]int{
+			"FOO": 3,
+		},
+	}, cfg, "rite config must reflect .riterc.yml only, never .taskrc.yml")
+}

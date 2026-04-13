@@ -65,15 +65,15 @@ CI scripts care about exit codes. rite's are documented in [CLI § Exit codes](/
 - `--exit-code` (`-x`) — exit with the failing cmd's exact code instead of rite's wrapped 200+ form. Useful when downstream CI tooling parses specific codes.
 - `--fail-on-status` — exit non-zero if any named task is *not up-to-date* (per `sources:` / `generates:`). Useful for "fail the build if the generated files weren't regenerated."
 
-## Caching the `.task` directory
+## Caching the `.rite` directory
 
-rite stores per-task fingerprints under `.task/` (or `$RITE_TEMP_DIR`). Caching that directory across CI runs makes incremental builds work between runs:
+rite stores per-task fingerprints under `.rite/` (or `$RITE_TEMP_DIR`). Caching that directory across CI runs makes incremental builds work between runs:
 
 ```yaml
 # GitHub Actions example
 - uses: actions/cache@v4
   with:
-    path: .task
+    path: .rite
     key: rite-${{ runner.os }}-${{ hashFiles('Ritefile.yml', '**/*.go') }}
 ```
 

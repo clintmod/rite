@@ -80,6 +80,43 @@ tasks:
 
 If you have `deps: [a, b]`, a and b may start simultaneously. If you have `cmds: [{task: a}, {task: b}]`, a runs to completion, then b.
 
+## Fail-fast: cancel siblings on first failure
+
+By default, when one of a task's `deps:` fails, the others **continue running** to completion — rite collects all the results, then reports the failure. This is useful for `lint + test + build` style runs where you want to see *every* problem, not just the first one to fire.
+
+If you want the opposite — kill the in-flight siblings the moment any dep fails — use `failfast`:
+
+```yaml
+tasks:
+  default:
+    deps: [dep1, dep2, dep3, dep4]
+    failfast: true       # cancel everything else when any dep fails
+
+  dep1: sleep 0.1 && echo dep1
+  dep2: sleep 0.2 && echo dep2
+  dep3: sleep 0.3 && echo dep3
+  dep4: exit 1
+```
+
+With `failfast: true`, the moment `dep4` exits non-zero, rite cancels `dep1`, `dep2`, `dep3` (whichever are still running) and exits. Without it, all four run to completion and rite reports the failure at the end.
+
+Same flag is available CLI-wide as `-F` / `--failfast`:
+
+```sh
+rite --failfast default
+```
+
+The CLI flag applies to every parallel execution in the run, not just one task's deps. Useful for one-off "I don't care about other failures, stop on the first one" invocations.
+
+When to reach for failfast:
+- Long-running deps where you'd rather save the seconds than see all failures (e.g., builds that take minutes).
+- Deps with side effects you don't want to occur when you already know the run will fail.
+- CI cost optimization.
+
+When to leave it off (the default):
+- Test/lint runs where seeing every failure helps fix the underlying problem in one go.
+- Independent deps with no coupling — there's nothing to gain from canceling them.
+
 ## Once-only execution
 
 If multiple tasks in a run depend on the same task, rite runs that dep **once** per `rite` invocation — its result is memoized for subsequent asks. Setting `run: once` on the depended-on task guarantees this even across weirder call graphs:

@@ -93,3 +93,59 @@ They look similar but behave differently:
 | Any fails → | Task **aborts** with an error | Task **runs** |
 
 Use `preconditions:` when "not allowed to proceed." Use `status:` when "no need to proceed."
+
+## Preconditions vs `if:`
+
+Both gate task execution. The difference is what *not running* means:
+
+| | `preconditions:` | `if:` |
+|---|---|---|
+| When the condition fails → | Task **aborts** with an error message | Task **silently skips**, exit 0 |
+| Use when | Invoking the task without the condition is a bug | Invoking the task without the condition is a valid no-op |
+| Where it lives | Top of task, list form with `sh:` + `msg:` | Top of task or per-cmd, single expression |
+
+Common pattern: combine both. Preconditions enforce hard invariants (working tree clean, required secrets present); `if:` controls feature-flag-style branches (deploy only when on the release branch, run cleanup only in prod). See [conditional execution (`if:`)](/conditionals) for full coverage of the `if:` family.
+
+## Interactive prompting for missing variables
+
+When you invoke rite with `-y`/`--yes` or `--interactive`, missing required variables don't immediately abort the task — instead, rite prompts the user to supply them at the terminal:
+
+```yaml
+tasks:
+  greet:
+    requires:
+      vars: [NAME]
+    cmds:
+      - echo "Hello, ${NAME}!"
+```
+
+```sh
+$ rite --interactive greet
+NAME: Alice
+Hello, Alice!
+```
+
+For `requires:` with `enum:`, the prompt becomes a selection menu rather than free-form input:
+
+```yaml
+tasks:
+  deploy:
+    requires:
+      vars:
+        - name: ENVIRONMENT
+          enum: [dev, staging, prod]
+    cmds:
+      - ./deploy --env ${ENVIRONMENT}
+```
+
+```sh
+$ rite --interactive deploy
+ENVIRONMENT:
+  > dev
+    staging
+    prod
+```
+
+The prompt only fires when the var is unset across **all** precedence tiers — shell env, CLI args, Ritefile vars all checked first. So `ENVIRONMENT=prod rite --interactive deploy` runs without prompting.
+
+For `--interactive` to work, rite must be running attached to a terminal. In CI (no TTY), the flag is a no-op and missing vars abort as usual. Use this for ergonomic local-dev workflows where you don't want to memorize flag names; rely on hard `requires:` failures in CI scripts.

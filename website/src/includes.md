@@ -116,7 +116,7 @@ Each include-site's vars cascade through one level. B's include of C only expose
 
 ## Interpolated include paths
 
-The `taskfile:` and `dir:` keys accept template syntax, resolved against the parent's variable set at setup time:
+The `taskfile:` and `dir:` keys accept template syntax, resolved against the parent's variable set at setup time. Both Go-template (<span v-pre>`{{.VAR}}`</span>) and the `${VAR}` shell-preprocessor form work:
 
 ```yaml
 vars:
@@ -124,11 +124,56 @@ vars:
 
 includes:
   svc:
-    taskfile: './services/{{.MODULE}}/Ritefile.yml'
-    dir:      './services/{{.MODULE}}'
+    taskfile: './services/${MODULE}/Ritefile.yml'
+    dir:      './services/${MODULE}'
 ```
 
 This is useful for factored-out monorepos where the include path is a parameter.
+
+## OS-specific includes
+
+There's no automatic per-OS include behavior — rite won't silently merge `Ritefile_darwin.yml` when it sees a `Ritefile.yml` next to it. If you want per-OS task definitions, declare it explicitly using the `OS` builtin variable in the include path:
+
+```yaml
+# Ritefile.yml
+version: '3'
+
+includes:
+  local: ./Ritefile_${OS}.yml      # Ritefile_darwin.yml / Ritefile_linux.yml / etc.
+```
+
+Then ship one Ritefile per OS. The include is templated at setup time, so each platform sees only its own file. Combined with `optional: true`, you can have per-OS overrides where present and a clean fallback when absent:
+
+```yaml
+includes:
+  local:
+    taskfile: ./Ritefile_${OS}.yml
+    optional: true
+```
+
+`OS` is a built-in available everywhere — its values are `darwin`, `linux`, `windows`, `freebsd`, etc. (Go's `runtime.GOOS`). For arch, use `ARCH`.
+
+## Include namespace aliases
+
+The `aliases:` key on an include creates alternate namespace prefixes for that include's tasks:
+
+```yaml
+includes:
+  mobile:
+    taskfile: ./mobile
+    aliases: [m, mob]
+
+tasks:
+  release:
+    cmds:
+      - task: mobile:build       # canonical
+      - task: m:sign             # aliased — same target
+      - task: mob:notarize       # aliased — same target
+```
+
+All three forms are equivalent at the call site. Useful when the include's full name is verbose and you want a typing shortcut without giving up the descriptive form.
+
+Aliases compose with task aliases inside the included file: if `mobile/Ritefile.yml` defines `build` with `aliases: [b]`, then `mobile:b`, `m:b`, and `mob:b` all work.
 
 ## Remote includes (experiment)
 

@@ -100,6 +100,23 @@ Three straightforward options:
   brew install rite
   ```
 
+## GitHub Actions: error annotations
+
+When `GITHUB_ACTIONS=true` is set in the environment (which Actions does automatically), rite emits a `::error::` annotation on task failure. The annotation surfaces in the workflow run UI as an inline error attached to the failed task name:
+
+```
+::error title=task: my-task::exit status 1
+```
+
+You don't have to enable anything — it's automatic. For non-Actions CI systems, the annotation is suppressed (it would just be noisy log line) but the exit code still propagates so the runner knows the build failed.
+
+If you want to suppress annotations even on GitHub Actions (e.g., your workflow handles failure presentation differently), unset the env var inline:
+
+```yaml
+- name: rite
+  run: GITHUB_ACTIONS= rite ci
+```
+
 ## Watch mode in CI
 
 Don't. `rite --watch` is interactive and never exits. CI runners will hang. See [watch § when not to use](/watch#when-not-to-use).

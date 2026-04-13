@@ -6,8 +6,7 @@ on:
       - 'v*'
 
 permissions:
-  id-token: write  # Required for OIDC
-  contents: read
+  contents: write  # goreleaser needs this to create GitHub releases
 
 jobs:
   goreleaser:
@@ -23,37 +22,23 @@ jobs:
         with:
           go-version: 1.26.x
 
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Update npm
-        run: npm install -g npm@latest
-
-      - name: Install Task
-        uses: go-task/setup-task@3be4020d41929789a01026e0e427a4321ce0ad44 # v2
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
-        with:
-          package_json_file: 'website/package.json'
-          run_install: 'true'
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7
         with:
-          distribution: goreleaser-pro
+          # Free goreleaser (no `distribution: goreleaser-pro`). Drops
+          # cloudsmith / nightly-only features we don't use yet.
           version: latest
-          args: release --clean --draft
+          # `--skip=homebrew` NOT set here — a real release does publish
+          # the brew formula. That requires:
+          #   1. clintmod/homebrew-tap repo exists with at least one commit.
+          #   2. A PAT with `repo` scope on that tap is set as GH_PAT.
+          # If either is missing when a tag lands, run locally with
+          #   goreleaser release --skip=homebrew
+          # to ship everything else, then unblock brew in a follow-up.
+          args: release --clean
         env:
-          GITHUB_TOKEN: ${{secrets.GH_PAT}}
-          GORELEASER_KEY: ${{secrets.GORELEASER_KEY}}
-          CLOUDSMITH_TOKEN: ${{secrets.CLOUDSMITH_TOKEN}}
-
-      - name: Deploy Website
-        shell: bash
-        run: |
-          task website:deploy:prod
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          # Falls back to the job's default token if GH_PAT isn't set —
+          # in that fallback mode only same-repo writes work, so the
+          # brew step will fail fast with a clear error. Fine for
+          # initial tags while the tap is being bootstrapped.
+          GITHUB_TOKEN: ${{secrets.GH_PAT || secrets.GITHUB_TOKEN}}

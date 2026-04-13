@@ -1,9 +1,16 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 version: 2
 
+# Free goreleaser only (no -pro). Upstream used the pro distribution for
+# Cloudsmith / nightly source archives / some template features — rite
+# doesn't need any of that yet. If we end up wanting pro features later,
+# the release.yml toggle is a one-line change.
+
+project_name: rite
+
 builds:
-  - binary: task
-    main: ./cmd/task
+  - binary: rite
+    main: ./cmd/rite
     goos:
       - windows
       - darwin
@@ -33,7 +40,7 @@ builds:
       - -trimpath
     ldflags:
       - "-s -w"
-      - "{{if .IsNightly}}-X github.com/go-task/task/v3/internal/version.version={{.Version}}{{end}}"
+      - "-X github.com/clintmod/rite/internal/version.version={{.Version}}"
 
 gomod:
   proxy: true
@@ -43,30 +50,29 @@ archives:
     files:
       - README.md
       - LICENSE
+      - NOTICE
       - completion/**/*
     format_overrides:
       - goos: windows
         formats: [zip]
 
-git:
-  ignore_tags:
-    - "{{if not .IsNightly}}nightly{{end}}"
-
 snapshot:
   version_template: '{{.Version}}'
 
 checksum:
-  name_template: 'task_checksums.txt'
+  name_template: 'rite_checksums.txt'
 
 nfpms:
-  - vendor: Task
-    homepage: https://taskfile.dev
-    maintainer: The Task authors <task@taskfile.dev>
-    description: A fast, cross-platform build tool inspired by Make, designed for modern workflows.
-    section: golang
+  - vendor: clintmod
+    homepage: https://github.com/clintmod/rite
+    maintainer: Clint Modien <cmodien@gmail.com>
+    description: >-
+      An idempotent task runner with Unix-native variable precedence. A hard
+      fork of go-task where first-in-wins semantics mean shell env, CLI args,
+      and outer scopes actually win over inner scopes — the inverse of
+      upstream's model.
+    section: devel
     license: MIT
-    conflicts:
-      - taskwarrior
     formats:
       - deb
       - rpm
@@ -74,102 +80,40 @@ nfpms:
     file_name_template: '{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}'
     contents:
       - src: completion/bash/task.bash
-        dst: /etc/bash_completion.d/task
+        dst: /etc/bash_completion.d/rite
       - src: completion/fish/task.fish
-        dst: /usr/share/fish/completions/task.fish
+        dst: /usr/share/fish/completions/rite.fish
       - src: completion/zsh/_task
-        dst: /usr/local/share/zsh/site-functions/_task
+        dst: /usr/local/share/zsh/site-functions/_rite
 
 brews:
-  - name: go-task
-    description: A fast, cross-platform build tool inspired by Make, designed for modern workflows.
+  - name: rite
+    description: Task runner with Unix-native variable precedence (hard fork of go-task).
     license: MIT
-    homepage: https://taskfile.dev
+    homepage: https://github.com/clintmod/rite
     directory: Formula
     repository:
-      owner: go-task
+      # NOTE: This tap repo must exist before the first release that actually
+      # publishes a brew formula, and a PAT with `repo` scope (write access to
+      # the tap) must be set as the GH_PAT secret on this repo. Until both
+      # exist, goreleaser will skip the brews step with a fatal error — to
+      # release without publishing to brew in the interim, pass
+      # `--skip=brew` in the goreleaser args (see release.yml).
+      owner: clintmod
       name: homebrew-tap
-    test: system "#{bin}/task", "--help"
+    test: system "#{bin}/rite", "--help"
     install: |-
-      bin.install "task"
-      bash_completion.install "completion/bash/task.bash" => "task"
-      zsh_completion.install "completion/zsh/_task" => "_task"
-      fish_completion.install "completion/fish/task.fish"
+      bin.install "rite"
+      bash_completion.install "completion/bash/task.bash" => "rite"
+      zsh_completion.install "completion/zsh/_task" => "_rite"
+      fish_completion.install "completion/fish/task.fish" => "rite.fish"
     commit_author:
-      name: task-bot
-      email: 106601941+task-bot@users.noreply.github.com
+      name: clintmod
+      email: cmodien@gmail.com
 
-winget:
-  - name: Task
-    publisher: Task
-    short_description: The modern task runner.
-    description: A fast, cross-platform build tool inspired by Make, designed for modern workflows.
-    license: MIT
-    homepage: https://taskfile.dev/
-    publisher_url: https://taskfile.dev/
-    publisher_support_url: https://github.com/go-task/task/issues
-    package_identifier: Task.Task
-    commit_author:
-      name: task-bot
-      email: 106601941+task-bot@users.noreply.github.com
-    commit_msg_template: 'chore: release {{.PackageIdentifier}} {{.Tag}}'
-    release_notes_url: https://github.com/go-task/task/releases/tag/{{.Tag}}
-    tags:
-      - build
-      - build-tool
-      - devops
-      - go
-      - make
-      - makefile
-      - runner
-      - task
-      - task-runner
-      - taskfile
-      - tool
-    repository:
-      owner: go-task
-      name: winget-pkgs
-      branch: 'task-{{.Version}}'
-      pull_request:
-        enabled: true
-        draft: false
-        check_boxes: true
-        base:
-          owner: microsoft
-          name: winget-pkgs
-          branch: master
-        body: |
-          /cc @andreynering @pd93 @vmaerten
-
-
-npms:
-  - name: "@go-task/cli"
-    repository: "git+https://github.com/go-task/task.git"
-    bugs: https://github.com/go-task/task/issues
-    description: A fast, cross-platform build tool inspired by Make, designed for modern workflows.
-    homepage: https://taskfile.dev
-    license: MIT
-    author: "The Task authors"
-    access: public
-    keywords:
-      - "task"
-      - "taskfile"
-      - "build-tool"
-      - "task-runner"
-
-cloudsmiths:
-  - organization: "task"
-    repository: "{{if not .IsNightly}}task{{end}}"
-    formats:
-      - deb
-      - rpm
-      - apk
-    distributions:
-      deb:
-        - "any-distro/any-version"
-      rpm:
-        - "any-distro/any-version"
-      alpine:
-        - "alpine/any-version"
-    component: main
-    republish: true
+release:
+  github:
+    owner: clintmod
+    name: rite
+  draft: true
+  prerelease: auto

@@ -10,8 +10,8 @@ import (
 
 // Precondition represents a precondition necessary for a task to run
 type Precondition struct {
-	Sh  string
-	Msg string
+	Sh  string `yaml:"sh"`
+	Msg string `yaml:"msg"`
 }
 
 func (p *Precondition) DeepCopy() *Precondition {

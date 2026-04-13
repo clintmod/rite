@@ -13,43 +13,43 @@ import (
 
 // Task represents a task
 type Task struct {
-	Task          string `hash:"ignore"`
-	Cmds          []*Cmd
-	Deps          []*Dep
-	Label         string
-	Desc          string
-	Prompt        Prompt
-	Summary       string
-	Requires      *Requires
-	Aliases       []string
-	Sources       []*Glob
-	Generates     []*Glob
-	Status        []string
-	Preconditions []*Precondition
-	Dir           string
-	Set           []string
-	Shopt         []string
-	Vars          *Vars
-	Env           *Vars
-	Dotenv        []string
-	Silent        *bool
-	Interactive   bool
-	Internal      bool
-	Method        string
-	Prefix        string `hash:"ignore"`
-	IgnoreError   bool
-	Run           string
-	Platforms     []*Platform
-	If            string
-	Watch         bool
-	Location      *Location
-	Failfast      bool
+	Task          string          `yaml:"-" hash:"ignore"`
+	Cmds          []*Cmd          `yaml:"cmds"`
+	Deps          []*Dep          `yaml:"deps"`
+	Label         string          `yaml:"label"`
+	Desc          string          `yaml:"desc"`
+	Prompt        Prompt          `yaml:"prompt"`
+	Summary       string          `yaml:"summary"`
+	Requires      *Requires       `yaml:"requires"`
+	Aliases       []string        `yaml:"aliases"`
+	Sources       []*Glob         `yaml:"sources"`
+	Generates     []*Glob         `yaml:"generates"`
+	Status        []string        `yaml:"status"`
+	Preconditions []*Precondition `yaml:"preconditions"`
+	Dir           string          `yaml:"dir"`
+	Set           []string        `yaml:"set"`
+	Shopt         []string        `yaml:"shopt"`
+	Vars          *Vars           `yaml:"vars"`
+	Env           *Vars           `yaml:"env"`
+	Dotenv        []string        `yaml:"dotenv"`
+	Silent        *bool           `yaml:"silent,omitempty"`
+	Interactive   bool            `yaml:"interactive"`
+	Internal      bool            `yaml:"internal"`
+	Method        string          `yaml:"method"`
+	Prefix        string          `yaml:"prefix" hash:"ignore"`
+	IgnoreError   bool            `yaml:"ignore_error"`
+	Run           string          `yaml:"run"`
+	Platforms     []*Platform     `yaml:"platforms"`
+	If            string          `yaml:"if"`
+	Watch         bool            `yaml:"watch"`
+	Location      *Location       `yaml:"-"`
+	Failfast      bool            `yaml:"failfast"`
 	// Populated during merging
-	Namespace            string `hash:"ignore"`
-	IncludeVars          *Vars
-	IncludedTaskfileVars *Vars
+	Namespace            string `yaml:"-" hash:"ignore"`
+	IncludeVars          *Vars  `yaml:"-"`
+	IncludedTaskfileVars *Vars  `yaml:"-"`
 
-	FullName string `hash:"ignore"`
+	FullName string `yaml:"-" hash:"ignore"`
 }
 
 func (t *Task) Name() string {

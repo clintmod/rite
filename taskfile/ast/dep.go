@@ -8,10 +8,10 @@ import (
 
 // Dep is a task dependency
 type Dep struct {
-	Task   string
-	For    *For
-	Vars   *Vars
-	Silent bool
+	Task   string `yaml:"task"`
+	For    *For   `yaml:"for"`
+	Vars   *Vars  `yaml:"vars"`
+	Silent bool   `yaml:"silent"`
 }
 
 func (d *Dep) DeepCopy() *Dep {

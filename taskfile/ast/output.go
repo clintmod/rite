@@ -11,7 +11,7 @@ type Output struct {
 	// Name of the Output.
 	Name string `yaml:"-"`
 	// Group specific style
-	Group OutputGroup
+	Group OutputGroup `yaml:"group"`
 }
 
 // IsSet returns true if and only if a custom output style is set.
@@ -52,8 +52,9 @@ func (s *Output) UnmarshalYAML(node *yaml.Node) error {
 
 // OutputGroup is the style options specific to the Group style.
 type OutputGroup struct {
-	Begin, End string
-	ErrorOnly  bool `yaml:"error_only"`
+	Begin     string `yaml:"begin"`
+	End       string `yaml:"end"`
+	ErrorOnly bool   `yaml:"error_only"`
 }
 
 // IsSet returns true if and only if a custom output style is set.

@@ -8,12 +8,12 @@ import (
 )
 
 type For struct {
-	From   string
-	List   []any
-	Matrix *Matrix
-	Var    string
-	Split  string
-	As     string
+	From   string  `yaml:"-"`
+	List   []any   `yaml:"-"`
+	Matrix *Matrix `yaml:"matrix"`
+	Var    string  `yaml:"var"`
+	Split  string  `yaml:"split"`
+	As     string  `yaml:"as"`
 }
 
 func (f *For) UnmarshalYAML(node *yaml.Node) error {

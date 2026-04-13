@@ -13,12 +13,12 @@ import (
 // true. Users opt out of export with `export: false` in the map form
 // (SPEC §vars/env Unification, non-exported variables section).
 type Var struct {
-	Value  any
-	Live   any
-	Sh     *string
-	Ref    string
-	Dir    string
-	Export *bool
+	Value  any     `yaml:"value"`
+	Live   any     `yaml:"-"`
+	Sh     *string `yaml:"sh"`
+	Ref    string  `yaml:"ref"`
+	Dir    string  `yaml:"-"`
+	Export *bool   `yaml:"export"`
 }
 
 // Exported reports whether v should be added to a cmd's process environ.

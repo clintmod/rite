@@ -7,10 +7,10 @@ import (
 )
 
 type Defer struct {
-	Cmd    string
-	Task   string
-	Vars   *Vars
-	Silent bool
+	Cmd    string `yaml:"defer"`
+	Task   string `yaml:"task"`
+	Vars   *Vars  `yaml:"vars"`
+	Silent bool   `yaml:"silent"`
 }
 
 func (d *Defer) UnmarshalYAML(node *yaml.Node) error {

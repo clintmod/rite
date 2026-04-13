@@ -9,17 +9,17 @@ import (
 
 // Cmd is a task command
 type Cmd struct {
-	Cmd         string
-	Task        string
-	For         *For
-	If          string
-	Silent      bool
-	Set         []string
-	Shopt       []string
-	Vars        *Vars
-	IgnoreError bool
-	Defer       bool
-	Platforms   []*Platform
+	Cmd         string      `yaml:"cmd"`
+	Task        string      `yaml:"task"`
+	For         *For        `yaml:"for"`
+	If          string      `yaml:"if"`
+	Silent      bool        `yaml:"silent"`
+	Set         []string    `yaml:"set"`
+	Shopt       []string    `yaml:"shopt"`
+	Vars        *Vars       `yaml:"vars"`
+	IgnoreError bool        `yaml:"ignore_error"`
+	Defer       bool        `yaml:"defer"`
+	Platforms   []*Platform `yaml:"platforms"`
 }
 
 func (c *Cmd) DeepCopy() *Cmd {

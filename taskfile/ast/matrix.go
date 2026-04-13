@@ -21,8 +21,8 @@ type (
 	// A MatrixRow list of values for a matrix key or a reference to another
 	// variable.
 	MatrixRow struct {
-		Ref   string
-		Value []any
+		Ref   string `yaml:"ref"`
+		Value []any  `yaml:"-"`
 	}
 )
 

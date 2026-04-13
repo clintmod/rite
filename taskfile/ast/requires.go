@@ -9,7 +9,7 @@ import (
 
 // Requires represents a set of required variables necessary for a task to run
 type Requires struct {
-	Vars []*VarsWithValidation
+	Vars []*VarsWithValidation `yaml:"vars"`
 }
 
 func (r *Requires) DeepCopy() *Requires {
@@ -25,8 +25,8 @@ func (r *Requires) DeepCopy() *Requires {
 // Enum represents an enum constraint for a required variable.
 // It can either be a static list of values or a reference to another variable.
 type Enum struct {
-	Ref   string
-	Value []string
+	Ref   string   `yaml:"ref"`
+	Value []string `yaml:"-"`
 }
 
 func (e *Enum) DeepCopy() *Enum {
@@ -70,8 +70,8 @@ func (e *Enum) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type VarsWithValidation struct {
-	Name string
-	Enum *Enum
+	Name string `yaml:"name"`
+	Enum *Enum  `yaml:"enum"`
 }
 
 func (v *VarsWithValidation) DeepCopy() *VarsWithValidation {

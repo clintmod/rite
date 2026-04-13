@@ -14,17 +14,17 @@ import (
 type (
 	// Include represents information about included taskfiles
 	Include struct {
-		Namespace      string
-		Taskfile       string
-		Dir            string
-		Optional       bool
-		Internal       bool
-		Aliases        []string
-		Excludes       []string
-		AdvancedImport bool
-		Vars           *Vars
-		Flatten        bool
-		Checksum       string
+		Namespace      string   `yaml:"-"`
+		Taskfile       string   `yaml:"taskfile"`
+		Dir            string   `yaml:"dir"`
+		Optional       bool     `yaml:"optional"`
+		Internal       bool     `yaml:"internal"`
+		Aliases        []string `yaml:"aliases"`
+		Excludes       []string `yaml:"excludes"`
+		AdvancedImport bool     `yaml:"-"`
+		Vars           *Vars    `yaml:"vars"`
+		Flatten        bool     `yaml:"flatten"`
+		Checksum       string   `yaml:"checksum"`
 	}
 	// Includes is an ordered map of namespaces to includes.
 	Includes struct {

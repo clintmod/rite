@@ -7,8 +7,8 @@ import (
 )
 
 type Glob struct {
-	Glob   string
-	Negate bool
+	Glob   string `yaml:"-"`
+	Negate bool   `yaml:"-"`
 }
 
 func (g *Glob) UnmarshalYAML(node *yaml.Node) error {

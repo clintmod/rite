@@ -12,8 +12,8 @@ import (
 
 // Platform represents GOOS and GOARCH values
 type Platform struct {
-	OS   string
-	Arch string
+	OS   string `yaml:"-"`
+	Arch string `yaml:"-"`
 }
 
 func (p *Platform) DeepCopy() *Platform {

@@ -2,7 +2,7 @@ all: False
 template: testify
 filename: '{{base (trimSuffix ".go" .InterfaceFile)}}_mock.go'
 packages:
-  github.com/go-task/task/v3/internal/fingerprint:
+  github.com/clintmod/rite/internal/fingerprint:
     interfaces:
       SourcesCheckable:
       StatusCheckable:

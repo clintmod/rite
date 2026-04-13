@@ -11,30 +11,30 @@ Requirements for milestone v0.2 (docs parity + schema publication). Each maps to
 
 Pages that exist on `taskfile.dev/docs/guide` and have no counterpart on `clintmod.github.io/rite`. Each page must (a) verify the feature exists in `rite` post-fork, (b) flag any divergence from upstream behavior caused by first-in-wins, (c) use `${VAR}` preprocessor style in examples.
 
-- [ ] **DOCS-01**: Page on **internal tasks** (`internal: true`) with example and CLI exclusion behavior
-- [ ] **DOCS-02**: Page on **task working directory** (`dir:`) including default behavior and relative path resolution
-- [ ] **DOCS-03**: Page on **platform-specific tasks and commands** (`platforms:`) for OS/arch gating
-- [ ] **DOCS-04**: Page on **calling another task** from within a task (`task:` command form) with `vars:` forwarding
-- [ ] **DOCS-05**: Page on **forwarding CLI arguments** (`.CLI_ARGS` special var) with `--` passthrough semantics
-- [ ] **DOCS-06**: Page on **wildcard task names** (`*` matching) with captured-wildcard access
-- [ ] **DOCS-07**: Page on **`defer:` cleanup** that runs after task completion (success and failure paths)
-- [ ] **DOCS-08**: Page on **task aliases** (alternate invocation names)
-- [ ] **DOCS-09**: Page on **`label:` display override** for custom task names in output
-- [ ] **DOCS-10**: Page on **`prompt:` warning prompts** for destructive/risky tasks
-- [ ] **DOCS-11**: Page covering the **silent / dry-run / ignore-errors** trio (`silent:`, `--dry`, `ignore_error:`)
-- [ ] **DOCS-12**: Page on **`set:` and `shopt:`** for controlling shell options per task or Ritefile
-- [ ] **DOCS-13**: Page on **watch mode** (`--watch`) with source-change detection
-- [ ] **DOCS-14**: Page on **interactive CLI applications** (`interactive: true` for TUIs/REPLs)
+- [x] **DOCS-01**: Page on **internal tasks** (`internal: true`) — `website/src/internal-tasks.md`
+- [x] **DOCS-02**: Page on **task working directory** (`dir:`) — `website/src/dir.md`
+- [x] **DOCS-03**: Page on **platform-specific tasks and commands** (`platforms:`) — `website/src/platforms.md`
+- [x] **DOCS-04**: Page on **calling another task** — `website/src/calling-tasks.md`
+- [x] **DOCS-05**: Page on **forwarding CLI arguments** (`.CLI_ARGS`) — `website/src/cli-args.md`
+- [x] **DOCS-06**: Page on **wildcard task names** — `website/src/wildcards.md`
+- [x] **DOCS-07**: Page on **`defer:` cleanup** — `website/src/defer.md`
+- [x] **DOCS-08**: Page on **task aliases** — `website/src/aliases.md`
+- [x] **DOCS-09**: Page on **`label:` display override** — `website/src/label.md`
+- [x] **DOCS-10**: Page on **`prompt:` warning prompts** — `website/src/prompt.md`
+- [x] **DOCS-11**: Page covering the **silent / dry-run / ignore-errors** trio — `website/src/silent-dry-ignore.md`
+- [x] **DOCS-12**: Page on **`set:` and `shopt:`** — `website/src/set-shopt.md`
+- [x] **DOCS-13**: Page on **watch mode** — `website/src/watch.md`
+- [x] **DOCS-14**: Page on **interactive CLI applications** — `website/src/interactive.md`
 
 ### Docs: Expansions
 
 Pages already present but thin. Each gets expanded to match upstream depth while staying honest about what `rite` does differently.
 
-- [ ] **DOCS-15**: Expand `cli.md` with full **help / `--list` / `--list-all` / `--summary`** coverage
-- [ ] **DOCS-16**: Add **CI integration** notes (colored output, GitHub Actions annotations)
-- [ ] **DOCS-17**: Document **short task syntax** (single-string shorthand for trivial tasks)
-- [ ] **DOCS-18**: Expand `precedence.md` with an explicit **`env:` block section** — currently conflated with vars
-- [ ] **DOCS-19**: Cross-link guide — every new page linked from `getting-started.md` and the VitePress sidebar config
+- [x] **DOCS-15**: Expanded `cli.md` with **help / `--list` / `--list-all` / `--summary`** section
+- [x] **DOCS-16**: Added **CI integration** as its own page (`website/src/ci.md`) — NO_COLOR, GitHub Actions groups, CI install, exit codes
+- [x] **DOCS-17**: Documented **short task syntax** as its own page (`website/src/short-syntax.md`)
+- [x] **DOCS-18**: Expanded `precedence.md` with explicit **`env:` block section** including dotenv tier 4 and divergence-from-go-task callout
+- [x] **DOCS-19**: Sidebar in `website/.vitepress/config.ts` restructured into 5 groups (Start here, Tasks, Execution, Reference, Coming from go-task) with all 14 new pages + ci page wired in
 
 ### Schema Publication
 
@@ -71,25 +71,25 @@ Which phases cover which requirements. Updated by roadmapper during `/gsd:plan-p
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DOCS-01 | Phase 6 | Pending |
-| DOCS-02 | Phase 6 | Pending |
-| DOCS-03 | Phase 6 | Pending |
-| DOCS-04 | Phase 6 | Pending |
-| DOCS-05 | Phase 6 | Pending |
-| DOCS-06 | Phase 6 | Pending |
-| DOCS-07 | Phase 6 | Pending |
-| DOCS-08 | Phase 6 | Pending |
-| DOCS-09 | Phase 6 | Pending |
-| DOCS-10 | Phase 6 | Pending |
-| DOCS-11 | Phase 6 | Pending |
-| DOCS-12 | Phase 6 | Pending |
-| DOCS-13 | Phase 6 | Pending |
-| DOCS-14 | Phase 6 | Pending |
-| DOCS-15 | Phase 6 | Pending |
-| DOCS-16 | Phase 6 | Pending |
-| DOCS-17 | Phase 6 | Pending |
-| DOCS-18 | Phase 6 | Pending |
-| DOCS-19 | Phase 6 | Pending |
+| DOCS-01 | Phase 6 | Complete |
+| DOCS-02 | Phase 6 | Complete |
+| DOCS-03 | Phase 6 | Complete |
+| DOCS-04 | Phase 6 | Complete |
+| DOCS-05 | Phase 6 | Complete |
+| DOCS-06 | Phase 6 | Complete |
+| DOCS-07 | Phase 6 | Complete |
+| DOCS-08 | Phase 6 | Complete |
+| DOCS-09 | Phase 6 | Complete |
+| DOCS-10 | Phase 6 | Complete |
+| DOCS-11 | Phase 6 | Complete |
+| DOCS-12 | Phase 6 | Complete |
+| DOCS-13 | Phase 6 | Complete |
+| DOCS-14 | Phase 6 | Complete |
+| DOCS-15 | Phase 6 | Complete |
+| DOCS-16 | Phase 6 | Complete |
+| DOCS-17 | Phase 6 | Complete |
+| DOCS-18 | Phase 6 | Complete |
+| DOCS-19 | Phase 6 | Complete |
 | SCHEMA-01 | Phase 7 | Pending |
 | SCHEMA-02 | Phase 7 | Pending |
 | SCHEMA-03 | Phase 7 | Pending |

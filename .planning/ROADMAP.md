@@ -48,23 +48,23 @@ Pre-dates `.planning/` bootstrap. Phase history tracked in commit messages (`Pha
 
 **Milestone Goal:** Full user-guide parity with `taskfile.dev/docs/guide`, plus hosted JSON schema so editors light up.
 
-#### Phase 6: Docs user-guide expansion
+#### Phase 6: Docs user-guide expansion ✅
 **Goal**: Reach feature parity with `taskfile.dev/docs/guide` by adding the 14 missing pages and expanding the 5 thin ones. Every new page verifies `rite`'s actual behavior against the documented feature and flags divergence from upstream caused by first-in-wins semantics.
-**Depends on**: v0.1.0 shipped (docs site live).
-**Requirements**: DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06, DOCS-07, DOCS-08, DOCS-09, DOCS-10, DOCS-11, DOCS-12, DOCS-13, DOCS-14, DOCS-15, DOCS-16, DOCS-17, DOCS-18, DOCS-19
-**Success Criteria** (what must be TRUE):
-  1. Every feature on taskfile.dev/docs/guide has a corresponding page on clintmod.github.io/rite (or an explicit Out-of-Scope note if `rite` removed the feature).
-  2. Each new page includes at least one runnable Ritefile example using `${VAR}` preprocessor syntax.
-  3. Any divergence from upstream behavior (first-in-wins effects, removed features, renamed flags) is called out in a "Differences from go-task" callout on the relevant page.
-  4. The VitePress sidebar exposes every page under a "Guide" group.
-  5. `rite lint` and `rite test` remain green; docs build (`pages.yml`) succeeds on the phase-closing commit.
-**Plans**: TBD (roadmapper will split during `/gsd:plan-phase 6`)
-
-Plans:
-- [ ] 06-01: TBD (likely: audit `rite` feature matrix against taskfile.dev guide, write a behavior-map table before any page gets drafted)
-- [ ] 06-02: TBD (likely: missing guide pages — batch 1 of 2)
-- [ ] 06-03: TBD (likely: missing guide pages — batch 2 of 2)
-- [ ] 06-04: TBD (likely: expansions to existing thin pages + sidebar/navigation update)
+**Status**: Complete (2026-04-13)
+**Requirements**: DOCS-01..19 (all complete)
+**What shipped**:
+  - `FEATURE-MAP.md` audit confirmed all 19 features exist in `rite`; only DOCS-18 (env precedence) diverges meaningfully.
+  - 14 new pages: internal-tasks, dir, platforms, calling-tasks, cli-args, wildcards, defer, aliases, label, prompt, silent-dry-ignore, set-shopt, watch, interactive.
+  - 4 expansions: cli.md (help/list/summary section), ci.md (new), precedence.md (env: block section), short-syntax.md (new).
+  - Sidebar restructured from 4 groups (Start here / Features / Reference / Coming from go-task) into 5 (Start here / Tasks / Execution / Reference / Coming from go-task) with all new pages wired in.
+  - CLAUDE.md updated with broader VitePress + Vue gotcha (multi-cause taxonomy).
+**Plans (executed without GSD agent pipeline; tracked via commit prefix `docs(06-NN)`)**:
+- [x] 06-01: Feature-map audit (FEATURE-MAP.md) — `ed7ca2d8`
+- [x] 06-02: Internal, aliases, label, short-syntax pages (Batch A) — `90bc1ee9`
+- [x] 06-03: Dir, platforms, defer, prompt, silent-dry-ignore (Batch B) — `e049cbfc`
+- [x] 06-04: Calling-tasks, cli-args, wildcards, interactive (Batch C) — `45de2979`
+- [x] 06-05: Set-shopt, watch (Batch D) — `59caca4b`
+- [x] 06-06: CLI expansion, ci page, precedence env section, sidebar (Batch E) — `0ae8b616`
 
 #### Phase 7: JSON schema publication
 **Goal**: Publish `schema.json` at `clintmod.github.io/rite/schema.json`, wire editor hints into the `rite --init` template, and re-enable the `lint-jsonschema` CI job that was disabled in `9155ba6c`.
@@ -103,6 +103,6 @@ Phases execute in numeric order: 6 → 7 → 8.
 | 3. Fixtures + include precedence | v0.1.0 | — | Complete | 2026-04-12 |
 | 4. `${VAR}` + export + unify | v0.1.0 | — | Complete | 2026-04-12 |
 | 5. Migrate + release + docs site | v0.1.0 | — | Complete | 2026-04-12 |
-| 6. Docs user-guide expansion | v0.2 | 0/TBD | Not started | — |
+| 6. Docs user-guide expansion | v0.2 | 6/6 | Complete | 2026-04-13 |
 | 7. JSON schema publication | v0.2 | 0/TBD | Not started | — |
 | 8. v1.0 cut | v1.0 | 0/TBD | Not started | — |

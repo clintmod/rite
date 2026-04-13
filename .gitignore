@@ -16,7 +16,9 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-./task
+./rite
+.rite
+# legacy cache name from pre-rename; ignore so coexistence testing is tidy
 .task
 dist/
 

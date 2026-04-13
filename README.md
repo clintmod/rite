@@ -12,6 +12,12 @@ brew tap clintmod/tap
 brew install rite
 ```
 
+**Install script** (macOS / Linux / FreeBSD / WSL):
+```
+curl -sSL https://raw.githubusercontent.com/clintmod/rite/main/install.sh | sh -s -- -b ~/bin
+```
+Downloads the latest release archive, verifies its SHA-256 against `rite_checksums.txt`, and drops `rite` into `~/bin`. Pass a tag as the last argument to pin a version (`… | sh -s -- -b ~/bin v0.1.0`). Default bindir is `./bin` if `-b` is omitted.
+
 **mise**:
 ```toml
 # mise.toml

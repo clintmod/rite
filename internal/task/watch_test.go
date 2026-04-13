@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/clintmod/rite"
+	"github.com/clintmod/rite/internal/task"
 	"github.com/clintmod/rite/internal/filepathext"
 )
 

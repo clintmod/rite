@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/pflag"
 	"mvdan.cc/sh/v3/syntax"
 
-	task "github.com/clintmod/rite"
+	task "github.com/clintmod/rite/internal/task"
 	"github.com/clintmod/rite/taskfile/ast"
 )
 

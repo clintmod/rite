@@ -9,13 +9,13 @@ import (
 
 	"github.com/spf13/pflag"
 
-	task "github.com/clintmod/rite"
 	"github.com/clintmod/rite/args"
 	"github.com/clintmod/rite/errors"
 	"github.com/clintmod/rite/experiments"
 	"github.com/clintmod/rite/internal/filepathext"
 	"github.com/clintmod/rite/internal/flags"
 	"github.com/clintmod/rite/internal/logger"
+	task "github.com/clintmod/rite/internal/task"
 	"github.com/clintmod/rite/internal/version"
 	"github.com/clintmod/rite/taskfile/ast"
 )

@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	task "github.com/clintmod/rite"
 	"github.com/clintmod/rite/internal/filepathext"
+	task "github.com/clintmod/rite/internal/task"
 )
 
 func TestInitDir(t *testing.T) {

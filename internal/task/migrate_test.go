@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	task "github.com/clintmod/rite"
+	task "github.com/clintmod/rite/internal/task"
 )
 
 func TestMigrate(t *testing.T) {

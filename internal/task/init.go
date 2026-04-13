@@ -11,7 +11,7 @@ import (
 
 const defaultFilename = "Ritefile.yml"
 
-//go:embed taskfile/templates/default.yml
+//go:embed templates/default.yml
 var DefaultTaskfile string
 
 // InitTaskfile creates a new Taskfile at path.

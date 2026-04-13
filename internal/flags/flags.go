@@ -11,11 +11,11 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 
-	task "github.com/clintmod/rite"
 	"github.com/clintmod/rite/errors"
 	"github.com/clintmod/rite/experiments"
 	"github.com/clintmod/rite/internal/env"
 	"github.com/clintmod/rite/internal/sort"
+	task "github.com/clintmod/rite/internal/task"
 	"github.com/clintmod/rite/taskfile/ast"
 	"github.com/clintmod/rite/taskrc"
 	taskrcast "github.com/clintmod/rite/taskrc/ast"

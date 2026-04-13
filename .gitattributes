@@ -1,5 +1,6 @@
 * text=auto
 *.mdx -linguist-detectable
 
-# Keep LF line endings in testdata for consistent checksums across platforms
-testdata/** text eol=lf
+# Keep LF line endings in testdata for consistent checksums across platforms.
+# Match testdata/ at any depth (post-refactor it lives under internal/task/).
+**/testdata/** text eol=lf

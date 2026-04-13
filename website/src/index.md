@@ -27,6 +27,22 @@ features:
     details: "rite --migrate Taskfile.yml produces a Ritefile and flags every site where first-in-wins would change the meaning of your existing config. No compatibility shim — an intentional break, documented line by line."
 ---
 
+## Install
+
+```sh
+brew tap clintmod/tap && brew install rite      # Homebrew
+```
+```toml
+# mise.toml
+[tools]
+"ubi:clintmod/rite" = "v0.1.0"                  # mise + ubi
+```
+```sh
+go install github.com/clintmod/rite/cmd/rite@latest   # from source
+```
+
+More options (binary archives, deb/rpm/apk, older-mise fallbacks) on [the getting-started page](/getting-started#install).
+
 ## Why this exists
 
 `go-task`'s variable model is structurally inverted: task-level `vars:` override CLI arguments and shell environment, which is the opposite of every Unix convention. The upstream project's planned redesign ([go-task/task#2035](https://github.com/go-task/task/issues/2035)) preserves the inversion.

@@ -2,13 +2,38 @@
 
 ## Install
 
-From source (requires Go 1.25 or newer):
+### Homebrew (macOS / Linux)
+
+```sh
+brew tap clintmod/tap
+brew install rite
+```
+
+### mise
+
+```toml
+# mise.toml
+[tools]
+"ubi:clintmod/rite" = "v0.1.0"
+```
+
+Then `mise install`. The [ubi backend](https://mise.jdx.dev/dev-tools/backends/ubi.html) downloads the prebuilt binary from the GitHub release — no Go toolchain needed.
+
+> **Older mise (pre-2026.4.x)?** The `ubi:` backend in older versions mangles `v`-prefixed tags. Either upgrade (`mise self-update`) or fall back to the `go:` backend, which works on any version but builds from source:
+> ```toml
+> [tools]
+> "go:github.com/clintmod/rite/cmd/rite" = "0.1.0"
+> ```
+
+### From source (Go 1.25+)
 
 ```sh
 go install github.com/clintmod/rite/cmd/rite@latest
 ```
 
-Binary releases, Homebrew, and Linux packages are on the roadmap — see [the releases page](https://github.com/clintmod/rite/releases).
+### Manual download
+
+Grab a binary from [the releases page](https://github.com/clintmod/rite/releases/latest) — archives for darwin / linux / windows / freebsd × amd64 / arm64 / arm / 386 / riscv64, plus deb / rpm / apk packages.
 
 ## Your first Ritefile
 

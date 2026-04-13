@@ -113,5 +113,11 @@ release:
   github:
     owner: clintmod
     name: rite
-  draft: true
+  # Auto-publish on tag. The draft: true default was useful for the first
+  # tag where we wanted to inspect artifacts before the world saw them,
+  # but it also hides the release from public APIs — mise's ubi/github
+  # backends couldn't resolve `clintmod/rite@v0.1.0` until the draft was
+  # manually promoted. Set back to `true` in a commit if we want the
+  # safety net per release.
+  draft: false
   prerelease: auto

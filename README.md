@@ -6,11 +6,26 @@
 
 ## Install
 
-From source (requires Go 1.25+):
+**Homebrew** (macOS / Linux):
+```
+brew tap clintmod/tap
+brew install rite
+```
 
+**mise**:
+```toml
+# mise.toml
+[tools]
+"ubi:clintmod/rite" = "v0.1.0"
+```
+(Older mise? See [getting-started](https://clintmod.github.io/rite/getting-started#mise) for the `go:` fallback.)
+
+**From source** (Go 1.25+):
 ```
 go install github.com/clintmod/rite/cmd/rite@latest
 ```
+
+**Binary download**: [releases page](https://github.com/clintmod/rite/releases/latest) — darwin / linux / windows / freebsd × amd64 / arm64 / arm / 386 / riscv64, plus deb / rpm / apk packages.
 
 ## Use
 

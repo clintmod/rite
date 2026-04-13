@@ -35,14 +35,33 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Features',
+        text: 'Tasks',
         items: [
+          { text: 'Short syntax', link: '/short-syntax' },
+          { text: 'Internal tasks', link: '/internal-tasks' },
+          { text: 'Aliases', link: '/aliases' },
+          { text: 'Label override', link: '/label' },
+          { text: 'Working directory', link: '/dir' },
+          { text: 'Wildcard names', link: '/wildcards' },
+          { text: 'Platforms', link: '/platforms' },
+          { text: 'Calling another task', link: '/calling-tasks' },
           { text: 'Dependencies', link: '/deps' },
-          { text: 'Incremental builds', link: '/sources-and-generates' },
+          { text: 'For-loops & matrices', link: '/for-loops' },
+        ],
+      },
+      {
+        text: 'Execution',
+        items: [
           { text: 'Includes', link: '/includes' },
           { text: 'Run modes', link: '/run-modes' },
+          { text: 'Incremental builds', link: '/sources-and-generates' },
           { text: 'Preconditions & requires', link: '/preconditions' },
-          { text: 'For-loops & matrices', link: '/for-loops' },
+          { text: 'Defer (cleanup)', link: '/defer' },
+          { text: 'Prompts', link: '/prompt' },
+          { text: 'Silent / dry-run / ignore-error', link: '/silent-dry-ignore' },
+          { text: 'Shell options (set/shopt)', link: '/set-shopt' },
+          { text: 'Watch mode', link: '/watch' },
+          { text: 'Interactive cmds', link: '/interactive' },
         ],
       },
       {
@@ -50,8 +69,10 @@ export default defineConfig({
         items: [
           { text: 'Variable precedence', link: '/precedence' },
           { text: 'Syntax', link: '/syntax' },
-          { text: 'Schema', link: '/schema' },
           { text: 'CLI', link: '/cli' },
+          { text: 'Forwarding CLI args', link: '/cli-args' },
+          { text: 'CI integration', link: '/ci' },
+          { text: 'Schema', link: '/schema' },
         ],
       },
       {

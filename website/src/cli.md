@@ -30,6 +30,51 @@ Runs the named task(s), passing any `KEY=value` pairs as CLI-tier vars (tier 2).
 
 Full list: `rite --help`.
 
+## Listing and inspecting tasks
+
+`--list` and `--list-all` produce a per-task summary suitable for `grep`-ing or piping to a fuzzy-finder.
+
+```sh
+$ rite --list
+task: Available tasks for this project:
+* build:        Build the binary
+* test:         Run the test suite
+* lint:         golangci-lint
+```
+
+`--list` shows only tasks with a `desc:` field. `--list-all` includes everything — even internal-by-convention `_helper` style tasks (but **not** tasks marked `internal: true`; those are hidden from both).
+
+JSON form for tooling:
+
+```sh
+rite --list --json
+rite --list-all --json
+```
+
+The JSON is stable enough to script against — task name, description, aliases, location.
+
+### `--summary` for a single task
+
+`--summary <task>` prints the long description (the task's `summary:` field, falling back to `desc:` if no `summary:` is set), plus its declared dependencies:
+
+```sh
+$ rite --summary deploy
+task: deploy
+
+Deploy the current build to the named environment. Requires
+ENV=staging|prod. Runs build and test as deps before deploying.
+
+dependencies:
+ - build
+ - test
+```
+
+Use `summary:` for tasks where the user really needs to know *what's about to happen* before they invoke. Use `desc:` for the one-line listing.
+
+### Tab completion
+
+`rite --completion bash > /etc/bash_completion.d/rite` (or zsh/fish/powershell) installs a completion script that knows your task names and flags. The script reads tasks at completion-time, so changes to the Ritefile show up immediately without re-installing.
+
 ## Passing variables
 
 Three ways, in precedence order:

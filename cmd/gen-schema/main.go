@@ -406,16 +406,6 @@ func refTo(name string) *jsonschema.Schema {
 	return &jsonschema.Schema{Ref: "#/$defs/" + name}
 }
 
-func stringOrRefOneOf(refName, description string) *jsonschema.Schema {
-	return &jsonschema.Schema{
-		OneOf: []*jsonschema.Schema{
-			{Type: "string"},
-			refTo(refName + "Object"),
-		},
-		Description: description,
-	}
-}
-
 func anyValue(description string) *jsonschema.Schema {
 	return &jsonschema.Schema{Description: description}
 }

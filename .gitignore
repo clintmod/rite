@@ -16,10 +16,9 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-./rite
-.rite
+.rite/
 # legacy cache name from pre-rename; ignore so coexistence testing is tidy
-.task
+.task/
 dist/
 
 .DS_Store
@@ -35,7 +34,6 @@ tags
 
 /bin/*
 !/bin/.keep
-/testdata/vars/v1
 /tmp
 node_modules
 website/.netlify/

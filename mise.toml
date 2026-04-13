@@ -1,0 +1,6 @@
+# Pinned dev tools. Keep in sync with .github/workflows/lint.yml —
+# CI uses the golangci-lint-action `version:` input, and local mismatch
+# means `rite lint` can pass locally while failing CI (gci rules tighten
+# between versions).
+[tools]
+golangci-lint = "2.11.4"

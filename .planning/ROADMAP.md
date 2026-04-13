@@ -66,20 +66,19 @@ Pre-dates `.planning/` bootstrap. Phase history tracked in commit messages (`Pha
 - [x] 06-05: Set-shopt, watch (Batch D) — `59caca4b`
 - [x] 06-06: CLI expansion, ci page, precedence env section, sidebar (Batch E) — `0ae8b616`
 
-#### Phase 7: JSON schema publication
+#### Phase 7: JSON schema publication ✅
 **Goal**: Publish `schema.json` at `clintmod.github.io/rite/schema.json`, wire editor hints into the `rite --init` template, and re-enable the `lint-jsonschema` CI job that was disabled in `9155ba6c`.
-**Depends on**: Phase 6 (docs site structure stable enough to embed `public/schema.json` without collision).
-**Requirements**: SCHEMA-01, SCHEMA-02, SCHEMA-03, SCHEMA-04
-**Success Criteria** (what must be TRUE):
-  1. `curl https://clintmod.github.io/rite/schema.json` returns a valid JSON Schema draft-07+ document.
-  2. A fresh `rite --init` writes a `Ritefile.yml` whose `# yaml-language-server:` header points at the hosted schema and gives autocomplete in VS Code + Zed with zero extra config.
-  3. `lint-jsonschema` runs on every push, blocking merges where `website/src/public/schema.json` is malformed or drifts from the AST.
-  4. Schema covers every documented field in `SPEC.md` — especially `export: false`, `${VAR}` templating markers, and the first-in-wins precedence hints (via descriptions).
-**Plans**: TBD (roadmapper will split during `/gsd:plan-phase 7`)
-
-Plans:
-- [ ] 07-01: TBD (likely: schema generation or curation from `taskfile/ast/`)
-- [ ] 07-02: TBD (likely: serve via VitePress `public/`, `--init` template update, CI re-enable)
+**Status**: Complete (2026-04-13)
+**Requirements**: SCHEMA-01..04 (all complete)
+**What shipped**:
+  - **Option b2 (codegen)** chosen over curation: yaml struct tags added to all public AST types (first-in-batch, single commit), a generator at `cmd/gen-schema/` that reflects on the AST using invopop/jsonschema + custom Mapper for the polymorphic types (Cmd, Dep, Task, Var) and scalar-parsed ones (Platform, Glob, Version), plus targeted post-reflection fixups for edge cases (CmdObject.defer, Task null form, required-field clearing).
+  - Schema covers all AST fields with descriptions; validated against 189/190 testdata fixtures (the one failure is a 0-byte `empty_taskfile` intentionally rejected).
+  - `rite gen:schema` task added to Ritefile for maintainer regeneration.
+  - `lint-jsonschema` CI re-enabled with three checks: stale-schema diff, metaschema validation, and fixture-validation sweep.
+**Plans (executed without GSD agent pipeline)**:
+- [x] 07-01: yaml struct tags on AST — `b1cbfd95`
+- [x] 07-02: generator (cmd/gen-schema, invopop, dual-reflector Mapper architecture) — `edc039da`
+- [x] 07-03: host + wire — schema.json in public/, init template URL, gen:schema task, CI re-enable — `40b70f54`
 
 ### 📋 v1.0 Stable (Planned)
 
@@ -104,5 +103,5 @@ Phases execute in numeric order: 6 → 7 → 8.
 | 4. `${VAR}` + export + unify | v0.1.0 | — | Complete | 2026-04-12 |
 | 5. Migrate + release + docs site | v0.1.0 | — | Complete | 2026-04-12 |
 | 6. Docs user-guide expansion | v0.2 | 6/6 | Complete | 2026-04-13 |
-| 7. JSON schema publication | v0.2 | 0/TBD | Not started | — |
+| 7. JSON schema publication | v0.2 | 3/3 | Complete | 2026-04-13 |
 | 8. v1.0 cut | v1.0 | 0/TBD | Not started | — |

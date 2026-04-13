@@ -38,10 +38,10 @@ Pages already present but thin. Each gets expanded to match upstream depth while
 
 ### Schema Publication
 
-- [ ] **SCHEMA-01**: Generate / curate `schema.json` from the `rite` taskfile AST (drop upstream's removed-pre-fork schema; build one that matches current SPEC)
-- [ ] **SCHEMA-02**: Ship `schema.json` via the VitePress `public/` dir so it's served at `clintmod.github.io/rite/schema.json`
-- [ ] **SCHEMA-03**: Add `# yaml-language-server: $schema=…` hint to the `rite --init` template so new Ritefiles get editor autocomplete
-- [ ] **SCHEMA-04**: Re-enable the `lint-jsonschema` CI job against the hosted schema (deleted in `9155ba6c`; needs updated path + a smoke fixture)
+- [x] **SCHEMA-01**: Generated via `cmd/gen-schema/` reflecting on `taskfile/ast/*`. Code-gen approach (option b2): yaml struct tags + invopop/jsonschema + custom Mapper for polymorphic types.
+- [x] **SCHEMA-02**: Served at `clintmod.github.io/rite/schema.json` via `website/src/public/schema.json`.
+- [x] **SCHEMA-03**: `internal/task/templates/default.yml` now points `yaml-language-server: $schema` at the hosted URL.
+- [x] **SCHEMA-04**: `lint-jsonschema` CI job re-enabled. Regenerates + diffs against the committed schema (catches stale schemas), metaschema-validates the schema itself, and validates every `testdata/**/Ritefile.yml` fixture against the schema.
 
 ## v1.0 Requirements (Deferred)
 
@@ -90,10 +90,10 @@ Which phases cover which requirements. Updated by roadmapper during `/gsd:plan-p
 | DOCS-17 | Phase 6 | Complete |
 | DOCS-18 | Phase 6 | Complete |
 | DOCS-19 | Phase 6 | Complete |
-| SCHEMA-01 | Phase 7 | Pending |
-| SCHEMA-02 | Phase 7 | Pending |
-| SCHEMA-03 | Phase 7 | Pending |
-| SCHEMA-04 | Phase 7 | Pending |
+| SCHEMA-01 | Phase 7 | Complete |
+| SCHEMA-02 | Phase 7 | Complete |
+| SCHEMA-03 | Phase 7 | Complete |
+| SCHEMA-04 | Phase 7 | Complete |
 
 **Coverage:**
 - v0.2 requirements: 23 total

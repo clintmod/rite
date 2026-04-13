@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 7 of 8 (JSON schema publication) — next up
-Plan: — (Phase 6 just completed; Phase 7 not yet planned)
-Status: Phase 6 complete; ready to start Phase 7
-Last activity: 2026-04-13 — Phase 6 docs expansion shipped (6 commits, 14 new pages, 4 expansions, sidebar restructure). FEATURE-MAP audit confirmed all 19 features exist; DOCS-18 was the only meaningful divergence.
+Phase: 8 of 8 (v1.0 Stable cut) — next up
+Plan: — (Phase 7 just completed; Phase 8 not yet planned)
+Status: Phase 7 complete; v0.2 milestone fully shipped; ready to discuss v1.0 scope
+Last activity: 2026-04-13 — Phase 7 JSON schema published (3 commits). Codegen via invopop/jsonschema + custom Mapper; schema served at clintmod.github.io/rite/schema.json; init template wired; CI re-enabled with stale-schema diff + metaschema + fixture validation.
 
-Progress: [████████░░] 80% (8 of 10 phases complete; v0.1.0 phases collapsed)
+Progress: [█████████░] 90% (9 of 10 phases complete; v0.1.0 phases collapsed)
 
 ## Performance Metrics
 
@@ -57,5 +57,5 @@ None captured yet. Phase 7 has scope from REQUIREMENTS.md (SCHEMA-01..04) but no
 ## Session Continuity
 
 Last session: 2026-04-13
-Stopped at: Phase 6 complete (6 commits, 14 new pages, 4 expansions, sidebar restructure, CLAUDE.md gotcha update). All shipped to `main`. Phase 7 (JSON schema publication) is the next logical step — REQUIREMENTS already defines SCHEMA-01..04 scope.
+Stopped at: Phase 7 complete. v0.2 milestone (Docs + Schema) fully shipped. Next up is v1.0 Stable (Phase 8: cut v1.0.0 tag, audit `RITE_X_REMOTE_TASKFILES`, verify completion scripts). That's a new milestone — run `/gsd:new-milestone v1.0 Stable` when ready, or pause and do other work first.
 Resume file: None

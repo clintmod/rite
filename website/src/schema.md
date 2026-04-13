@@ -45,7 +45,7 @@ output: group
 # Advanced object format
 output:
   group:
-    begin: "::group::{{.TASK}}"
+    begin: "::group::{{.RITE_NAME}}"
     end: "::endgroup::"
     error_only: false
 ```

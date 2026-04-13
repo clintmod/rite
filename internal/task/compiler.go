@@ -257,13 +257,23 @@ func (c *Compiler) getSpecialVars(t *ast.Task, call *Call) (map[string]string, e
 		"RITE_VERSION":     version.GetVersion(),
 	}
 	if t != nil {
+		taskDir := filepath.ToSlash(filepathext.SmartJoin(c.Dir, t.Dir))
 		allVars["TASK"] = t.Task
-		allVars["TASK_DIR"] = filepath.ToSlash(filepathext.SmartJoin(c.Dir, t.Dir))
+		allVars["TASK_DIR"] = taskDir
+		// rite-named aliases for .TASK and .TASK_DIR. The original names
+		// keep working for Taskfile-muscle-memory users and to avoid
+		// breaking migrated Ritefiles; the rite-prefixed names are the
+		// SPEC-preferred surface going forward and `rite migrate`
+		// rewrites references to them.
+		allVars["RITE_NAME"] = t.Task
+		allVars["RITE_TASK_DIR"] = taskDir
 		allVars["RITEFILE"] = filepath.ToSlash(t.Location.Taskfile)
 		allVars["RITEFILE_DIR"] = filepath.ToSlash(filepath.Dir(t.Location.Taskfile))
 	} else {
 		allVars["TASK"] = ""
 		allVars["TASK_DIR"] = ""
+		allVars["RITE_NAME"] = ""
+		allVars["RITE_TASK_DIR"] = ""
 		allVars["RITEFILE"] = ""
 		allVars["RITEFILE_DIR"] = ""
 	}

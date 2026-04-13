@@ -65,6 +65,7 @@ func Migrate(srcPath string, warn io.Writer) (dstPath string, err error) {
 
 	// Transform pass — mechanical string rewrites only.
 	out := rewriteIncludePaths(string(data))
+	out = rewriteSpecialVarRefs(out)
 	if hasTaskfileDevSchemaPointer(out) {
 		fmt.Fprintf(warn, "rite migrate: SCHEMA-URL %s: `$schema=https://taskfile.dev/schema.json` references upstream docs; rite's schema is not yet published (Phase 5 docs).\n", srcPath)
 	}
@@ -167,6 +168,35 @@ func rewriteInsideIncludesLine(line string) string {
 func hasTaskfileDevSchemaPointer(s string) bool {
 	return strings.Contains(s, "taskfile.dev/schema")
 }
+
+// rewriteSpecialVarRefs rewrites references to go-task's special vars
+// .TASK and .TASK_DIR into rite's SPEC-preferred aliases .RITE_NAME and
+// .RITE_TASK_DIR. Both old and new names resolve at runtime (see
+// compiler.getSpecialVars) so this is a readability nudge, not a
+// correctness fix.
+//
+// Scope: only inside Go-template expressions (`{{ … }}`) to avoid
+// mangling prose or user-defined vars that happen to be named `TASK`.
+// Order matters: rewrite `.TASK_DIR` first so the `.TASK` pass doesn't
+// half-rename it to `.RITE_NAME_DIR`.
+func rewriteSpecialVarRefs(s string) string {
+	return rxTemplateExpr.ReplaceAllStringFunc(s, func(expr string) string {
+		expr = rxTaskDirRef.ReplaceAllString(expr, "${1}.RITE_TASK_DIR${2}")
+		expr = rxTaskNameRef.ReplaceAllString(expr, "${1}.RITE_NAME${2}")
+		return expr
+	})
+}
+
+var (
+	// rxTemplateExpr matches a `{{ ... }}` Go-template expression. Non-greedy
+	// so adjacent expressions on one line are matched separately.
+	rxTemplateExpr = regexp.MustCompile(`\{\{[\s\S]*?\}\}`)
+	// `(?:^|[^.\w])` / `(?:[^.\w]|$)` bracket the match to avoid partial
+	// hits like `.MY_TASK_DIR` or `.TASK_NAME`. Capture groups preserve
+	// the bracketing characters. Run `.TASK_DIR` before `.TASK`.
+	rxTaskDirRef  = regexp.MustCompile(`(^|[^.\w])\.TASK_DIR([^\w]|$)`)
+	rxTaskNameRef = regexp.MustCompile(`(^|[^.\w])\.TASK([^_\w]|$)`)
+)
 
 // migrateDoc captures the minimal shape we need for warning detection.
 // Deliberately loose — unknown keys are ignored.

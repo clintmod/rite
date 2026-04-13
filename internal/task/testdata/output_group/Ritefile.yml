@@ -2,7 +2,7 @@ version: '3'
 
 output:
   group:
-    begin: '::group::{{ .TASK }}'
+    begin: '::group::{{ .RITE_NAME }}'
     end: '::endgroup::'
 
 tasks:

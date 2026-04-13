@@ -2,6 +2,7 @@ package task_test
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -81,6 +82,65 @@ tasks:
 	for _, w := range wantWarns {
 		if !strings.Contains(warnS, w) {
 			t.Errorf("warnings missing %q\nGOT:\n%s", w, warnS)
+		}
+	}
+}
+
+// TestMigrateRewritesSpecialVars locks in the rite-named special-var alias
+// rewrite: occurrences of .TASK and .TASK_DIR inside `{{ … }}` become
+// .RITE_NAME and .RITE_TASK_DIR after migration. Both names work at
+// runtime — this is a readability nudge to steer migrated Ritefiles
+// toward the SPEC-preferred surface. References outside template
+// expressions (prose, comments mentioning TASK_DIR) are left alone.
+func TestMigrateRewritesSpecialVars(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	src := filepath.Join(dir, "Taskfile.yml")
+	input := `version: '3'
+tasks:
+  print-task:
+    cmds:
+      - echo {{.TASK}}
+      - echo "running {{ .TASK }} in {{.TASK_DIR}}"
+  other:
+    # .TASK in a comment is left alone — not inside a template expr.
+    vars:
+      MY_TASK_DIR: static   # substring MY_TASK_DIR must not be rewritten
+    cmds:
+      - echo {{.MY_TASK_DIR}}
+`
+	if err := os.WriteFile(src, []byte(input), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	dst, err := task.Migrate(src, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(out)
+
+	wantFrags := []string{
+		"echo {{.RITE_NAME}}",
+		"running {{ .RITE_NAME }} in {{.RITE_TASK_DIR}}",
+		"{{.MY_TASK_DIR}}",     // user var stays untouched
+		"# .TASK in a comment", // non-template occurrence stays untouched
+	}
+	for _, w := range wantFrags {
+		if !strings.Contains(got, w) {
+			t.Errorf("output missing %q\nGOT:\n%s", w, got)
+		}
+	}
+
+	unwantFrags := []string{
+		".RITE_NAME_DIR",  // sanity: don't half-rename .TASK_DIR
+		".RITE_TASK_DIR_", // no cascading
+	}
+	for _, w := range unwantFrags {
+		if strings.Contains(got, w) {
+			t.Errorf("output unexpectedly contains %q\nGOT:\n%s", w, got)
 		}
 	}
 }

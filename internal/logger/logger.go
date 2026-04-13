@@ -102,7 +102,7 @@ func BrightRed() PrintFunc {
 
 func envColor(name string, defaultColor color.Attribute) []color.Attribute {
 	// Fetch the environment variable
-	override := env.GetTaskEnv(name)
+	override := env.GetRiteEnv(name)
 
 	// First, try splitting the string by commas (RGB shortcut syntax) and if it
 	// matches, then prepend the 256-color foreground escape sequence.

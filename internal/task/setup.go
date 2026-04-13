@@ -133,7 +133,7 @@ func (e *Executor) setupTempDir() error {
 		return nil
 	}
 
-	tempDir := env.GetTaskEnv("TEMP_DIR")
+	tempDir := env.GetRiteEnv("TEMP_DIR")
 	if tempDir == "" {
 		e.TempDir = TempDir{
 			Remote:      filepathext.SmartJoin(e.Dir, ".rite"),

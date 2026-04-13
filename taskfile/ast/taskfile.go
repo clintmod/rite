@@ -15,8 +15,8 @@ const NamespaceSeparator = ":"
 
 var V3 = semver.MustParse("3")
 
-// ErrIncludedTaskfilesCantHaveDotenvs is returned when a included Taskfile contains dotenvs
-var ErrIncludedTaskfilesCantHaveDotenvs = errors.New("rite: Included Taskfiles can't have dotenv declarations. Please, move the dotenv declaration to the main Taskfile")
+// ErrIncludedRitefilesCantHaveDotenvs is returned when an included Ritefile contains dotenvs
+var ErrIncludedRitefilesCantHaveDotenvs = errors.New("rite: Included Ritefiles can't have dotenv declarations. Please, move the dotenv declaration to the main Ritefile")
 
 // Taskfile is the abstract syntax tree for a Taskfile
 type Taskfile struct {
@@ -42,7 +42,7 @@ func (t1 *Taskfile) Merge(t2 *Taskfile, include *Include) error {
 		return fmt.Errorf(`rite: Taskfiles versions should match. First is "%s" but second is "%s"`, t1.Version, t2.Version)
 	}
 	if len(t2.Dotenv) > 0 {
-		return ErrIncludedTaskfilesCantHaveDotenvs
+		return ErrIncludedRitefilesCantHaveDotenvs
 	}
 	if t2.Output.IsSet() {
 		t1.Output = t2.Output

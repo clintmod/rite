@@ -10,7 +10,7 @@ import (
 	"github.com/clintmod/rite/taskfile/ast"
 )
 
-const taskVarPrefix = "RITE_"
+const riteVarPrefix = "RITE_"
 
 // GetEnviron the all return all environment variables encapsulated on a
 // ast.Vars
@@ -91,14 +91,16 @@ func isTypeAllowed(v any) bool {
 	}
 }
 
-func GetTaskEnv(key string) string {
-	return os.Getenv(taskVarPrefix + key)
+// GetRiteEnv returns the value of a RITE_-prefixed environment variable.
+// The prefix is applied automatically; callers pass the bare suffix.
+func GetRiteEnv(key string) string {
+	return os.Getenv(riteVarPrefix + key)
 }
 
-// GetTaskEnvBool returns the boolean value of a TASK_ prefixed env var.
+// GetRiteEnvBool returns the boolean value of a RITE_-prefixed env var.
 // Returns the value and true if set and valid, or false and false if not set or invalid.
-func GetTaskEnvBool(key string) (bool, bool) {
-	v := GetTaskEnv(key)
+func GetRiteEnvBool(key string) (bool, bool) {
+	v := GetRiteEnv(key)
 	if v == "" {
 		return false, false
 	}
@@ -106,10 +108,10 @@ func GetTaskEnvBool(key string) (bool, bool) {
 	return b, err == nil
 }
 
-// GetTaskEnvInt returns the integer value of a TASK_ prefixed env var.
+// GetRiteEnvInt returns the integer value of a RITE_-prefixed env var.
 // Returns the value and true if set and valid, or 0 and false if not set or invalid.
-func GetTaskEnvInt(key string) (int, bool) {
-	v := GetTaskEnv(key)
+func GetRiteEnvInt(key string) (int, bool) {
+	v := GetRiteEnv(key)
 	if v == "" {
 		return 0, false
 	}
@@ -117,10 +119,10 @@ func GetTaskEnvInt(key string) (int, bool) {
 	return i, err == nil
 }
 
-// GetTaskEnvDuration returns the duration value of a TASK_ prefixed env var.
+// GetRiteEnvDuration returns the duration value of a RITE_-prefixed env var.
 // Returns the value and true if set and valid, or 0 and false if not set or invalid.
-func GetTaskEnvDuration(key string) (time.Duration, bool) {
-	v := GetTaskEnv(key)
+func GetRiteEnvDuration(key string) (time.Duration, bool) {
+	v := GetRiteEnv(key)
 	if v == "" {
 		return 0, false
 	}
@@ -128,17 +130,17 @@ func GetTaskEnvDuration(key string) (time.Duration, bool) {
 	return d, err == nil
 }
 
-// GetTaskEnvString returns the string value of a TASK_ prefixed env var.
+// GetRiteEnvString returns the string value of a RITE_-prefixed env var.
 // Returns the value and true if set (non-empty), or empty string and false if not set.
-func GetTaskEnvString(key string) (string, bool) {
-	v := GetTaskEnv(key)
+func GetRiteEnvString(key string) (string, bool) {
+	v := GetRiteEnv(key)
 	return v, v != ""
 }
 
-// GetTaskEnvStringSlice returns a comma-separated list from a TASK_ prefixed env var.
+// GetRiteEnvStringSlice returns a comma-separated list from a RITE_-prefixed env var.
 // Returns the slice and true if set (non-empty), or nil and false if not set.
-func GetTaskEnvStringSlice(key string) ([]string, bool) {
-	v := GetTaskEnv(key)
+func GetRiteEnvStringSlice(key string) ([]string, bool) {
+	v := GetRiteEnv(key)
 	if v == "" {
 		return nil, false
 	}

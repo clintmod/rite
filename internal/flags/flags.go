@@ -172,7 +172,7 @@ func init() {
 		pflag.DurationVar(&Timeout, "timeout", getConfig(config, "REMOTE_TIMEOUT", func() *time.Duration { return config.Remote.Timeout }, time.Second*10), "Timeout for downloading remote Taskfiles.")
 		pflag.BoolVar(&ClearCache, "clear-cache", false, "Clear the remote cache.")
 		pflag.DurationVar(&CacheExpiryDuration, "expiry", getConfig(config, "REMOTE_CACHE_EXPIRY", func() *time.Duration { return config.Remote.CacheExpiry }, 0), "Expiry duration for cached remote Taskfiles.")
-		pflag.StringVar(&RemoteCacheDir, "remote-cache-dir", getConfig(config, "REMOTE_CACHE_DIR", func() *string { return config.Remote.CacheDir }, env.GetTaskEnv("REMOTE_DIR")), "Directory to cache remote Taskfiles.")
+		pflag.StringVar(&RemoteCacheDir, "remote-cache-dir", getConfig(config, "REMOTE_CACHE_DIR", func() *string { return config.Remote.CacheDir }, env.GetRiteEnv("REMOTE_DIR")), "Directory to cache remote Taskfiles.")
 		pflag.StringVar(&CACert, "cacert", getConfig(config, "REMOTE_CACERT", func() *string { return config.Remote.CACert }, ""), "Path to a custom CA certificate for HTTPS connections.")
 		pflag.StringVar(&Cert, "cert", getConfig(config, "REMOTE_CERT", func() *string { return config.Remote.Cert }, ""), "Path to a client certificate for HTTPS connections.")
 		pflag.StringVar(&CertKey, "cert-key", getConfig(config, "REMOTE_CERT_KEY", func() *string { return config.Remote.CertKey }, ""), "Path to a client certificate key for HTTPS connections.")
@@ -180,8 +180,8 @@ func init() {
 	pflag.Parse()
 
 	// Auto-detect color based on environment when not explicitly configured
-	// Priority: CLI flag > TASK_COLOR env > taskrc config > NO_COLOR > FORCE_COLOR/CI > default
-	colorExplicitlySet := pflag.Lookup("color").Changed || env.GetTaskEnv("COLOR") != "" || (config != nil && config.Color != nil)
+	// Priority: CLI flag > RITE_COLOR env > riterc config > NO_COLOR > FORCE_COLOR/CI > default
+	colorExplicitlySet := pflag.Lookup("color").Changed || env.GetRiteEnv("COLOR") != "" || (config != nil && config.Color != nil)
 	if !colorExplicitlySet {
 		if os.Getenv("NO_COLOR") != "" {
 			Color = false
@@ -328,28 +328,28 @@ func getConfig[T any](config *taskrcast.TaskRC, envKey string, fieldFunc func() 
 	return fallback
 }
 
-// getEnvAs parses a TASK_ prefixed env var as type T
+// getEnvAs parses a RITE_ prefixed env var as type T
 func getEnvAs[T any](envKey string) (T, bool) {
 	var zero T
 	switch any(zero).(type) {
 	case bool:
-		if val, ok := env.GetTaskEnvBool(envKey); ok {
+		if val, ok := env.GetRiteEnvBool(envKey); ok {
 			return any(val).(T), true
 		}
 	case int:
-		if val, ok := env.GetTaskEnvInt(envKey); ok {
+		if val, ok := env.GetRiteEnvInt(envKey); ok {
 			return any(val).(T), true
 		}
 	case time.Duration:
-		if val, ok := env.GetTaskEnvDuration(envKey); ok {
+		if val, ok := env.GetRiteEnvDuration(envKey); ok {
 			return any(val).(T), true
 		}
 	case string:
-		if val, ok := env.GetTaskEnvString(envKey); ok {
+		if val, ok := env.GetRiteEnvString(envKey); ok {
 			return any(val).(T), true
 		}
 	case []string:
-		if val, ok := env.GetTaskEnvStringSlice(envKey); ok {
+		if val, ok := env.GetRiteEnvStringSlice(envKey); ok {
 			return any(val).(T), true
 		}
 	}

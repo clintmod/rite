@@ -10,9 +10,9 @@ import (
 var useGoCoreUtils bool
 
 func init() {
-	// If TASK_CORE_UTILS is set to either true or false, respect that.
+	// If RITE_CORE_UTILS is set to either true or false, respect that.
 	// By default, enable on Windows only.
-	if v, err := strconv.ParseBool(env.GetTaskEnv("CORE_UTILS")); err == nil {
+	if v, err := strconv.ParseBool(env.GetRiteEnv("CORE_UTILS")); err == nil {
 		useGoCoreUtils = v
 	} else {
 		useGoCoreUtils = runtime.GOOS == "windows"

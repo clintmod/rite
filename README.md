@@ -54,6 +54,10 @@ The thing that makes `rite` different is how it handles variables. In one senten
 
 This is how Unix has worked for 50 years. It is not how `go-task` works.
 
+## Why the name?
+
+A **rite** is a ritual — a prescribed set of actions performed the same way every time. That's exactly what a task runner is: a script of steps you repeat on every build, every deploy, every release. The word also reads as a near-homophone of *right*, which fits the project's thesis — variables should behave the way Unix has always done it, i.e. the *right* way. Short, typable, and one letter off from `task`'s spiritual ancestor `rake` without colliding with anything on `PATH`.
+
 ## Why does this exist?
 
 `rite` began as a hard fork of [`go-task/task`](https://github.com/go-task/task). The upstream project has a variable model where a task's own `vars:` block overrides CLI arguments and shell environment — the inverse of every Unix precedent. A [decade of bugs](https://github.com/go-task/task/issues/2034) trace to this choice, and the upstream's [proposed redesign](https://github.com/go-task/task/issues/2035) preserves the inversion.

@@ -24,7 +24,7 @@ dist/
 
 # editors
 .idea/
-.vscode/settings.json
+.vscode/
 .fleet/
 .claude/
 

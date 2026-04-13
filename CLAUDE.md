@@ -44,7 +44,7 @@ EOF
 rite
 ```
 
-**Run the project's own tasks** (eventually — once tests are fixed in Phase 2):
+**Run the project's own tasks:**
 ```bash
 rite lint
 rite test
@@ -54,26 +54,44 @@ rite test
 
 **Env var prefix:** `RITE_*` for rite-internal config. `RITE_X_*` for experiment flags (e.g. `RITE_X_ENV_PRECEDENCE=1`).
 
+**Regenerating golden fixtures:** always pass both env vars or the snapshots bake in the local absolute path and CI explodes on cross-platform runners:
+```bash
+GOLDIE_UPDATE=true GOLDIE_TEMPLATE=true go test ./... -run <TestName>
+```
+The Ritefile's `generate:fixtures` target already sets both.
+
 ---
 
-## Phase status
+## Phase status — all shipped
 
 - **Phase 0 (done):** Repo identity — SPEC, LICENSE, NOTICE, README.
-- **Phase 1 (done, commit `bebe02bc`):** Rebrand — module path, binary, file discovery, env vars, special vars. Still uses upstream's variable precedence semantics.
-- **Phase 1.5 (deferred):** Cosmetic polish — log prefix (`task:` → `rite:`), error message strings, user-visible docs.
-- **Phase 2 (next, the point of the project):** Rewrite `compiler.go:getVariables()` for first-in-wins precedence. Replace merging with DAG-walk resolution. Make dynamic `sh:` vars per-resolution.
-- **Phase 3:** Test fixture audit and rewrite (~180 fixtures, ~40-80% rely on last-in-wins semantics).
-- **Phase 4:** `vars`/`env` unification, `${VAR}` shell-syntax preprocessor.
-- **Phase 5:** `rite migrate` tool; docs site; v1.0.0.
+- **Phase 1 (done `bebe02bc`):** Module path, binary, file discovery, env var prefix, special var rename.
+- **Phase 1.5 (done `d096a229`, `4600626f`):** Log prefix + error strings + `rite --init`.
+- **Phase 2 (done `8d7ebd7f`, `ffb9838e`):** First-in-wins `getVariables()`, per-resolution dynamic cache.
+- **Phase 3 (done `6183bc96` through `01c62390`):** Fixture rebrand + rewrite, include-site var precedence fix (`Taskfile.Merge` no longer flattens).
+- **Phase 4 (done `da018dc6`, `419f2f96`, `75930421`):** `${VAR}` preprocessor, `export: false`, vars/env unified, shell env always wins.
+- **Phase 5 (done `f1d1d121` through `82dbd415`):** `rite migrate` subcommand, docs site at clintmod.github.io/rite, Homebrew tap at clintmod/homebrew-tap, v0.1.0 tagged and published.
+
+---
+
+## Shipped infrastructure
+
+- **Releases:** `v0.1.0` published, archives for darwin/linux/windows/freebsd × amd64/arm64/arm/386/riscv64 + deb/rpm/apk. `goreleaser` runs on every `v*` tag. Config at `.goreleaser.yml` uses free goreleaser; `release.draft: false` so tags auto-publish.
+- **Homebrew tap:** `clintmod/homebrew-tap/Formula/rite.rb`. Pushed by goreleaser using the `HOMEBREW_TAP_TOKEN` secret (fine-grained PAT scoped to the tap only). Main repo release uses the default `GITHUB_TOKEN`. Users install: `brew tap clintmod/tap && brew install rite`.
+- **Docs site:** `website/` is a pure VitePress project; `.github/workflows/pages.yml` builds on every push that touches `website/**` and publishes to `clintmod.github.io/rite/` via GitHub Pages (Source: GitHub Actions — enabled via `gh api POST /repos/clintmod/rite/pages`). Custom domain can be added later by dropping `DOCS_BASE=/rite/` from `pages.yml`.
+- **CI:** Test (Go 1.25+1.26 × ubuntu+macos+windows), Lint (golangci-lint v2.11.4, config at `.golangci.yml`), Docs, goreleaser. All green on main at session end.
+- **Secrets on `clintmod/rite`:** `GH_PAT` (fine-grained, scoped to `clintmod/homebrew-tap`, exposed to workflow as `HOMEBREW_TAP_TOKEN`).
 
 ---
 
 ## Known sharp edges
 
-- **Log prefix still prints `task: [default]` instead of `rite:`.** Cosmetic. Phase 1.5.
-- **Many tests currently fail.** They assert on `TASK_*` special var names or "Taskfile" substrings in error output. Don't fix piecemeal — they'll be rewritten wholesale in Phase 3 against the new semantics.
-- **`website/` docs are unrebranded.** Vuepress content still references `taskfile.dev` and Taskfile syntax. Do not touch unless working on Phase 5 docs.
-- **Variable precedence is currently upstream's broken model.** Shell env does NOT override task-scope `vars:`. This is what Phase 2 exists to fix. Don't be surprised.
+- **Go package is still named `task`.** The module path was renamed to `github.com/clintmod/rite` in Phase 1 but the Go package identifier stayed `task`. Several files that import the root package use an explicit alias: `task "github.com/clintmod/rite"`. goimports / golangci-lint enforce this — don't remove the alias without renaming the package everywhere.
+- **`go install` binaries report the wrong version.** goreleaser's ldflags inject `internal/version.version=v0.1.0` for release builds only. A bare `go install github.com/clintmod/rite/cmd/rite@v0.1.0` embeds the fallback constant `3.49.1`. Brew, ubi, and release archives all report the correct version.
+- **VitePress + Shiki + Vue bug:** multiple `{{…}}` on one line inside YAML fenced blocks can confuse the Vue SFC compiler. If you see a build error like `src/foo.md (L:C): Error parsing JavaScript expression` and the position doesn't match your source, convert the example to `${VAR}` form (SPEC-preferred anyway). Inline prose references use `<span v-pre>`{{.VAR}}`</span>` as the escape.
+- **Older mise + `ubi:` backend strips `v` prefixes.** Users on mise < 2026.4 hitting `"ubi:clintmod/rite" = "v0.1.0"` get a 404. Docs steer them to the `go:` backend fallback. When bumping mise in CI, use 2026.4.x+.
+- **`lint-jsonschema` job is gone until we publish a schema.** The upstream workflow validated `website/src/public/schema.json` (Taskfile schema). We deleted the file with the site rebuild; re-add the job when we host our own at `clintmod.github.io/rite/schema.json`.
+- **Remote-taskfile experiment (`RITE_X_REMOTE_TASKFILES=1`)** inherits upstream code paths we haven't audited. Docs note this. Don't assume production-grade behavior.
 
 ---
 

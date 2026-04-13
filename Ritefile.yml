@@ -37,6 +37,18 @@ tasks:
     cmds:
       - task: generate:mocks
       - task: generate:fixtures
+      - task: generate:schema
+
+  generate:schema:
+    desc: Regenerates the JSON Schema for Ritefiles (served at clintmod.github.io/rite/schema.json)
+    aliases: [gen:schema, g:schema]
+    sources:
+      - "taskfile/ast/**/*.go"
+      - "cmd/gen-schema/main.go"
+    generates:
+      - "website/src/public/schema.json"
+    cmds:
+      - go run ./cmd/gen-schema > website/src/public/schema.json
 
   generate:mocks:
     desc: Runs Mockery to create mocks

@@ -83,6 +83,15 @@ tasks:
     cmds:
       - GOBIN="{{.BIN}}" go install github.com/vektra/mockery/v3@{{.MOCKERY_VERSION}}
 
+  hooks:install:
+    desc: Enables the tracked git hooks in .githooks/ (runs golangci-lint on pre-push)
+    aliases: [hooks]
+    status:
+      - test "$(git config --get core.hooksPath)" = ".githooks"
+    cmds:
+      - git config --local core.hooksPath .githooks
+      - echo "enabled .githooks — pre-push will run golangci-lint on Go changes"
+
   mod:
     desc: Downloads and tidy Go modules
     cmds:

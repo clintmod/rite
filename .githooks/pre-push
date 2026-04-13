@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Run golangci-lint before pushing so CI doesn't fail on gci/fmt issues.
+# Only runs when the push actually contains Go-relevant changes.
+
+set -euo pipefail
+
+zero="0000000000000000000000000000000000000000"
+changed=""
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ "$local_sha" = "$zero" ] && continue
+    if [ "$remote_sha" = "$zero" ]; then
+        range="$local_sha"
+    else
+        range="$remote_sha..$local_sha"
+    fi
+    files=$(git diff --name-only "$range" 2>/dev/null || true)
+    changed="$changed"$'\n'"$files"
+done
+
+if ! echo "$changed" | grep -qE '\.go$|^\.golangci\.yml$|^go\.(mod|sum)$'; then
+    exit 0
+fi
+
+if ! command -v golangci-lint >/dev/null 2>&1; then
+    echo "pre-push: golangci-lint not found on PATH, skipping lint check" >&2
+    exit 0
+fi
+
+echo "pre-push: running golangci-lint..."
+if ! golangci-lint run; then
+    echo ""
+    echo "pre-push: lint failed. Fix with:  rite format  (or  golangci-lint run --fix )"
+    echo "pre-push: then amend/recommit and push again. Use --no-verify to override."
+    exit 1
+fi

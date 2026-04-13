@@ -50,6 +50,11 @@ rite lint
 rite test
 ```
 
+**Enable the shared git hooks** (one-time per clone — runs `golangci-lint` on pre-push so CI doesn't eat gci failures):
+```bash
+rite hooks
+```
+
 **File discovery:** `Ritefile`, `Ritefile.yml`, `Ritefile.yaml`, `Ritefile.dist.yml`, `Ritefile.dist.yaml` (plus lowercase variants). No Taskfile recognition.
 
 **Env var prefix:** `RITE_*` for rite-internal config. `RITE_X_*` for experiment flags (e.g. `RITE_X_ENV_PRECEDENCE=1`).

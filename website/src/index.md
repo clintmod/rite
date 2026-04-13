@@ -1,49 +1,59 @@
 ---
-title: "Task: The Modern Task Runner"
 layout: home
+
 hero:
-  name: Task
-  text: The Modern Task Runner
-  tagline:
-    A fast, cross-platform build tool inspired by Make, designed for modern
-    workflows.
-  image:
-    src: /img/logo.png
-    alt: Task logo
+  name: rite
+  text: Task runner with Unix-native variable precedence.
+  tagline: Your shell env wins. Your CLI args win. Internal `vars:` are defaults, not mandates. A hard fork of go-task where first-in-wins is actually first-in-wins.
   actions:
     - theme: brand
-      text: Install
-      link: /docs/installation
+      text: Get started
+      link: /getting-started
     - theme: alt
-      text: Get Started
-      link: /docs/getting-started
+      text: Coming from go-task?
+      link: /migration
     - theme: alt
-      text: Guide
-      link: /docs/guide
+      text: View on GitHub
+      link: https://github.com/clintmod/rite
 
 features:
-  - title: 30-Second Setup
-    details:
-      Single binary download, zero dependencies. Works with Homebrew, Snapcraft,
-      Scoop and more.
-    icon: 🚀
-
-  - title: Truly cross-platform
-    icon: 🖥️
-    details:
-      Run the same Taskfile on Linux, macOS and Windows. No extra setup. Task
-      handles platform quirks so you don’t have to.
-
-  - title: Smart Caching
-    icon: 🎯
-    details:
-      Skip unnecessary rebuilds by tracking file changes (timestamp or
-      content-based).
-
-  - title: Ideal for code generation & scaffolding
-    icon: ⚡
-    details:
-      Use Task to wire up codegen tools, formatters, linters, or anything
-      repetitive. Chain commands, set dependencies, and keep your workflow
-      clean.
+  - title: First-in-wins precedence
+    details: "Shell env beats CLI args beats entrypoint defaults beats task-scope. Task-scope vars blocks are defaults only — if any higher tier set the name, the task value is ignored. Eight documented tiers, no surprises."
+  - title: "${VAR} and {{.VAR}} are interchangeable"
+    details: "Both syntaxes resolve against the same variable set with identical precedence. Use shell-native for commands, Go-template for conditionals and globs. Pick whichever reads cleaner."
+  - title: Every var exports
+    details: "A declared variable reaches the cmd shell environ by default. Opt out with export: false. No more vars vs env asymmetry."
+  - title: One-way migration
+    details: "rite --migrate Taskfile.yml produces a Ritefile and flags every site where first-in-wins would change the meaning of your existing config. No compatibility shim — an intentional break, documented line by line."
 ---
+
+## Why this exists
+
+`go-task`'s variable model is structurally inverted: task-level `vars:` override CLI arguments and shell environment, which is the opposite of every Unix convention. The upstream project's planned redesign ([go-task/task#2035](https://github.com/go-task/task/issues/2035)) preserves the inversion.
+
+`rite` starts from the opposite premise. The closer a variable is declared to the user, the more authority it has. Your shell environment is law. Internal `vars:` blocks declare what a value *should be if nothing else sets it*. Nothing a Ritefile declares internally can override what the user passed on the command line.
+
+See [`SPEC.md`](https://github.com/clintmod/rite/blob/main/SPEC.md) for the full design contract.
+
+## The 60-second mental model
+
+```yaml
+# Ritefile.yml
+version: '3'
+vars:
+  ENV: staging
+tasks:
+  deploy:
+    vars:
+      ENV: development   # task-scope default
+    cmds:
+      - echo "Deploying to ${ENV}"
+```
+
+| Invocation | Output | Why |
+|---|---|---|
+| `rite deploy` | `Deploying to staging` | Entrypoint `vars:` wins over task-scope default |
+| `ENV=prod rite deploy` | `Deploying to prod` | Shell env wins over everything |
+| `rite deploy ENV=qa` | `Deploying to qa` | CLI wins over entrypoint and task-scope |
+
+Compare to `go-task`, where `rite deploy ENV=qa` would print `development` because task-scope `vars:` override CLI args.

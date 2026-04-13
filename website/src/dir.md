@@ -60,7 +60,7 @@ You can also reach for these instead of (or alongside) `dir:`:
 | Var | Value |
 |---|---|
 | `ROOT_DIR` | Directory containing the entrypoint Ritefile |
-| `TASKFILE_DIR` | Directory containing the Ritefile that defined this task (different from ROOT_DIR for included files) |
+| `RITEFILE_DIR` | Directory containing the Ritefile that defined this task (different from ROOT_DIR for included files) |
 | `USER_WORKING_DIR` | The shell's CWD when rite was invoked |
 
 Useful when you want absolute references in cmds without committing to a `dir:`:
@@ -69,5 +69,5 @@ Useful when you want absolute references in cmds without committing to a `dir:`:
 tasks:
   archive:
     cmds:
-      - tar -czf {{.USER_WORKING_DIR}}/build.tgz -C {{.ROOT_DIR}} .
+      - tar -czf ${USER_WORKING_DIR}/build.tgz -C ${ROOT_DIR} .
 ```

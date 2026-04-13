@@ -95,6 +95,6 @@ Stdin Ritefiles can use `includes:` only with absolute paths or `-d` — they ha
 
 ## What rite does NOT do (vs. some alternatives)
 
-- **No automatic OS-suffix files.** rite does not silently merge `Ritefile_darwin.yml` when running on macOS. If you want that pattern, declare it explicitly via [includes with templated paths](/includes#os-specific-includes) — `includes: { local: ./Ritefile_${RITE_OS}.yml }`.
+- **No automatic OS-suffix files.** rite does not silently merge `Ritefile_darwin.yml` when running on macOS. If you want that pattern, declare it explicitly via [includes with templated paths](/includes#os-specific-includes) — `includes: { local: ./Ritefile_${OS}.yml }`.
 - **No XDG search.** rite doesn't look in `$XDG_CONFIG_HOME/rite/` for anything. The global Ritefile lives in `$HOME` (matching upstream); use `-g` to invoke it.
 - **No remote-by-default.** Remote Ritefile loading exists behind the experiment flag `RITE_X_REMOTE_TASKFILES=1` but is not production-grade. Don't rely on it for shared CI Ritefiles yet.

@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: write  # goreleaser needs this to create GitHub releases
+  contents: write  # goreleaser needs this to create GitHub releases on this repo
 
 jobs:
   goreleaser:
@@ -25,20 +25,19 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7
         with:
-          # Free goreleaser (no `distribution: goreleaser-pro`). Drops
-          # cloudsmith / nightly-only features we don't use yet.
           version: latest
-          # `--skip=homebrew` NOT set here — a real release does publish
-          # the brew formula. That requires:
-          #   1. clintmod/homebrew-tap repo exists with at least one commit.
-          #   2. A PAT with `repo` scope on that tap is set as GH_PAT.
-          # If either is missing when a tag lands, run locally with
-          #   goreleaser release --skip=homebrew
-          # to ship everything else, then unblock brew in a follow-up.
           args: release --clean
         env:
-          # Falls back to the job's default token if GH_PAT isn't set —
-          # in that fallback mode only same-repo writes work, so the
-          # brew step will fail fast with a clear error. Fine for
-          # initial tags while the tap is being bootstrapped.
-          GITHUB_TOKEN: ${{secrets.GH_PAT || secrets.GITHUB_TOKEN}}
+          # Two tokens, two scopes:
+          #   GITHUB_TOKEN   — auto-provided, scoped to clintmod/rite. Used
+          #                    by goreleaser to create the release, upload
+          #                    the archives, and push artifacts back to
+          #                    this repo.
+          #   HOMEBREW_TAP_TOKEN — our PAT, scoped to the tap repo.
+          #                    Referenced by .goreleaser.yml's
+          #                    brews.repository.token so the formula
+          #                    commit goes to clintmod/homebrew-tap.
+          # The split avoids broadening the PAT's scope to this repo —
+          # keeps the blast radius small if the token ever leaks.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.GH_PAT }}

@@ -93,14 +93,12 @@ brews:
     homepage: https://github.com/clintmod/rite
     directory: Formula
     repository:
-      # NOTE: This tap repo must exist before the first release that actually
-      # publishes a brew formula, and a PAT with `repo` scope (write access to
-      # the tap) must be set as the GH_PAT secret on this repo. Until both
-      # exist, goreleaser will skip the brews step with a fatal error — to
-      # release without publishing to brew in the interim, pass
-      # `--skip=brew` in the goreleaser args (see release.yml).
       owner: clintmod
       name: homebrew-tap
+      # HOMEBREW_TAP_TOKEN is a PAT scoped to clintmod/homebrew-tap only
+      # (see release.yml). GITHUB_TOKEN handles the release on this repo,
+      # HOMEBREW_TAP_TOKEN handles the commit on the tap.
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     test: system "#{bin}/rite", "--help"
     install: |-
       bin.install "rite"

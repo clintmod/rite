@@ -2,7 +2,7 @@
 
 > An idempotent task runner with Unix-native variable precedence.
 
-**Status: pre-1.0, usable.** Binary builds, test suite is green, SPEC's variable precedence model and `${VAR}` shell-native preprocessor are both live. `rite migrate` converts a `Taskfile.yml` to a `Ritefile.yml` and flags anything that changes meaning under the new semantics. Docs site and v1.0.0 tag are still to come. See [`SPEC.md`](./SPEC.md) for the design contract.
+**Status: v0.1.0 shipped, pre-1.0.** Binary builds, test suite is green, SPEC's variable precedence model and `${VAR}` shell-native preprocessor are both live. `rite migrate` converts a `Taskfile.yml` to a `Ritefile.yml` and flags anything that changes meaning under the new semantics. Docs site lives at [clintmod.github.io/rite](https://clintmod.github.io/rite/); v1.0.0 still to come. See [`SPEC.md`](./SPEC.md) for the design contract.
 
 ## Install
 
@@ -94,7 +94,8 @@ MIT. See [`LICENSE`](./LICENSE). Original copyright © 2016 Andrey Nering; fork 
 - [x] **Phase 2:** First-in-wins `getVariables()`, per-resolution dynamic-var cache.
 - [x] **Phase 3:** Test fixture audit and rewrite; include-site var precedence fix.
 - [x] **Phase 4:** `${VAR}` preprocessor, `export: false` opt-out, vars/env unified.
-- [ ] **Phase 5 (in progress):** `rite migrate` tool ✅ · docs site · v1.0.0 release.
+- [x] **Phase 5:** `rite migrate` tool, docs site, v0.1.0 release with Homebrew tap + mise support.
+- [ ] **Next:** docs expansion to full user-guide parity, JSON schema publication, v1.0.0.
 
 ## Migrating from go-task
 

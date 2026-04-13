@@ -1,0 +1,27 @@
+# Keep Docker build context small and reproducible.
+# Currently only used by scripts/coexistence/Dockerfile.
+
+.git
+.githooks
+.github
+.vscode
+.idea
+.DS_Store
+
+# Cache dirs from prior local task/rite runs.
+.task
+.rite
+
+# Build outputs.
+bin
+dist
+
+# Website / docs — not needed for the coexistence smoke.
+website/node_modules
+website/.vitepress/cache
+website/.vitepress/dist
+
+# Go test artifacts.
+*.test
+*.out
+coverage*

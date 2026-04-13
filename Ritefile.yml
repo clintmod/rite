@@ -176,6 +176,13 @@ tasks:
     cmds:
       - goreleaser --snapshot --clean
 
+  verify:coexistence:
+    desc: Dockerized dual-install smoke — asserts rite and go-task don't corrupt each other (the v1.0 coexistence gate)
+    aliases: [coexistence]
+    cmds:
+      - docker build -t rite-coexistence -f scripts/coexistence/Dockerfile .
+      - docker run --rm rite-coexistence
+
   gotestsum:install:
     desc: Installs gotestsum
     status:

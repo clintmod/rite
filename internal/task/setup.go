@@ -136,8 +136,8 @@ func (e *Executor) setupTempDir() error {
 	tempDir := env.GetTaskEnv("TEMP_DIR")
 	if tempDir == "" {
 		e.TempDir = TempDir{
-			Remote:      filepathext.SmartJoin(e.Dir, ".task"),
-			Fingerprint: filepathext.SmartJoin(e.Dir, ".task"),
+			Remote:      filepathext.SmartJoin(e.Dir, ".rite"),
+			Fingerprint: filepathext.SmartJoin(e.Dir, ".rite"),
 		}
 	} else if filepath.IsAbs(tempDir) || strings.HasPrefix(tempDir, "~") {
 		tempDir, err := execext.ExpandLiteral(tempDir)

@@ -13,23 +13,26 @@ import (
 
 var (
 	defaultXDGTaskRCs = []string{
-		"taskrc.yml",
-		"taskrc.yaml",
+		"riterc.yml",
+		"riterc.yaml",
 	}
 	defaultTaskRCs = []string{
-		".taskrc.yml",
-		".taskrc.yaml",
+		".riterc.yml",
+		".riterc.yaml",
 	}
 )
 
-// GetConfig loads and merges local and global Task configuration files
+// GetConfig loads and merges local and global rite configuration files.
+// Filenames are rite-specific (`.riterc.yml`, `$XDG_CONFIG_HOME/rite/riterc.yml`)
+// so rite can coexist with go-task's own `.taskrc.yml` in the same directory
+// or home without either tool stepping on the other's config.
 func GetConfig(dir string) (*ast.TaskRC, error) {
 	var config *ast.TaskRC
 	reader := NewReader()
 
 	// Read the XDG config file
 	if xdgConfigHome := os.Getenv("XDG_CONFIG_HOME"); xdgConfigHome != "" {
-		xdgConfigNode, err := NewNode("", filepath.Join(xdgConfigHome, "task"), defaultXDGTaskRCs)
+		xdgConfigNode, err := NewNode("", filepath.Join(xdgConfigHome, "rite"), defaultXDGTaskRCs)
 		if err == nil && xdgConfigNode != nil {
 			xdgConfig, err := reader.Read(xdgConfigNode)
 			if err != nil {

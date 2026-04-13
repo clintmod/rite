@@ -136,7 +136,7 @@ func run() error {
 		if len(args) > 0 {
 			name := args[0]
 			if filepathext.IsExtOnly(name) {
-				name = filepathext.SmartJoin(filepath.Dir(name), "Taskfile"+filepath.Ext(name))
+				name = filepathext.SmartJoin(filepath.Dir(name), "Ritefile"+filepath.Ext(name))
 			}
 			path = filepathext.SmartJoin(wd, name)
 		}

@@ -36,7 +36,7 @@ func setupDirs(t *testing.T) (string, string, string) {
 	t.Helper()
 
 	xdgConfigDir := t.TempDir()
-	xdgTaskConfigDir := filepath.Join(xdgConfigDir, "task")
+	xdgTaskConfigDir := filepath.Join(xdgConfigDir, "rite")
 	require.NoError(t, os.Mkdir(xdgTaskConfigDir, 0o755))
 
 	homeDir := t.TempDir()
@@ -67,7 +67,7 @@ func TestGetConfig_NoConfigFiles(t *testing.T) { //nolint:paralleltest // cannot
 func TestGetConfig_OnlyXDG(t *testing.T) { //nolint:paralleltest // cannot run in parallel
 	xdgDir, _, localDir := setupDirs(t)
 
-	writeFile(t, xdgDir, "taskrc.yml", xdgConfigYAML)
+	writeFile(t, xdgDir, "riterc.yml", xdgConfigYAML)
 
 	cfg, err := GetConfig(localDir)
 	assert.NoError(t, err)
@@ -84,7 +84,7 @@ func TestGetConfig_OnlyXDG(t *testing.T) { //nolint:paralleltest // cannot run i
 func TestGetConfig_OnlyHome(t *testing.T) { //nolint:paralleltest // cannot run in parallel
 	_, homeDir, localDir := setupDirs(t)
 
-	writeFile(t, homeDir, ".taskrc.yml", homeConfigYAML)
+	writeFile(t, homeDir, ".riterc.yml", homeConfigYAML)
 
 	cfg, err := GetConfig(localDir)
 	assert.NoError(t, err)
@@ -100,7 +100,7 @@ func TestGetConfig_OnlyHome(t *testing.T) { //nolint:paralleltest // cannot run 
 func TestGetConfig_OnlyLocal(t *testing.T) { //nolint:paralleltest // cannot run in parallel
 	_, _, localDir := setupDirs(t)
 
-	writeFile(t, localDir, ".taskrc.yml", localConfigYAML)
+	writeFile(t, localDir, ".riterc.yml", localConfigYAML)
 
 	cfg, err := GetConfig(localDir)
 	assert.NoError(t, err)
@@ -116,13 +116,13 @@ func TestGetConfig_All(t *testing.T) { //nolint:paralleltest // cannot run in pa
 	xdgConfigDir, homeDir, localDir := setupDirs(t)
 
 	// Write local config
-	writeFile(t, localDir, ".taskrc.yml", localConfigYAML)
+	writeFile(t, localDir, ".riterc.yml", localConfigYAML)
 
 	// Write home config
-	writeFile(t, homeDir, ".taskrc.yml", homeConfigYAML)
+	writeFile(t, homeDir, ".riterc.yml", homeConfigYAML)
 
 	// Write XDG config
-	writeFile(t, xdgConfigDir, "taskrc.yml", xdgConfigYAML)
+	writeFile(t, xdgConfigDir, "riterc.yml", xdgConfigYAML)
 
 	cfg, err := GetConfig(localDir)
 	assert.NoError(t, err)
@@ -146,7 +146,7 @@ remote:
   trusted-hosts:
     - github.com
 `
-	writeFile(t, localDir, ".taskrc.yml", configYAML)
+	writeFile(t, localDir, ".riterc.yml", configYAML)
 
 	cfg, err := GetConfig(localDir)
 	assert.NoError(t, err)
@@ -161,7 +161,7 @@ remote:
     - gitlab.com
     - example.com:8080
 `
-	writeFile(t, localDir, ".taskrc.yml", configYAML)
+	writeFile(t, localDir, ".riterc.yml", configYAML)
 
 	cfg, err = GetConfig(localDir)
 	assert.NoError(t, err)
@@ -181,7 +181,7 @@ remote:
     - gitlab.com
   timeout: "30s"
 `
-		writeFile(t, xdgConfigDir, "taskrc.yml", xdgConfig)
+		writeFile(t, xdgConfigDir, "riterc.yml", xdgConfig)
 
 		// Home config has example.com (should be combined with XDG)
 		homeConfig := `
@@ -189,7 +189,7 @@ remote:
   trusted-hosts:
     - example.com
 `
-		writeFile(t, homeDir, ".taskrc.yml", homeConfig)
+		writeFile(t, homeDir, ".riterc.yml", homeConfig)
 
 		cfg, err := GetConfig(localDir)
 		assert.NoError(t, err)
@@ -203,7 +203,7 @@ remote:
   trusted-hosts:
     - local.dev
 `
-		writeFile(t, localDir, ".taskrc.yml", localConfig)
+		writeFile(t, localDir, ".riterc.yml", localConfig)
 
 		cfg, err = GetConfig(localDir)
 		assert.NoError(t, err)

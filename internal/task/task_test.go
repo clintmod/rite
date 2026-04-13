@@ -415,8 +415,8 @@ func (fct fileContentTest) Run(t *testing.T) {
 	e := task.NewExecutor(
 		task.WithDir(fct.Dir),
 		task.WithTempDir(task.TempDir{
-			Remote:      filepathext.SmartJoin(fct.Dir, ".task"),
-			Fingerprint: filepathext.SmartJoin(fct.Dir, ".task"),
+			Remote:      filepathext.SmartJoin(fct.Dir, ".rite"),
+			Fingerprint: filepathext.SmartJoin(fct.Dir, ".rite"),
 		}),
 		task.WithEntrypoint(fct.Entrypoint),
 		task.WithStdout(io.Discard),
@@ -505,9 +505,9 @@ func TestStatusChecksum(t *testing.T) { // nolint:paralleltest // cannot run in 
 		files []string
 		task  string
 	}{
-		{[]string{"generated.txt", ".task/checksum/build"}, "build"},
-		{[]string{"generated-wildcard.txt", ".task/checksum/build-wildcard"}, "build-wildcard"},
-		{[]string{"generated.txt", ".task/checksum/build-with-status"}, "build-with-status"},
+		{[]string{"generated.txt", ".rite/checksum/build"}, "build"},
+		{[]string{"generated-wildcard.txt", ".rite/checksum/build-wildcard"}, "build-wildcard"},
+		{[]string{"generated.txt", ".rite/checksum/build-with-status"}, "build-with-status"},
 	}
 
 	for _, test := range tests { // nolint:paralleltest // cannot run in parallel
@@ -521,8 +521,8 @@ func TestStatusChecksum(t *testing.T) { // nolint:paralleltest // cannot run in 
 
 			var buff bytes.Buffer
 			tempDir := task.TempDir{
-				Remote:      filepathext.SmartJoin(dir, ".task"),
-				Fingerprint: filepathext.SmartJoin(dir, ".task"),
+				Remote:      filepathext.SmartJoin(dir, ".rite"),
+				Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 			}
 			e := task.NewExecutor(
 				task.WithDir(dir),
@@ -563,13 +563,13 @@ func TestStatusTimestamp(t *testing.T) { // nolint:paralleltest // cannot run in
 
 	generatedFile := filepathext.SmartJoin(dir, "generated.txt")
 	tempDir := task.TempDir{
-		Remote:      filepathext.SmartJoin(dir, ".task"),
-		Fingerprint: filepathext.SmartJoin(dir, ".task"),
+		Remote:      filepathext.SmartJoin(dir, ".rite"),
+		Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 	}
 
 	// Clean up any state from previous runs.
 	_ = os.Remove(generatedFile)
-	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".task"))
+	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".rite"))
 
 	var buff bytes.Buffer
 	e := task.NewExecutor(
@@ -612,13 +612,13 @@ func TestStatusChecksumMissingGenerated(t *testing.T) { // nolint:paralleltest /
 
 	generatedFile := filepathext.SmartJoin(dir, "generated.txt")
 	tempDir := task.TempDir{
-		Remote:      filepathext.SmartJoin(dir, ".task"),
-		Fingerprint: filepathext.SmartJoin(dir, ".task"),
+		Remote:      filepathext.SmartJoin(dir, ".rite"),
+		Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 	}
 
 	// Clean up any state from previous runs.
 	_ = os.Remove(generatedFile)
-	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".task"))
+	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".rite"))
 
 	var buff bytes.Buffer
 	e := task.NewExecutor(
@@ -658,15 +658,15 @@ func TestStatusVariables(t *testing.T) {
 
 	const dir = "testdata/status_vars"
 
-	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".task"))
+	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".rite"))
 	_ = os.Remove(filepathext.SmartJoin(dir, "generated.txt"))
 
 	var buff bytes.Buffer
 	e := task.NewExecutor(
 		task.WithDir(dir),
 		task.WithTempDir(task.TempDir{
-			Remote:      filepathext.SmartJoin(dir, ".task"),
-			Fingerprint: filepathext.SmartJoin(dir, ".task"),
+			Remote:      filepathext.SmartJoin(dir, ".rite"),
+			Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 		}),
 		task.WithStdout(&buff),
 		task.WithStderr(&buff),
@@ -695,14 +695,14 @@ func TestCmdsVariables(t *testing.T) {
 
 	const dir = "testdata/cmds_vars"
 
-	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".task"))
+	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".rite"))
 
 	var buff bytes.Buffer
 	e := task.NewExecutor(
 		task.WithDir(dir),
 		task.WithTempDir(task.TempDir{
-			Remote:      filepathext.SmartJoin(dir, ".task"),
-			Fingerprint: filepathext.SmartJoin(dir, ".task"),
+			Remote:      filepathext.SmartJoin(dir, ".rite"),
+			Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 		}),
 		task.WithStdout(&buff),
 		task.WithStderr(&buff),
@@ -847,14 +847,14 @@ func TestDryChecksum(t *testing.T) {
 
 	const dir = "testdata/dry_checksum"
 
-	checksumFile := filepathext.SmartJoin(dir, ".task/checksum/default")
+	checksumFile := filepathext.SmartJoin(dir, ".rite/checksum/default")
 	_ = os.Remove(checksumFile)
 
 	e := task.NewExecutor(
 		task.WithDir(dir),
 		task.WithTempDir(task.TempDir{
-			Remote:      filepathext.SmartJoin(dir, ".task"),
-			Fingerprint: filepathext.SmartJoin(dir, ".task"),
+			Remote:      filepathext.SmartJoin(dir, ".rite"),
+			Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 		}),
 		task.WithStdout(io.Discard),
 		task.WithStderr(io.Discard),
@@ -918,7 +918,7 @@ func TestIncludesRemote(t *testing.T) {
 	enableExperimentForTest(t, &experiments.RemoteTaskfiles, 1)
 
 	dir := "testdata/includes_remote"
-	os.RemoveAll(filepath.Join(dir, ".task", "remote"))
+	os.RemoveAll(filepath.Join(dir, ".rite", "remote"))
 
 	srv := httptest.NewServer(http.FileServer(http.Dir(dir)))
 	defer srv.Close()
@@ -1109,9 +1109,9 @@ func TestIncludesHttp(t *testing.T) {
 	defer srv.Close()
 
 	t.Cleanup(func() {
-		// This test fills the .task/remote directory with cache entries because the include URL
+		// This test fills the .rite/remote directory with cache entries because the include URL
 		// is different on every test due to the dynamic nature of the TCP port in srv.URL
-		if err := os.RemoveAll(filepath.Join(dir, ".task")); err != nil {
+		if err := os.RemoveAll(filepath.Join(dir, ".rite")); err != nil {
 			t.Logf("error cleaning up: %s", err)
 		}
 	})
@@ -2398,7 +2398,7 @@ func TestEvaluateSymlinksInPaths(t *testing.T) { // nolint:paralleltest // canno
 			buff.Reset()
 		})
 	}
-	err := os.RemoveAll(dir + "/.task")
+	err := os.RemoveAll(dir + "/.rite")
 	require.NoError(t, err)
 }
 

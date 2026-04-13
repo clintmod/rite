@@ -23,7 +23,7 @@ func TestFileWatch(t *testing.T) {
 	t.Parallel()
 
 	const dir = "testdata/watch"
-	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".task"))
+	_ = os.RemoveAll(filepathext.SmartJoin(dir, ".rite"))
 	_ = os.RemoveAll(filepathext.SmartJoin(dir, "src"))
 
 	expectedOutput := strings.TrimSpace(`

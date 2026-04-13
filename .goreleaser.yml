@@ -51,7 +51,7 @@ archives:
       - README.md
       - LICENSE
       - NOTICE
-      - completion/**/*
+      - internal/task/completion/**/*
     format_overrides:
       - goos: windows
         formats: [zip]
@@ -79,11 +79,11 @@ nfpms:
       - apk
     file_name_template: '{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}'
     contents:
-      - src: completion/bash/task.bash
+      - src: internal/task/completion/bash/task.bash
         dst: /etc/bash_completion.d/rite
-      - src: completion/fish/task.fish
+      - src: internal/task/completion/fish/task.fish
         dst: /usr/share/fish/completions/rite.fish
-      - src: completion/zsh/_task
+      - src: internal/task/completion/zsh/_task
         dst: /usr/local/share/zsh/site-functions/_rite
 
 brews:
@@ -102,9 +102,9 @@ brews:
     test: system "#{bin}/rite", "--help"
     install: |-
       bin.install "rite"
-      bash_completion.install "completion/bash/task.bash" => "rite"
-      zsh_completion.install "completion/zsh/_task" => "_rite"
-      fish_completion.install "completion/fish/task.fish" => "rite.fish"
+      bash_completion.install "internal/task/completion/bash/task.bash" => "rite"
+      zsh_completion.install "internal/task/completion/zsh/_task" => "_rite"
+      fish_completion.install "internal/task/completion/fish/task.fish" => "rite.fish"
     commit_author:
       name: clintmod
       email: cmodien@gmail.com

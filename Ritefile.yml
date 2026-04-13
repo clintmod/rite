@@ -57,7 +57,7 @@ tasks:
       GOLDIE_UPDATE: 'true'
       GOLDIE_TEMPLATE: 'true'
     cmds:
-      - find ./testdata -name '*.golden' -delete
+      - find ./internal/task/testdata -name '*.golden' -delete
       - go test ./...
 
   install:mockery:
@@ -134,7 +134,7 @@ tasks:
     deps: [gotestsum:install]
     sources:
       - "**/*.go"
-      - "testdata/**/*"
+      - "internal/task/testdata/**/*"
     cmds:
       - gotestsum -f '{{.GOTESTSUM_FORMAT}}' ./...
 

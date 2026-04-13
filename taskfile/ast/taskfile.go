@@ -20,20 +20,20 @@ var ErrIncludedTaskfilesCantHaveDotenvs = errors.New("rite: Included Taskfiles c
 
 // Taskfile is the abstract syntax tree for a Taskfile
 type Taskfile struct {
-	Location string           `yaml:"-"`
-	Version  *semver.Version  `yaml:"version"`
-	Output   Output           `yaml:"output"`
-	Method   string           `yaml:"method"`
-	Includes *Includes        `yaml:"includes"`
-	Set      []string         `yaml:"set"`
-	Shopt    []string         `yaml:"shopt"`
-	Vars     *Vars            `yaml:"vars"`
-	Env      *Vars            `yaml:"env"`
-	Tasks    *Tasks           `yaml:"tasks"`
-	Silent   bool             `yaml:"silent"`
-	Dotenv   []string         `yaml:"dotenv"`
-	Run      string           `yaml:"run"`
-	Interval time.Duration    `yaml:"interval"`
+	Location string          `yaml:"-"`
+	Version  *semver.Version `yaml:"version"`
+	Output   Output          `yaml:"output"`
+	Method   string          `yaml:"method"`
+	Includes *Includes       `yaml:"includes"`
+	Set      []string        `yaml:"set"`
+	Shopt    []string        `yaml:"shopt"`
+	Vars     *Vars           `yaml:"vars"`
+	Env      *Vars           `yaml:"env"`
+	Tasks    *Tasks          `yaml:"tasks"`
+	Silent   bool            `yaml:"silent"`
+	Dotenv   []string        `yaml:"dotenv"`
+	Run      string          `yaml:"run"`
+	Interval time.Duration   `yaml:"interval"`
 }
 
 // Merge merges the second Taskfile into the first

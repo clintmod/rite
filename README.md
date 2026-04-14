@@ -2,7 +2,16 @@
 
 > An idempotent task runner with Unix-native variable precedence.
 
-**Status: v0.1.0 shipped, 1.0 in flight.** Binary builds, test suite is green across Linux/macOS/Windows on Go 1.26, SPEC's variable precedence model and `${VAR}` shell-native preprocessor are both live. `rite migrate` converts a `Taskfile.yml` to a `Ritefile.yml` and flags anything that changes meaning under the new semantics. The remote-Ritefile experiment has been removed (see [§Non-goals](#non-goals)); Ritefiles must be checked into the repo they build. `rite migrate` now rewrites and runtime-aliases all six legacy special vars (`.TASK`, `.TASK_DIR`, `.TASKFILE`, `.TASKFILE_DIR`, `.ROOT_TASKFILE`, `.TASK_VERSION`). Docs site lives at [clintmod.github.io/rite](https://clintmod.github.io/rite/). One public-API rename ([#22](https://github.com/clintmod/rite/issues/22)) remains before the 1.0 tag. See [`SPEC.md`](./SPEC.md) for the design contract and [`CHANGELOG.md`](./CHANGELOG.md) for the full diff since v0.1.0.
+**Status: 1.0 cut 2026-04-14.**
+
+- Binary builds, test suite green on Linux / macOS / Windows × Go 1.26.
+- SPEC's 8-tier variable precedence and `${VAR}` shell-native preprocessor are live.
+- `rite migrate <path>` converts a `Taskfile.yml` → `Ritefile.yml`, walks `includes:` recursively, and flags anything that changes meaning under rite's semantics.
+- All six legacy special vars (`.TASK`, `.TASK_DIR`, `.TASKFILE`, `.TASKFILE_DIR`, `.ROOT_TASKFILE`, `.TASK_VERSION`) are rewritten at migrate time and runtime-aliased for Ritefiles that predate the rename.
+- `includes:` paths are sandboxed to the Ritefile tree; remote URLs, `../` escape, and symlink escape are rejected.
+- Remote-Ritefile experiment removed — see [§Non-goals](#non-goals).
+- Public API stable under semver: `Ritefile*` / `Rite*` types fixed at 1.0.
+- Docs: [clintmod.github.io/rite](https://clintmod.github.io/rite/) · design contract in [`SPEC.md`](./SPEC.md) · full release log in [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## Install
 
@@ -104,7 +113,8 @@ MIT. See [`LICENSE`](./LICENSE). Original copyright © 2016 Andrey Nering; fork 
 - [x] **Phase 4:** `${VAR}` preprocessor, `export: false` opt-out, vars/env unified.
 - [x] **Phase 5:** `rite migrate` tool, docs site, v0.1.0 release with Homebrew tap + mise support.
 - [x] **1.0 prep:** CHANGELOG, Migrating-from-go-task guide, remote-Ritefile removal, N-deep include env-export fix, full special-var rewrite/alias coverage, Go 1.25 dropped from CI.
-- [ ] **v1.0.0:** public API rename (`Task*` → `Ritefile*`/`Rite*`) for a stable semver surface, then tag.
+- [x] **v1.0.0:** public API rename (`Task*` → `Ritefile*`/`Rite*`), `rite migrate` subcommand, schema-version upper bound, includes sandboxing (rejects `://`, `../`, symlink escape; redacts parse-error snippets from non-Ritefile targets), and concurrency hardening (`Vars.Merge` lock, signal-handler ctx cancel, `templater.Cache` race). See [`CHANGELOG.md`](./CHANGELOG.md) for the full list.
+- [ ] **Post-1.0:** real-world migrate corpus in CI (#44), `executionHashes` leak + dedupe fix (#51), test-fixture `bytes.Buffer` race (#56), `graph.Merge` errgroup parallelism (#49), expand CI race matrix as the above land.
 
 ## Migrating from go-task
 

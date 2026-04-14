@@ -67,27 +67,24 @@ func (tfg *RitefileGraph) Merge() (*Ritefile, error) {
 			return nil, err
 		}
 
-		// Create an error group to wait for all the included Taskfiles to be merged with all its parents
+		// Fan out across every parent that includes this vertex, then join once
+		// at the end of the level. `Vars.Merge` (issue #48) and `Tasks` Get/Set
+		// are lock-protected, and distinct predecessor edges point at distinct
+		// parent vertices, so the per-edge goroutines write to disjoint `t1`s.
 		var g errgroup.Group
 
-		// Loop over edge that leads to a vertex that includes the current vertex
 		for _, edge := range predecessorMap[hash] {
-
-			// Start a goroutine to process each included Ritefile
 			g.Go(func() error {
-				// Get the base vertex
 				vertex, err := tfg.Vertex(edge.Source)
 				if err != nil {
 					return err
 				}
 
-				// Get the merge options
 				includes, ok := edge.Properties.Data.([]*Include)
 				if !ok {
 					return fmt.Errorf("rite: Failed to get merge options")
 				}
 
-				// Merge the included Taskfiles into the parent Ritefile
 				for _, include := range includes {
 					if err := vertex.Ritefile.Merge(
 						includedVertex.Ritefile,
@@ -99,12 +96,8 @@ func (tfg *RitefileGraph) Merge() (*Ritefile, error) {
 
 				return nil
 			})
-			if err := g.Wait(); err != nil {
-				return nil, err
-			}
 		}
 
-		// Wait for all the go routines to finish
 		if err := g.Wait(); err != nil {
 			return nil, err
 		}

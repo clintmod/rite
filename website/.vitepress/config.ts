@@ -76,6 +76,7 @@ export default defineConfig({
           { text: 'File discovery', link: '/file-discovery' },
           { text: 'CI integration', link: '/ci' },
           { text: 'Schema', link: '/schema' },
+          { text: '.riterc config', link: '/riterc' },
         ],
       },
       {

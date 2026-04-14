@@ -1,8 +1,158 @@
 # Changelog
 
-## Unreleased
+All notable changes to **rite** are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### rite fork (Phases 1–5 wave 1)
+`rite` is a hard fork of [`go-task/task`](https://github.com/go-task/task) —
+the variable-precedence model is intentionally inverted (see
+[SPEC.md](./SPEC.md) §Variable Precedence and
+[go-task/task#2035](https://github.com/go-task/task/issues/2035)). Releases
+below v0.1.0 from go-task are preserved verbatim at the bottom of this file
+for archaeological reference only; they do not describe rite behavior.
+
+## [Unreleased]
+
+## [1.0.0] - TBD
+
+First stable release of rite. Consolidates everything shipped since v0.1.0
+and locks in the user-visible surface (CLI flags, exit codes, file
+discovery, variable precedence).
+
+### Added
+
+- `.RITE_NAME` and `.RITE_TASK_DIR` special-var aliases for the
+  upstream-compatible `.TASK` / `.TASK_DIR` names; `rite migrate` rewrites
+  adjacent references in one expression.
+- `rite hooks` task installs the shared `pre-push` hook so CI doesn't
+  surface `golangci-lint` / `gci` failures that a local push would have
+  caught.
+- Ritefile JSON Schema published at `clintmod.github.io/rite/schema.json`
+  and wired into the VitePress docs. `cmd/gen-schema` generates it from
+  the AST.
+- End-to-end fixture tests for first-in-wins precedence, `export: false`,
+  and lazy `sh:` variable evaluation.
+- Fixture-backed scope-isolation tests (issue #2).
+- Dockerized dual-install smoke test: verifies `rite` and `task` can be
+  installed side-by-side without stomping each other's state directories.
+
+### Changed
+
+- **Coexistence rename:** state directory is now `.rite/` (was `.task/`)
+  and the rc file is `.riterc.yml` (was `.taskrc.yml`). See **Breaking**.
+- `EnvPrecedence` experiment graduated to default behavior and the
+  `RITE_X_ENV_PRECEDENCE` flag removed. Shell env always wins over any
+  Ritefile-declared `env:` block; there is no opt-out. See **Breaking**.
+- Core library moved from the repository root to `internal/task/`. rite
+  is a CLI, not an import target — external consumers should not be
+  depending on these packages.
+- Pin `go`, `node`, and `pnpm` in `mise.toml`; pin `golangci-lint@2.11.4`
+  to match CI. Reproducible toolchain across dev machines.
+- SPEC and site docs formalize the `.rite/` / `.riterc.yml` paths and
+  clarify `.rite/` scoping behavior.
+
+### Fixed
+
+- `go install github.com/clintmod/rite/cmd/rite@vX.Y.Z` now reports the
+  correct version instead of the stale upstream `3.49.1` fallback. goreleaser
+  still injects the tag via ldflags for brew / release archives (#19).
+- Response-body leak in the remote-Ritefile retry loop — each retry now
+  closes the previous response body before spawning the next request (#12).
+- Re-entrant `RLock` in `Vars.ToCacheMap` that could deadlock under
+  concurrent compilation (#11).
+- goreleaser + Ritefile paths updated for the post-move `internal/task/`
+  layout.
+- `.gitattributes` restores `eol=lf` on relocated `testdata/` so Windows
+  checkouts don't corrupt golden-fixture checksums.
+
+### Removed
+
+- Remote-Ritefile feature in its entirety, including:
+  <!-- TODO PR#21: confirm final list + exit-code table below when #21 merges -->
+  `RITE_X_REMOTE_TASKFILES` experiment, `.riterc.yml` `remote:` block,
+  `RITE_REMOTE_DIR` env var, and CLI flags `--insecure`, `--download`,
+  `--offline`, `--trusted-hosts`, `--clear-cache`, `--timeout`, `--expiry`,
+  `--remote-cache-dir`, `--cacert`, `--cert`, `--cert-key`. The
+  `CLI_OFFLINE` special var is gone. Ritefiles are meant to be checked in;
+  fetching them at run time broke idempotency and reproducibility and
+  added a TLS/proxy trust surface the fork never intended to own. To share
+  tasks across repos, vendor the file in (submodule / subtree / build copy).
+  Local `includes:` with optional `checksum:` pinning stays; `NewNode`
+  now rejects any entrypoint containing `://` with a clear error. (PR #21)
+- Upstream-specific docs workflows and the issue-triage workflow.
+- `goreleaser-nightly` / `goreleaser-pr` configs and the PR-build workflow
+  — unused in this fork's release pipeline.
+- Committed `.vscode/` directory and dead prettier config.
+- `.planning/` tree — GSD workflow was overfit for a project of this size.
+
+### Breaking
+
+1. **State-dir rename: `.task/` → `.rite/`, `.taskrc.yml` → `.riterc.yml`.**
+   Repos migrating from go-task with checked-in `.task/` state should
+   rename on the migration commit. `.gitignore` patterns updated; a
+   legacy `.task` line is kept so both files coexist cleanly during a
+   dual-install transition.
+
+2. **`RITE_X_ENV_PRECEDENCE` flag removed.** Behavior is now unconditional:
+   shell env (tier 1) always wins over the Ritefile's `env:` block. If
+   you had the flag set to `1`, delete it — same behavior. If you had it
+   unset and were relying on Ritefile env to override the shell, that no
+   longer works; see the
+   [Migration guide](https://clintmod.github.io/rite/migration) for the
+   intended idiom (Ritefile env is a default when the shell hasn't set
+   the variable).
+
+3. **Remote-Ritefiles removed (PR #21).** Any Ritefile using `includes:`
+   with a URL now fails loudly at load time instead of silently fetching.
+   The relevant error types
+   (`TaskfileFetchFailedError`, `TaskfileNotTrustedError`,
+   `TaskfileNotSecureError`, `TaskfileCacheNotFoundError`,
+   `TaskfileNetworkTimeoutError`)
+   are gone, so their exit codes 103–107 are freed. Later Taskfile-related
+   codes shift down to fill the gap — one-time break for anyone scripting
+   against specific exit codes.
+
+   <!-- TODO PR#21: replace with confirmed old→new table from engineer-1
+        once the rip-out merges. Task brief states 108–111 slide down to
+        103–106; leaving placeholder until locked. -->
+
+   | Old code | Error                           | New code |
+   |---------:|:--------------------------------|---------:|
+   | 103      | `TaskfileFetchFailedError`      | _freed_  |
+   | 104      | `TaskfileNotTrustedError`       | _freed_  |
+   | 105      | `TaskfileNotSecureError`        | _freed_  |
+   | 106      | `TaskfileCacheNotFoundError`    | _freed_  |
+   | 107      | `TaskfileNetworkTimeoutError`   | _freed_  |
+   | 108      | _(Taskfile error — to confirm)_ | 103      |
+   | 109      | _(Taskfile error — to confirm)_ | 104      |
+   | 110      | _(Taskfile error — to confirm)_ | 105      |
+   | 111      | _(Taskfile error — to confirm)_ | 106      |
+
+4. The five `go-task` → `rite` semantic breaks carried forward from
+   v0.1.0 — repeated here because they define what 1.0 is:
+   - Task-scope `vars:` / `env:` are **defaults**, not overrides. An
+     entrypoint-level declaration with the same key wins (SPEC tier 5
+     beats tier 7).
+   - Task-level `dotenv:` files don't override entrypoint `env:`.
+   - `vars:` auto-exports to the cmd shell environ. Add
+     `FOO: { value: "…", export: false }` to keep secrets Ritefile-internal.
+   - Shell env always wins over Ritefile `env:`. No opt-out, no
+     experiment flag.
+   - File format is `Ritefile`, not `Taskfile`. No compatibility shim;
+     migration is one-way via `rite migrate`.
+
+   `rite migrate` emits site-specific warnings
+   (`OVERRIDE-VAR`, `OVERRIDE-ENV`, `DOTENV-ENTRY`, `SECRET-VAR`,
+   `SCHEMA-URL`) so you can review before the semantics silently change
+   on you.
+
+## [0.1.0] - 2026-04-12
+
+First public tag. The rite fork ships with Phases 1–5 (wave 1) complete:
+rebrand, first-in-wins precedence, `${VAR}` preprocessor, unified
+`vars:`/`env:`, and the `rite migrate` subcommand.
+
+### Added — rite fork (Phases 1–5 wave 1)
 
 - **Rebrand (Phase 1):** module path `github.com/clintmod/rite`, binary
   `rite`, file discovery `Ritefile` / `Ritefile.yml` / `Ritefile.yaml` /
@@ -27,7 +177,7 @@
   no longer flattens included-file top vars into the parent's
   `TaskfileVars` tier-4. Each file keeps its own vars; the pipeline
   resolves per-tier correctly including for nested X→Y→Z includes.
-- **${VAR} shell-native preprocessor (Phase 4 wave 1):** `${NAME}`,
+- **`${VAR}` shell-native preprocessor (Phase 4 wave 1):** `${NAME}`,
   `$NAME`, and `$$` → `$` are recognized in every templated string.
   Unknown refs pass through literal so the shell can still resolve
   `$?`, `$1`, env-only vars, etc. Interchangeable with `{{.VAR}}`.
@@ -44,20 +194,29 @@
 - **`rite migrate` subcommand (Phase 5 wave 1):** converts a go-task
   `Taskfile.yml` to a `Ritefile.yml` and emits warnings for every site
   the semantics would silently change under first-in-wins:
-  OVERRIDE-VAR, OVERRIDE-ENV, DOTENV-ENTRY, SECRET-VAR, SCHEMA-URL.
+  `OVERRIDE-VAR`, `OVERRIDE-ENV`, `DOTENV-ENTRY`, `SECRET-VAR`,
+  `SCHEMA-URL`.
+- **Distribution:** goreleaser-built archives for
+  darwin/linux/windows/freebsd × amd64/arm64/arm/386/riscv64,
+  deb/rpm/apk, Homebrew tap at `clintmod/homebrew-tap`, and docs site
+  at `clintmod.github.io/rite`.
 
-#### Breaking changes from upstream go-task
+### Breaking — vs upstream go-task
 
-1. Task-scope `vars:` / `env:` are defaults; they no longer override an
-   entrypoint-level declaration with the same key.
-2. Task-level `dotenv:` files don't override entrypoint `env:`.
-3. `vars:` auto-exports to the cmd shell environ — add `export: false`
-   for secrets.
-4. Shell env always wins over Ritefile env (no opt-out).
-5. File format is `Ritefile`, not `Taskfile`. No compatibility shim.
+See the **Breaking** section under [1.0.0] above; those items originated
+in v0.1.0 and remain in force.
 
-Use `rite --migrate <path>` to get site-specific warnings on your own
+Use `rite migrate <path>` to get site-specific warnings on your own
 Taskfiles.
+
+---
+
+## Upstream `go-task` history (pre-fork)
+
+The sections below are preserved verbatim from the upstream
+`go-task/task` repository at the time of the fork. They describe **go-task**
+behavior and do not reflect changes in rite; keep them for archaeological
+reference only. All user-facing changes in rite are above this divider.
 
 ### inherited from upstream v3.49.x Unreleased
 

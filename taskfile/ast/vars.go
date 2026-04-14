@@ -119,21 +119,41 @@ func (vars *Vars) ToCacheMap() (m map[string]any) {
 	return m
 }
 
-// Merge loops over other and merges it values with the variables in vars. If
-// the include parameter is not nil and its it is an advanced import, the
-// directory is set to the value of the include parameter.
+// Merge loops over other and merges its values with the variables in vars. If
+// the include parameter is not nil and is an advanced import, the directory
+// is set to the value of the include parameter.
+//
+// Snapshots `other` under its read lock, then writes into `vars` under its
+// write lock. Holding the two locks disjointly mirrors ReverseMerge and
+// keeps concurrent readers/writers on either side safe — see issue #48.
+// The bug it replaces wrote into vars.om with no lock on vars at all, which
+// went unnoticed because graph.Merge currently serializes the include walk;
+// the moment that parallelism is restored (#49) the racy writes become live.
 func (vars *Vars) Merge(other *Vars, include *Include) {
-	if vars == nil || vars.om == nil || other == nil {
+	if vars == nil || vars.om == nil || other == nil || other.om == nil {
 		return
 	}
-	defer other.mutex.RUnlock()
-	other.mutex.RLock()
-	for pair := other.om.Front(); pair != nil; pair = pair.Next() {
-		if include != nil && include.AdvancedImport {
-			pair.Value.Dir = include.Dir
-		}
-		vars.om.Set(pair.Key, pair.Value)
+
+	type kv struct {
+		key string
+		val Var
 	}
+	other.mutex.RLock()
+	pairs := make([]kv, 0, other.om.Len())
+	for pair := other.om.Front(); pair != nil; pair = pair.Next() {
+		val := pair.Value
+		if include != nil && include.AdvancedImport {
+			val.Dir = include.Dir
+		}
+		pairs = append(pairs, kv{key: pair.Key, val: val})
+	}
+	other.mutex.RUnlock()
+
+	vars.mutex.Lock()
+	for _, p := range pairs {
+		vars.om.Set(p.key, p.val)
+	}
+	vars.mutex.Unlock()
 }
 
 // ReverseMerge merges other variables with the existing variables in vars, but

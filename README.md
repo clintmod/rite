@@ -2,7 +2,7 @@
 
 > An idempotent task runner with Unix-native variable precedence.
 
-**Status: v0.1.0 shipped, pre-1.0.** Binary builds, test suite is green, SPEC's variable precedence model and `${VAR}` shell-native preprocessor are both live. `rite migrate` converts a `Taskfile.yml` to a `Ritefile.yml` and flags anything that changes meaning under the new semantics. Docs site lives at [clintmod.github.io/rite](https://clintmod.github.io/rite/); v1.0.0 still to come. See [`SPEC.md`](./SPEC.md) for the design contract.
+**Status: v0.1.0 shipped, 1.0 in flight.** Binary builds, test suite is green across Linux/macOS/Windows on Go 1.26, SPEC's variable precedence model and `${VAR}` shell-native preprocessor are both live. `rite migrate` converts a `Taskfile.yml` to a `Ritefile.yml` and flags anything that changes meaning under the new semantics. The remote-Ritefile experiment has been removed (see [§Non-goals](#non-goals)); Ritefiles must be checked into the repo they build. `rite migrate` now rewrites and runtime-aliases all six legacy special vars (`.TASK`, `.TASK_DIR`, `.TASKFILE`, `.TASKFILE_DIR`, `.ROOT_TASKFILE`, `.TASK_VERSION`). Docs site lives at [clintmod.github.io/rite](https://clintmod.github.io/rite/). One public-API rename ([#22](https://github.com/clintmod/rite/issues/22)) remains before the 1.0 tag. See [`SPEC.md`](./SPEC.md) for the design contract and [`CHANGELOG.md`](./CHANGELOG.md) for the full diff since v0.1.0.
 
 ## Install
 
@@ -103,7 +103,8 @@ MIT. See [`LICENSE`](./LICENSE). Original copyright © 2016 Andrey Nering; fork 
 - [x] **Phase 3:** Test fixture audit and rewrite; include-site var precedence fix.
 - [x] **Phase 4:** `${VAR}` preprocessor, `export: false` opt-out, vars/env unified.
 - [x] **Phase 5:** `rite migrate` tool, docs site, v0.1.0 release with Homebrew tap + mise support.
-- [ ] **Next:** docs expansion to full user-guide parity, JSON schema publication, v1.0.0.
+- [x] **1.0 prep:** CHANGELOG, Migrating-from-go-task guide, remote-Ritefile removal, N-deep include env-export fix, full special-var rewrite/alias coverage, Go 1.25 dropped from CI.
+- [ ] **v1.0.0:** public API rename (`Task*` → `Ritefile*`/`Rite*`) for a stable semver surface, then tag.
 
 ## Migrating from go-task
 

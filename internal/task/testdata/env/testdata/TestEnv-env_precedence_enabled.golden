@@ -1,5 +1,0 @@
-GOOS='linux' GOARCH='amd64' CGO_ENABLED='0'
-FOO='foo' BAR='bar' BAZ=''
-QUX='from_os'
-FOO='foo' BAR='bar' BAZ=''
-foo

@@ -145,6 +145,78 @@ tasks:
 	}
 }
 
+// TestMigrateRewritesAdjacentSpecialVars covers the case where two
+// .TASK / .TASK_DIR refs appear inside the same `{{ … }}` expression,
+// with or without a separator between them. A single pass of the
+// bracket-class regex consumes the shared separator and misses match
+// #2, so the rewriter runs to a fixed point. See issue #10.
+func TestMigrateRewritesAdjacentSpecialVars(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, cmd string
+		want      []string
+	}{
+		{
+			name: "two_task_dir_space_separated",
+			cmd:  `echo {{.TASK_DIR .TASK_DIR}}`,
+			want: []string{"{{.RITE_TASK_DIR .RITE_TASK_DIR}}"},
+		},
+		{
+			name: "two_task_dir_via_printf",
+			cmd:  `echo {{printf "%s/%s" .TASK_DIR .TASK_DIR}}`,
+			want: []string{`{{printf "%s/%s" .RITE_TASK_DIR .RITE_TASK_DIR}}`},
+		},
+		{
+			name: "two_task_space_separated",
+			cmd:  `echo {{.TASK .TASK}}`,
+			want: []string{"{{.RITE_NAME .RITE_NAME}}"},
+		},
+		{
+			name: "three_task_dir_space_separated",
+			cmd:  `echo {{.TASK_DIR .TASK_DIR .TASK_DIR}}`,
+			want: []string{"{{.RITE_TASK_DIR .RITE_TASK_DIR .RITE_TASK_DIR}}"},
+		},
+		{
+			name: "mixed_task_and_task_dir",
+			cmd:  `echo {{printf "%s/%s" .TASK .TASK_DIR}}`,
+			want: []string{`{{printf "%s/%s" .RITE_NAME .RITE_TASK_DIR}}`},
+		},
+		{
+			name: "separate_expressions_still_work",
+			cmd:  `echo {{.TASK}}{{.TASK_DIR}}`,
+			want: []string{"{{.RITE_NAME}}{{.RITE_TASK_DIR}}"},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			src := filepath.Join(dir, "Taskfile.yml")
+			input := "version: '3'\ntasks:\n  t:\n    cmds:\n      - " + c.cmd + "\n"
+			if err := os.WriteFile(src, []byte(input), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			dst, err := task.Migrate(src, io.Discard)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out, err := os.ReadFile(dst)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := string(out)
+			for _, w := range c.want {
+				if !strings.Contains(got, w) {
+					t.Errorf("output missing %q\nGOT:\n%s", w, got)
+				}
+			}
+			if strings.Contains(got, ".TASK_DIR") || strings.Contains(got, ".TASK ") || strings.Contains(got, ".TASK}") {
+				t.Errorf("output still contains un-rewritten ref\nGOT:\n%s", got)
+			}
+		})
+	}
+}
+
 func TestMigrateRitefilePath(t *testing.T) {
 	t.Parallel()
 	// filepath.Join on Windows normalizes to backslash separators, so express

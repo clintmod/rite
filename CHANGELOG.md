@@ -68,7 +68,6 @@ discovery, variable precedence).
 ### Removed
 
 - Remote-Ritefile feature in its entirety, including:
-  <!-- TODO PR#21: confirm final list + exit-code table below when #21 merges -->
   `RITE_X_REMOTE_TASKFILES` experiment, `.riterc.yml` `remote:` block,
   `RITE_REMOTE_DIR` env var, and CLI flags `--insecure`, `--download`,
   `--offline`, `--trusted-hosts`, `--clear-cache`, `--timeout`, `--expiry`,
@@ -102,31 +101,29 @@ discovery, variable precedence).
    intended idiom (Ritefile env is a default when the shell hasn't set
    the variable).
 
-3. **Remote-Ritefiles removed (PR #21).** Any Ritefile using `includes:`
-   with a URL now fails loudly at load time instead of silently fetching.
-   The relevant error types
-   (`TaskfileFetchFailedError`, `TaskfileNotTrustedError`,
-   `TaskfileNotSecureError`, `TaskfileCacheNotFoundError`,
-   `TaskfileNetworkTimeoutError`)
-   are gone, so their exit codes 103–107 are freed. Later Taskfile-related
-   codes shift down to fill the gap — one-time break for anyone scripting
-   against specific exit codes.
+3. **Remote-Ritefiles removed (PR #21) + Ritefile-loading exit-code
+   renumbering.** Any Ritefile using `includes:` with a URL now fails
+   loudly at load time instead of silently fetching. The five
+   remote-specific error types are gone, so their exit codes 103–107
+   are freed. The remaining Ritefile-loading codes (previously 108–111)
+   shift down to fill the gap — one-time break for anyone scripting
+   against specific exit codes. Exit codes 100–102 (Ritefile not
+   found / already exists / decode), the 200-range `CodeTask*` codes,
+   and the 50-range `CodeTaskRC*` codes are unchanged. The error struct
+   names still read `Taskfile*` in `errors/errors.go` — upstream holdover
+   we haven't renamed yet; they're listed in backticks below for grep.
 
-   <!-- TODO PR#21: replace with confirmed old→new table from engineer-1
-        once the rip-out merges. Task brief states 108–111 slide down to
-        103–106; leaving placeholder until locked. -->
-
-   | Old code | Error                           | New code |
-   |---------:|:--------------------------------|---------:|
-   | 103      | `TaskfileFetchFailedError`      | _freed_  |
-   | 104      | `TaskfileNotTrustedError`       | _freed_  |
-   | 105      | `TaskfileNotSecureError`        | _freed_  |
-   | 106      | `TaskfileCacheNotFoundError`    | _freed_  |
-   | 107      | `TaskfileNetworkTimeoutError`   | _freed_  |
-   | 108      | _(Taskfile error — to confirm)_ | 103      |
-   | 109      | _(Taskfile error — to confirm)_ | 104      |
-   | 110      | _(Taskfile error — to confirm)_ | 105      |
-   | 111      | _(Taskfile error — to confirm)_ | 106      |
+   | Error                          | Old code | New code    |
+   |--------------------------------|---------:|:-----------:|
+   | `TaskfileFetchFailedError`     | 103      | *removed*   |
+   | `TaskfileNotTrustedError`      | 104      | *removed*   |
+   | `TaskfileNotSecureError`       | 105      | *removed*   |
+   | `TaskfileCacheNotFoundError`   | 106      | *removed*   |
+   | `TaskfileNetworkTimeoutError`  | 107      | *removed*   |
+   | `TaskfileVersionCheckError`    | 108      | **103**     |
+   | `TaskfileInvalid`              | 109      | **104**     |
+   | `TaskfileCycle`                | 110      | **105**     |
+   | `TaskfileDoesNotMatchChecksum` | 111      | **106**     |
 
 4. The five `go-task` → `rite` semantic breaks carried forward from
    v0.1.0 — repeated here because they define what 1.0 is:

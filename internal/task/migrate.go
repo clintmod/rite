@@ -181,8 +181,27 @@ func hasTaskfileDevSchemaPointer(s string) bool {
 // half-rename it to `.RITE_NAME_DIR`.
 func rewriteSpecialVarRefs(s string) string {
 	return rxTemplateExpr.ReplaceAllStringFunc(s, func(expr string) string {
-		expr = rxTaskDirRef.ReplaceAllString(expr, "${1}.RITE_TASK_DIR${2}")
-		expr = rxTaskNameRef.ReplaceAllString(expr, "${1}.RITE_NAME${2}")
+		// Run each rewrite to a fixed point. The bracket-class boundary
+		// approach *consumes* the separator on both sides of a match, so
+		// when two refs share a separator (e.g. `{{.TASK .TASK}}` or
+		// `{{printf "%s/%s" .TASK_DIR .TASK_DIR}}`) only the first is
+		// rewritten on a single pass — the shared separator is eaten by
+		// match #1 and unavailable as the lead boundary for match #2.
+		// Go's RE2 has no lookahead, so re-scan the output until stable.
+		for {
+			next := rxTaskDirRef.ReplaceAllString(expr, "${1}.RITE_TASK_DIR${2}")
+			if next == expr {
+				break
+			}
+			expr = next
+		}
+		for {
+			next := rxTaskNameRef.ReplaceAllString(expr, "${1}.RITE_NAME${2}")
+			if next == expr {
+				break
+			}
+			expr = next
+		}
 		return expr
 	})
 }

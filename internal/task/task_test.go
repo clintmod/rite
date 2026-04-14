@@ -937,6 +937,29 @@ func TestIncludesIncorrect(t *testing.T) {
 	assert.Contains(t, err.Error(), "Failed to parse testdata/includes_incorrect/incomplete.yml:", err.Error())
 }
 
+// TestIncludesURLRejected locks in the non-goal that remote Ritefiles are
+// unsupported. A URL in `includes:` must fail loudly with the "remote
+// Ritefiles are not supported" error rather than silently falling through
+// to a "file not found" (which is what happens if the URL slips past the
+// scheme check into filepath.Join, where "://" collapses to ":/").
+func TestIncludesURLRejected(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/includes_url"
+
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+		task.WithSilent(true),
+	)
+
+	err := e.Setup()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "remote Ritefiles are not supported")
+}
+
 func TestIncludesEmptyMain(t *testing.T) {
 	t.Parallel()
 
@@ -2695,20 +2718,4 @@ tasks:
 	if _, err := os.Stat(filepath.Join(dir, ".task")); !os.IsNotExist(err) {
 		t.Fatalf(".task/ was created (err=%v); rite must not write into go-task's cache namespace", err)
 	}
-}
-
-// enableExperimentForTest enables the experiment behind pointer e for the duration of test t and sub-tests,
-// with the experiment being restored to its previous state when tests complete.
-//
-// Typically experiments are controlled via TASK_X_ env vars, but we cannot use those in tests
-// because the experiment settings are parsed during experiments.init(), before any tests run.
-func enableExperimentForTest(t *testing.T, e *experiments.Experiment, val int) {
-	t.Helper()
-	prev := *e
-	*e = experiments.Experiment{
-		Name:          prev.Name,
-		AllowedValues: []int{val},
-		Value:         val,
-	}
-	t.Cleanup(func() { *e = prev })
 }

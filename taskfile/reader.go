@@ -115,6 +115,13 @@ func (r *Reader) include(ctx context.Context, node Node) error {
 				return err
 			}
 
+			if hasURLScheme(include.Taskfile) {
+				if include.Optional {
+					return nil
+				}
+				return errors.New("rite: remote Ritefiles are not supported — check Ritefiles in to your repo to keep task execution idempotent")
+			}
+
 			entrypoint, err := node.ResolveEntrypoint(include.Taskfile)
 			if err != nil {
 				return err

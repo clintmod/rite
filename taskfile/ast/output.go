@@ -25,7 +25,7 @@ func (s *Output) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var name string
 		if err := node.Decode(&name); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		s.Name = name
 		return nil
@@ -35,10 +35,10 @@ func (s *Output) UnmarshalYAML(node *yaml.Node) error {
 			Group *OutputGroup
 		}
 		if err := node.Decode(&tmp); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		if tmp.Group == nil {
-			return errors.NewTaskfileDecodeError(nil, node).WithMessage(`output style must have the "group" key when in mapping form`)
+			return errors.NewRitefileDecodeError(nil, node).WithMessage(`output style must have the "group" key when in mapping form`)
 		}
 		*s = Output{
 			Name:  "group",
@@ -47,7 +47,7 @@ func (s *Output) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("output")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("output")
 }
 
 // OutputGroup is the style options specific to the Group style.

@@ -50,8 +50,8 @@ func (e *Executor) watchTasks(calls ...*Call) error {
 	switch {
 	case e.Interval != 0:
 		waitTime = e.Interval
-	case e.Taskfile.Interval != 0:
-		waitTime = e.Taskfile.Interval
+	case e.Ritefile.Interval != 0:
+		waitTime = e.Ritefile.Interval
 	default:
 		waitTime = defaultWaitTime
 	}

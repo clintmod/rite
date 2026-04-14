@@ -26,8 +26,8 @@ var (
 // Filenames are rite-specific (`.riterc.yml`, `$XDG_CONFIG_HOME/rite/riterc.yml`)
 // so rite can coexist with go-task's own `.taskrc.yml` in the same directory
 // or home without either tool stepping on the other's config.
-func GetConfig(dir string) (*ast.TaskRC, error) {
-	var config *ast.TaskRC
+func GetConfig(dir string) (*ast.Riterc, error) {
+	var config *ast.Riterc
 	reader := NewReader()
 
 	// Read the XDG config file

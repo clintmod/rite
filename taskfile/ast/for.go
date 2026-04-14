@@ -22,7 +22,7 @@ func (f *For) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var from string
 		if err := node.Decode(&from); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		f.From = from
 		return nil
@@ -30,7 +30,7 @@ func (f *For) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.SequenceNode:
 		var list []any
 		if err := node.Decode(&list); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		f.List = list
 		return nil
@@ -43,13 +43,13 @@ func (f *For) UnmarshalYAML(node *yaml.Node) error {
 			As     string
 		}
 		if err := node.Decode(&forStruct); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		if forStruct.Var == "" && forStruct.Matrix.Len() == 0 {
-			return errors.NewTaskfileDecodeError(nil, node).WithMessage("invalid keys in for")
+			return errors.NewRitefileDecodeError(nil, node).WithMessage("invalid keys in for")
 		}
 		if forStruct.Var != "" && forStruct.Matrix.Len() != 0 {
-			return errors.NewTaskfileDecodeError(nil, node).WithMessage("cannot use both var and matrix in for")
+			return errors.NewRitefileDecodeError(nil, node).WithMessage("cannot use both var and matrix in for")
 		}
 		f.Matrix = forStruct.Matrix
 		f.Var = forStruct.Var
@@ -58,7 +58,7 @@ func (f *For) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("for")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("for")
 }
 
 func (f *For) DeepCopy() *For {

@@ -385,7 +385,7 @@ func (sb *SyncBuffer) Write(p []byte) (n int, err error) {
 	return sb.buf.Write(p)
 }
 
-// fileContentTest provides a basic reusable test-case for running a Taskfile
+// fileContentTest provides a basic reusable test-case for running a Ritefile
 // and inspect generated files.
 type fileContentTest struct {
 	Dir        string
@@ -758,8 +758,8 @@ func TestTaskVersion(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, test.Version, e.Taskfile.Version)
-			assert.Equal(t, 2, e.Taskfile.Tasks.Len())
+			assert.Equal(t, test.Version, e.Ritefile.Version)
+			assert.Equal(t, 2, e.Ritefile.Tasks.Len())
 		})
 	}
 }
@@ -778,7 +778,7 @@ func TestTaskVersionDecoupledFromAppVersion(t *testing.T) {
 		task.WithVersionCheck(true),
 	)
 	require.NoError(t, e.Setup())
-	assert.Equal(t, semver.MustParse("3"), e.Taskfile.Version)
+	assert.Equal(t, semver.MustParse("3"), e.Ritefile.Version)
 }
 
 func TestTaskIgnoreErrors(t *testing.T) {
@@ -2691,7 +2691,7 @@ func TestWildcard(t *testing.T) {
 
 // TestCoexistenceCacheDir locks in the SPEC "On-disk Paths" guarantee:
 // rite writes its fingerprint state to .rite/ and MUST NOT touch .task/.
-// A user checking in a Ritefile alongside a Taskfile.yml should be able to
+// A user checking in a Ritefile alongside a Ritefile.yml should be able to
 // run both tools without either clobbering or silently reading the other's
 // cache. Regressions here would merge our bookkeeping into go-task's and
 // vice-versa.

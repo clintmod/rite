@@ -22,7 +22,7 @@ type (
 	ExecutorOption interface {
 		ApplyToExecutor(*Executor)
 	}
-	// An Executor is used for processing Taskfile(s) and executing the task(s)
+	// An Executor is used for processing Ritefile(s) and executing the task(s)
 	// within them.
 	Executor struct {
 		// Flags
@@ -52,7 +52,7 @@ type (
 		Stderr io.Writer
 
 		// Internal
-		Taskfile           *ast.Taskfile
+		Ritefile           *ast.Ritefile
 		Logger             *logger.Logger
 		Compiler           *Compiler
 		Output             output.Output
@@ -123,7 +123,7 @@ func (o *dirOption) ApplyToExecutor(e *Executor) {
 	e.Dir = o.dir
 }
 
-// WithEntrypoint sets the entrypoint (main Taskfile) of the [Executor]. By
+// WithEntrypoint sets the entrypoint (main Ritefile) of the [Executor]. By
 // default, Task will search for one of the default Taskfiles in the given
 // directory.
 func WithEntrypoint(entrypoint string) ExecutorOption {
@@ -361,7 +361,7 @@ func (o *intervalOption) ApplyToExecutor(e *Executor) {
 }
 
 // WithOutputStyle sets the output style of the [Executor]. By default, the
-// output style is set to the style defined in the Taskfile.
+// output style is set to the style defined in the Ritefile.
 func WithOutputStyle(outputStyle ast.Output) ExecutorOption {
 	return &outputStyleOption{outputStyle}
 }
@@ -376,7 +376,7 @@ func (o *outputStyleOption) ApplyToExecutor(e *Executor) {
 
 // WithTaskSorter sets the sorter that the [Executor] will use to sort tasks. By
 // default, the sorter is set to sort tasks alphabetically, but with tasks with
-// no namespace (in the root Taskfile) first.
+// no namespace (in the root Ritefile) first.
 func WithTaskSorter(sorter sort.Sorter) ExecutorOption {
 	return &taskSorterOption{sorter}
 }

@@ -2,12 +2,12 @@ package errors
 
 import "fmt"
 
-type TaskRCNotFoundError struct {
+type RitercNotFoundError struct {
 	URI  string
 	Walk bool
 }
 
-func (err TaskRCNotFoundError) Error() string {
+func (err RitercNotFoundError) Error() string {
 	var walkText string
 	if err.Walk {
 		walkText = " (or any of the parent directories)"
@@ -15,6 +15,6 @@ func (err TaskRCNotFoundError) Error() string {
 	return fmt.Sprintf(`rite: No Task config file found at %q%s`, err.URI, walkText)
 }
 
-func (err TaskRCNotFoundError) Code() int {
-	return CodeTaskRCNotFoundError
+func (err RitercNotFoundError) Code() int {
+	return CodeRitercNotFoundError
 }

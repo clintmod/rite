@@ -12,7 +12,7 @@ import (
 )
 
 type (
-	TaskfileDecodeError struct {
+	RitefileDecodeError struct {
 		Message  string
 		Location string
 		Line     int
@@ -23,13 +23,13 @@ type (
 	}
 )
 
-func NewTaskfileDecodeError(err error, node *yaml.Node) *TaskfileDecodeError {
+func NewRitefileDecodeError(err error, node *yaml.Node) *RitefileDecodeError {
 	// If the error is already a DecodeError, return it
-	taskfileInvalidErr := &TaskfileDecodeError{}
+	taskfileInvalidErr := &RitefileDecodeError{}
 	if errors.As(err, &taskfileInvalidErr) {
 		return taskfileInvalidErr
 	}
-	return &TaskfileDecodeError{
+	return &RitefileDecodeError{
 		Line:   node.Line,
 		Column: node.Column,
 		Tag:    node.ShortTag(),
@@ -37,7 +37,7 @@ func NewTaskfileDecodeError(err error, node *yaml.Node) *TaskfileDecodeError {
 	}
 }
 
-func (err *TaskfileDecodeError) Error() string {
+func (err *RitefileDecodeError) Error() string {
 	buf := &bytes.Buffer{}
 
 	// Print the error message
@@ -65,10 +65,10 @@ func (err *TaskfileDecodeError) Error() string {
 	return buf.String()
 }
 
-func (err *TaskfileDecodeError) Debug() string {
+func (err *RitefileDecodeError) Debug() string {
 	const indentWidth = 2
 	buf := &bytes.Buffer{}
-	fmt.Fprintln(buf, "TaskfileDecodeError:")
+	fmt.Fprintln(buf, "RitefileDecodeError:")
 
 	// Recursively loop through the error chain and print any details
 	var debug func(error, int)
@@ -81,8 +81,8 @@ func (err *TaskfileDecodeError) Debug() string {
 			return
 		}
 
-		// Taskfile decode error
-		decodeErr := &TaskfileDecodeError{}
+		// Ritefile decode error
+		decodeErr := &RitefileDecodeError{}
 		if errors.As(err, &decodeErr) {
 			fmt.Fprintf(buf, "%s%s (%s:%d:%d)\n",
 				indentStr,
@@ -102,25 +102,25 @@ func (err *TaskfileDecodeError) Debug() string {
 	return buf.String()
 }
 
-func (err *TaskfileDecodeError) Unwrap() error {
+func (err *RitefileDecodeError) Unwrap() error {
 	return err.Err
 }
 
-func (err *TaskfileDecodeError) Code() int {
-	return CodeTaskfileDecode
+func (err *RitefileDecodeError) Code() int {
+	return CodeRitefileDecode
 }
 
-func (err *TaskfileDecodeError) WithMessage(format string, a ...any) *TaskfileDecodeError {
+func (err *RitefileDecodeError) WithMessage(format string, a ...any) *RitefileDecodeError {
 	err.Message = fmt.Sprintf(format, a...)
 	return err
 }
 
-func (err *TaskfileDecodeError) WithTypeMessage(t string) *TaskfileDecodeError {
+func (err *RitefileDecodeError) WithTypeMessage(t string) *RitefileDecodeError {
 	err.Message = fmt.Sprintf("cannot unmarshal %s into %s", err.Tag, t)
 	return err
 }
 
-func (err *TaskfileDecodeError) WithFileInfo(location string, snippet string) *TaskfileDecodeError {
+func (err *RitefileDecodeError) WithFileInfo(location string, snippet string) *RitefileDecodeError {
 	err.Location = location
 	err.Snippet = snippet
 	return err

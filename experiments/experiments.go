@@ -34,7 +34,7 @@ func Parse(dir string) {
 	ParseWithConfig(dir, config)
 }
 
-func ParseWithConfig(dir string, config *ast.TaskRC) {
+func ParseWithConfig(dir string, config *ast.Riterc) {
 	// Read any .env files
 	readDotEnv(dir)
 	// Initialize the experiments

@@ -22,13 +22,13 @@ type Compiler struct {
 	Entrypoint     string
 	UserWorkingDir string
 
-	TaskfileEnv  *ast.Vars
-	TaskfileVars *ast.Vars
+	RitefileEnv  *ast.Vars
+	RitefileVars *ast.Vars
 
 	Logger *logger.Logger
 }
 
-func (c *Compiler) GetTaskfileVariables() (*ast.Vars, error) {
+func (c *Compiler) GetRitefileVariables() (*ast.Vars, error) {
 	return c.getVariables(nil, nil, true)
 }
 
@@ -48,10 +48,10 @@ func (c *Compiler) FastGetVariables(t *ast.Task, call *Call) (*ast.Vars, error) 
 // Precedence (highest → lowest):
 //  1. Shell environment
 //  2. CLI / call.Vars (FOO=bar rite build, --set FOO=bar)
-//  3. Entrypoint env block (TaskfileEnv — dotenv files are merged here upstream)
-//  4. Entrypoint vars block (TaskfileVars)
+//  3. Entrypoint env block (RitefileEnv — dotenv files are merged here upstream)
+//  4. Entrypoint vars block (RitefileVars)
 //  5. Include-site vars (t.IncludeVars)
-//  6. Included-file top-level vars (t.IncludedTaskfileVars)
+//  6. Included-file top-level vars (t.IncludedRitefileVars)
 //  7. Task-scope vars (t.Vars) — defaults only
 //  8. Built-in/special vars (RITE_EXE, RITEFILE, TASK, ...)
 //
@@ -136,14 +136,14 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 	}
 
 	// Tier 3: entrypoint env (dotenv merged in upstream).
-	for k, v := range c.TaskfileEnv.All() {
+	for k, v := range c.RitefileEnv.All() {
 		if err := rangeFunc(k, v); err != nil {
 			return nil, err
 		}
 	}
 
 	// Tier 4: entrypoint vars.
-	for k, v := range c.TaskfileVars.All() {
+	for k, v := range c.RitefileVars.All() {
 		if err := rangeFunc(k, v); err != nil {
 			return nil, err
 		}
@@ -177,7 +177,7 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 			}
 		}
 		// Tier 6: included file top-level vars.
-		for k, v := range t.IncludedTaskfileVars.All() {
+		for k, v := range t.IncludedRitefileVars.All() {
 			if err := taskRangeFunc(k, v); err != nil {
 				return nil, err
 			}
@@ -273,8 +273,8 @@ func (c *Compiler) getSpecialVars(t *ast.Task, call *Call) (map[string]string, e
 	}
 	if t != nil {
 		taskDir := filepath.ToSlash(filepathext.SmartJoin(c.Dir, t.Dir))
-		ritefile := filepath.ToSlash(t.Location.Taskfile)
-		ritefileDir := filepath.ToSlash(filepath.Dir(t.Location.Taskfile))
+		ritefile := filepath.ToSlash(t.Location.Ritefile)
+		ritefileDir := filepath.ToSlash(filepath.Dir(t.Location.Ritefile))
 		allVars["TASK"] = t.Task
 		allVars["TASK_DIR"] = taskDir
 		// rite-named aliases for .TASK and .TASK_DIR. The original names

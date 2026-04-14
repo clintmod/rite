@@ -47,7 +47,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var cmd string
 		if err := node.Decode(&cmd); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		c.Cmd = cmd
 		return nil
@@ -67,7 +67,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			Platforms   []*Platform
 		}
 		if err := node.Decode(&cmdStruct); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		if cmdStruct.Defer != nil {
 
@@ -114,8 +114,8 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			return nil
 		}
 
-		return errors.NewTaskfileDecodeError(nil, node).WithMessage("invalid keys in command")
+		return errors.NewRitefileDecodeError(nil, node).WithMessage("invalid keys in command")
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("command")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("command")
 }

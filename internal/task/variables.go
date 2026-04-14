@@ -66,7 +66,7 @@ func (e *Executor) CompiledTaskForTaskList(call *Call) (*ast.Task, error) {
 		IgnoreError:          origTask.IgnoreError,
 		Run:                  origTask.Run,
 		IncludeVars:          origTask.IncludeVars,
-		IncludedTaskfileVars: origTask.IncludedTaskfileVars,
+		IncludedRitefileVars: origTask.IncludedRitefileVars,
 		Platforms:            origTask.Platforms,
 		Location:             origTask.Location,
 		Requires:             origTask.Requires,
@@ -133,7 +133,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		IgnoreError:          origTask.IgnoreError,
 		Run:                  templater.Replace(origTask.Run, cache),
 		IncludeVars:          origTask.IncludeVars,
-		IncludedTaskfileVars: origTask.IncludedTaskfileVars,
+		IncludedRitefileVars: origTask.IncludedRitefileVars,
 		Platforms:            origTask.Platforms,
 		If:                   templater.Replace(origTask.If, cache),
 		Location:             origTask.Location,
@@ -179,7 +179,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 	new.Env = ast.NewVars()
 	new.Env.Merge(templater.ReplaceVars(origTask.Env, cache), nil)   // tier 7 — defaults
 	new.Env.Merge(templater.ReplaceVars(dotenvEnvs, cache), nil)     // task-level dotenv overlay
-	new.Env.Merge(templater.ReplaceVars(e.Taskfile.Env, cache), nil) // tier 3/5 — entrypoint env wins
+	new.Env.Merge(templater.ReplaceVars(e.Ritefile.Env, cache), nil) // tier 3/5 — entrypoint env wins
 	if evaluateShVars {
 		// Per-resolution dynamic-var dedupe for this task's env block; see
 		// SPEC §Dynamic Variables and HandleDynamicVar.
@@ -356,8 +356,8 @@ func itemsFromFor(
 	// Get the list from a matrix
 	if f.Matrix.Len() != 0 {
 		if err := resolveMatrixRefs(f.Matrix, cache); err != nil {
-			return nil, nil, errors.TaskfileInvalidError{
-				URI: location.Taskfile,
+			return nil, nil, errors.RitefileInvalidError{
+				URI: location.Ritefile,
 				Err: err,
 			}
 		}
@@ -422,8 +422,8 @@ func itemsFromFor(
 						values = append(values, v)
 					}
 				default:
-					return nil, nil, errors.TaskfileInvalidError{
-						URI: location.Taskfile,
+					return nil, nil, errors.RitefileInvalidError{
+						URI: location.Ritefile,
 						Err: errors.New("loop var must be a delimiter-separated string, list or a map"),
 					}
 				}

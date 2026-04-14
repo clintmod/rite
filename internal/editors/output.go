@@ -25,7 +25,7 @@ type (
 	Location struct {
 		Line     int    `json:"line"`
 		Column   int    `json:"column"`
-		Taskfile string `json:"taskfile"`
+		Ritefile string `json:"taskfile"`
 	}
 )
 
@@ -43,7 +43,7 @@ func NewTask(task *ast.Task) Task {
 		Location: &Location{
 			Line:     task.Location.Line,
 			Column:   task.Location.Column,
-			Taskfile: task.Location.Taskfile,
+			Ritefile: task.Location.Ritefile,
 		},
 	}
 }

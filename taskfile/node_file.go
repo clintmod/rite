@@ -19,16 +19,16 @@ type FileNode struct {
 
 func NewFileNode(entrypoint, dir string, opts ...NodeOption) (*FileNode, error) {
 	// Find the entrypoint file
-	resolvedEntrypoint, err := fsext.Search(entrypoint, dir, DefaultTaskfiles)
+	resolvedEntrypoint, err := fsext.Search(entrypoint, dir, DefaultRitefiles)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			if entrypoint == "" {
-				return nil, errors.TaskfileNotFoundError{URI: entrypoint, Walk: true}
+				return nil, errors.RitefileNotFoundError{URI: entrypoint, Walk: true}
 			} else {
-				return nil, errors.TaskfileNotFoundError{URI: entrypoint, Walk: false}
+				return nil, errors.RitefileNotFoundError{URI: entrypoint, Walk: false}
 			}
 		} else if errors.Is(err, os.ErrPermission) {
-			return nil, errors.TaskfileNotFoundError{URI: entrypoint, Walk: true, OwnerChange: true}
+			return nil, errors.RitefileNotFoundError{URI: entrypoint, Walk: true, OwnerChange: true}
 		}
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (node *FileNode) ResolveEntrypoint(entrypoint string) (string, error) {
 		return path, nil
 	}
 
-	// NOTE: Uses the directory of the entrypoint (Taskfile), not the current working directory
+	// NOTE: Uses the directory of the entrypoint (Ritefile), not the current working directory
 	// This means that files are included relative to one another
 	entrypointDir := filepath.Dir(node.entrypoint)
 	return filepathext.SmartJoin(entrypointDir, path), nil
@@ -84,7 +84,7 @@ func (node *FileNode) ResolveDir(dir string) (string, error) {
 		return path, nil
 	}
 
-	// NOTE: Uses the directory of the entrypoint (Taskfile), not the current working directory
+	// NOTE: Uses the directory of the entrypoint (Ritefile), not the current working directory
 	// This means that files are included relative to one another
 	entrypointDir := filepath.Dir(node.entrypoint)
 	return filepathext.SmartJoin(entrypointDir, path), nil

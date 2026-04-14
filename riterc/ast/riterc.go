@@ -7,7 +7,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-type TaskRC struct {
+type Riterc struct {
 	Version      *semver.Version `yaml:"version"`
 	Verbose      *bool           `yaml:"verbose"`
 	Silent       *bool           `yaml:"silent"`
@@ -19,8 +19,8 @@ type TaskRC struct {
 	Experiments  map[string]int  `yaml:"experiments"`
 }
 
-// Merge combines the current TaskRC with another TaskRC, prioritizing non-nil fields from the other TaskRC.
-func (t *TaskRC) Merge(other *TaskRC) {
+// Merge combines the current Riterc with another Riterc, prioritizing non-nil fields from the other Riterc.
+func (t *Riterc) Merge(other *Riterc) {
 	if other == nil {
 		return
 	}

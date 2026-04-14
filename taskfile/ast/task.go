@@ -47,7 +47,7 @@ type Task struct {
 	// Populated during merging
 	Namespace            string `yaml:"-" hash:"ignore"`
 	IncludeVars          *Vars  `yaml:"-"`
-	IncludedTaskfileVars *Vars  `yaml:"-"`
+	IncludedRitefileVars *Vars  `yaml:"-"`
 
 	FullName string `yaml:"-" hash:"ignore"`
 }
@@ -109,7 +109,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var cmd Cmd
 		if err := node.Decode(&cmd); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		t.Cmds = append(t.Cmds, &cmd)
 		return nil
@@ -118,7 +118,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.SequenceNode:
 		var cmds []*Cmd
 		if err := node.Decode(&cmds); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		t.Cmds = cmds
 		return nil
@@ -158,11 +158,11 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 			Failfast      bool
 		}
 		if err := node.Decode(&task); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		if task.Cmd != nil {
 			if task.Cmds != nil {
-				return errors.NewTaskfileDecodeError(nil, node).WithMessage("task cannot have both cmd and cmds")
+				return errors.NewRitefileDecodeError(nil, node).WithMessage("task cannot have both cmd and cmds")
 			}
 			t.Cmds = []*Cmd{task.Cmd}
 		} else {
@@ -199,7 +199,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("task")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("task")
 }
 
 // DeepCopy creates a new instance of Task and copies
@@ -235,7 +235,7 @@ func (t *Task) DeepCopy() *Task {
 		IgnoreError:          t.IgnoreError,
 		Run:                  t.Run,
 		IncludeVars:          t.IncludeVars.DeepCopy(),
-		IncludedTaskfileVars: t.IncludedTaskfileVars.DeepCopy(),
+		IncludedRitefileVars: t.IncludedRitefileVars.DeepCopy(),
 		Platforms:            deepcopy.Slice(t.Platforms),
 		If:                   t.If,
 		Location:             t.Location.DeepCopy(),

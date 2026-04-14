@@ -37,7 +37,7 @@ type (
 	SnippetOption interface {
 		ApplyToSnippet(*Snippet)
 	}
-	// A Snippet is a syntax highlighted snippet of a Taskfile with optional
+	// A Snippet is a syntax highlighted snippet of a Ritefile with optional
 	// padding and a line and column indicator.
 	Snippet struct {
 		linesRaw         []string

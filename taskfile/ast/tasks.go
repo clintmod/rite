@@ -118,7 +118,7 @@ func (t *Tasks) Values(sorter sort.Sorter) iter.Seq[*Task] {
 	}
 }
 
-func (t1 *Tasks) Merge(t2 *Tasks, include *Include, includedTaskfileVars *Vars) error {
+func (t1 *Tasks) Merge(t2 *Tasks, include *Include, includedRitefileVars *Vars) error {
 	defer t2.mutex.RUnlock()
 	t2.mutex.RLock()
 	for name, v := range t2.All(nil) {
@@ -170,17 +170,17 @@ func (t1 *Tasks) Merge(t2 *Tasks, include *Include, includedTaskfileVars *Vars) 
 			task.Task = taskName
 		}
 
-		// IncludedTaskfileVars captures the included file's own top-level vars
+		// IncludedRitefileVars captures the included file's own top-level vars
 		// (tier 6 in SPEC §Variable Precedence). We set this for every included
 		// task, not just AdvancedImport, because under first-in-wins each
 		// included file's vars must be reachable as a tier distinct from the
-		// parent's — the upstream flatten-into-parent model (Taskfile.Merge
+		// parent's — the upstream flatten-into-parent model (Ritefile.Merge
 		// line 70) used to make this automatic via tier 4 but also pre-empted
 		// include-site vars at tier 5, which SPEC forbids.
 		//
 		// N-deep merges: when A includes B includes C, the graph merge walks
 		// in reverse topological order (C→B, then B→A). The C task enters this
-		// loop with IncludedTaskfileVars already populated from C's own file
+		// loop with IncludedRitefileVars already populated from C's own file
 		// (set during B.Merge(C)). On the outer A.Merge(B) pass, a naive
 		// overwrite would replace those with B's vars and drop C's entirely,
 		// so `${BOTTOM}` / `{{.BOTTOM}}` go absent at depth ≥ 2. We instead
@@ -188,14 +188,14 @@ func (t1 *Tasks) Merge(t2 *Tasks, include *Include, includedTaskfileVars *Vars) 
 		// set deeper-file vars overlay on top, so deeper-wins precedence
 		// holds across any depth. Regression fence: issue #24 /
 		// TestScopeIsolation-nested_includes.
-		merged := includedTaskfileVars.DeepCopy()
+		merged := includedRitefileVars.DeepCopy()
 		if merged == nil {
 			merged = NewVars()
 		}
-		if task.IncludedTaskfileVars != nil {
-			merged.Merge(task.IncludedTaskfileVars, nil)
+		if task.IncludedRitefileVars != nil {
+			merged.Merge(task.IncludedRitefileVars, nil)
 		}
-		task.IncludedTaskfileVars = merged
+		task.IncludedRitefileVars = merged
 
 		if include.AdvancedImport {
 			task.Dir = filepathext.SmartJoin(include.Dir, task.Dir)
@@ -215,9 +215,9 @@ func (t1 *Tasks) Merge(t2 *Tasks, include *Include, includedTaskfileVars *Vars) 
 		t1.Set(taskName, task)
 	}
 
-	// If the included Taskfile has a default task, is not flattened and the
+	// If the included Ritefile has a default task, is not flattened and the
 	// parent namespace has no task with a matching name, we can add an alias so
-	// that the user can run the included Taskfile's default task without
+	// that the user can run the included Ritefile's default task without
 	// specifying its full name. If the parent namespace has aliases, we add
 	// another alias for each of them.
 	_, t2DefaultExists := t2.Get("default")
@@ -250,7 +250,7 @@ func (t *Tasks) UnmarshalYAML(node *yaml.Node) error {
 			// Decode the value node into a Task struct
 			var v Task
 			if err := valueNode.Decode(&v); err != nil {
-				return errors.NewTaskfileDecodeError(err, node)
+				return errors.NewRitefileDecodeError(err, node)
 			}
 
 			// Set the task name and location
@@ -266,7 +266,7 @@ func (t *Tasks) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("tasks")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("tasks")
 }
 
 func taskNameWithNamespace(taskName string, namespace string) string {

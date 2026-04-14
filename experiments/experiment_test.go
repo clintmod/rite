@@ -17,7 +17,7 @@ func TestNew(t *testing.T) {
 	)
 	tests := []struct {
 		name          string
-		config        *ast.TaskRC
+		config        *ast.Riterc
 		allowedValues []int
 		env           int
 		wantEnabled   bool
@@ -85,7 +85,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name: `[1] allowed, config="1"`,
-			config: &ast.TaskRC{
+			config: &ast.Riterc{
 				Experiments: map[string]int{
 					exampleExperiment: 1,
 				},
@@ -97,7 +97,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name: `[1] allowed, config="2"`,
-			config: &ast.TaskRC{
+			config: &ast.Riterc{
 				Experiments: map[string]int{
 					exampleExperiment: 2,
 				},
@@ -114,7 +114,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name: `[1, 2] allowed, env="1", config="2"`,
-			config: &ast.TaskRC{
+			config: &ast.Riterc{
 				Experiments: map[string]int{
 					exampleExperiment: 2,
 				},

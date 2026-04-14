@@ -16,13 +16,13 @@ type (
 		ApplyToReader(*Reader)
 	}
 	// A Reader will recursively read Taskfiles from a given [Node] and build a
-	// [ast.TaskRC] from them.
+	// [ast.Riterc] from them.
 	Reader struct {
 		debugFunc DebugFunc
 	}
 )
 
-// NewReader constructs a new Taskfile [Reader] using the given Node and
+// NewReader constructs a new Ritefile [Reader] using the given Node and
 // options.
 func NewReader(opts ...ReaderOption) *Reader {
 	r := &Reader{
@@ -57,8 +57,8 @@ func (o *debugFuncOption) ApplyToReader(r *Reader) {
 }
 
 // Read will read the Task config defined by the [Reader]'s [Node].
-func (r *Reader) Read(node *Node) (*ast.TaskRC, error) {
-	var config ast.TaskRC
+func (r *Reader) Read(node *Node) (*ast.Riterc, error) {
+	var config ast.Riterc
 
 	if node == nil {
 		return nil, os.ErrInvalid

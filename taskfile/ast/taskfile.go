@@ -18,8 +18,8 @@ var V3 = semver.MustParse("3")
 // ErrIncludedRitefilesCantHaveDotenvs is returned when an included Ritefile contains dotenvs
 var ErrIncludedRitefilesCantHaveDotenvs = errors.New("rite: Included Ritefiles can't have dotenv declarations. Please, move the dotenv declaration to the main Ritefile")
 
-// Taskfile is the abstract syntax tree for a Taskfile
-type Taskfile struct {
+// Ritefile is the abstract syntax tree for a Ritefile
+type Ritefile struct {
 	Location string          `yaml:"-"`
 	Version  *semver.Version `yaml:"version"`
 	Output   Output          `yaml:"output"`
@@ -36,8 +36,8 @@ type Taskfile struct {
 	Interval time.Duration   `yaml:"interval"`
 }
 
-// Merge merges the second Taskfile into the first
-func (t1 *Taskfile) Merge(t2 *Taskfile, include *Include) error {
+// Merge merges the second Ritefile into the first
+func (t1 *Ritefile) Merge(t2 *Ritefile, include *Include) error {
 	if !t1.Version.Equal(t2.Version) {
 		return fmt.Errorf(`rite: Taskfiles versions should match. First is "%s" but second is "%s"`, t1.Version, t2.Version)
 	}
@@ -75,13 +75,13 @@ func (t1 *Taskfile) Merge(t2 *Taskfile, include *Include) error {
 	// top-level `vars:` are tier 6 — include-site vars (tier 5) must beat
 	// them, and tier 5 must in turn beat nothing at tier 4. Upstream's
 	// flattening merge here would leak t2's vars up into the parent's
-	// tier-4 TaskfileVars and pre-empt tier 5 entirely. Pass t2.Vars
-	// directly so each task's IncludedTaskfileVars reflects only that
+	// tier-4 RitefileVars and pre-empt tier 5 entirely. Pass t2.Vars
+	// directly so each task's IncludedRitefileVars reflects only that
 	// task's source file, not a union across all includes.
 	return t1.Tasks.Merge(t2.Tasks, include, t2.Vars)
 }
 
-func (tf *Taskfile) UnmarshalYAML(node *yaml.Node) error {
+func (tf *Ritefile) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
 	case yaml.MappingNode:
 		var taskfile struct {
@@ -100,7 +100,7 @@ func (tf *Taskfile) UnmarshalYAML(node *yaml.Node) error {
 			Interval time.Duration
 		}
 		if err := node.Decode(&taskfile); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		tf.Version = taskfile.Version
 		tf.Output = taskfile.Output
@@ -130,5 +130,5 @@ func (tf *Taskfile) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("taskfile")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("taskfile")
 }

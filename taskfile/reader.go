@@ -24,9 +24,9 @@ type (
 		ApplyToReader(*Reader)
 	}
 	// A Reader recursively reads Ritefiles from a given [Node] and builds a
-	// [ast.TaskfileGraph] from them.
+	// [ast.RitefileGraph] from them.
 	Reader struct {
-		graph     *ast.TaskfileGraph
+		graph     *ast.RitefileGraph
 		debugFunc DebugFunc
 	}
 )
@@ -34,7 +34,7 @@ type (
 // NewReader constructs a new Ritefile [Reader] using the given options.
 func NewReader(opts ...ReaderOption) *Reader {
 	r := &Reader{
-		graph: ast.NewTaskfileGraph(),
+		graph: ast.NewRitefileGraph(),
 	}
 	r.Options(opts...)
 	return r
@@ -65,8 +65,8 @@ func (o *debugFuncOption) ApplyToReader(r *Reader) {
 
 // Read will read the Ritefile defined by the given [Node] and recurse through
 // any [ast.Includes] it finds, reading each included Ritefile and building an
-// [ast.TaskfileGraph] as it goes.
-func (r *Reader) Read(ctx context.Context, node Node) (*ast.TaskfileGraph, error) {
+// [ast.RitefileGraph] as it goes.
+func (r *Reader) Read(ctx context.Context, node Node) (*ast.RitefileGraph, error) {
 	if err := r.include(ctx, node); err != nil {
 		return nil, err
 	}
@@ -74,9 +74,9 @@ func (r *Reader) Read(ctx context.Context, node Node) (*ast.TaskfileGraph, error
 }
 
 func (r *Reader) include(ctx context.Context, node Node) error {
-	vertex := &ast.TaskfileVertex{
+	vertex := &ast.RitefileVertex{
 		URI:      node.Location(),
-		Taskfile: nil,
+		Ritefile: nil,
 	}
 
 	if err := r.graph.AddVertex(vertex); err == graph.ErrVertexAlreadyExists {
@@ -86,21 +86,21 @@ func (r *Reader) include(ctx context.Context, node Node) error {
 	}
 
 	var err error
-	vertex.Taskfile, err = r.readNode(node)
+	vertex.Ritefile, err = r.readNode(node)
 	if err != nil {
 		return err
 	}
 
 	var g errgroup.Group
 
-	for _, include := range vertex.Taskfile.Includes.All() {
+	for _, include := range vertex.Ritefile.Includes.All() {
 		vars := env.GetEnviron()
-		vars.Merge(vertex.Taskfile.Vars, nil)
+		vars.Merge(vertex.Ritefile.Vars, nil)
 		g.Go(func() error {
 			cache := &templater.Cache{Vars: vars}
 			include = &ast.Include{
 				Namespace:      include.Namespace,
-				Taskfile:       templater.Replace(include.Taskfile, cache),
+				Ritefile:       templater.Replace(include.Ritefile, cache),
 				Dir:            templater.Replace(include.Dir, cache),
 				Optional:       include.Optional,
 				Internal:       include.Internal,
@@ -115,14 +115,14 @@ func (r *Reader) include(ctx context.Context, node Node) error {
 				return err
 			}
 
-			if hasURLScheme(include.Taskfile) {
+			if hasURLScheme(include.Ritefile) {
 				if include.Optional {
 					return nil
 				}
 				return errors.New("rite: remote Ritefiles are not supported — check Ritefiles in to your repo to keep task execution idempotent")
 			}
 
-			entrypoint, err := node.ResolveEntrypoint(include.Taskfile)
+			entrypoint, err := node.ResolveEntrypoint(include.Ritefile)
 			if err != nil {
 				return err
 			}
@@ -167,7 +167,7 @@ func (r *Reader) include(ctx context.Context, node Node) error {
 				)
 			}
 			if errors.Is(err, graph.ErrEdgeCreatesCycle) {
-				return errors.TaskfileCycleError{
+				return errors.RitefileCycleError{
 					Source:      node.Location(),
 					Destination: includeNode.Location(),
 				}
@@ -179,7 +179,7 @@ func (r *Reader) include(ctx context.Context, node Node) error {
 	return g.Wait()
 }
 
-func (r *Reader) readNode(node Node) (*ast.Taskfile, error) {
+func (r *Reader) readNode(node Node) (*ast.Ritefile, error) {
 	b, err := node.Read()
 	if err != nil {
 		return nil, err
@@ -187,16 +187,16 @@ func (r *Reader) readNode(node Node) (*ast.Taskfile, error) {
 
 	sum := sha256Hex(b)
 	if !node.Verify(sum) {
-		return nil, &errors.TaskfileDoesNotMatchChecksum{
+		return nil, &errors.RitefileDoesNotMatchChecksum{
 			URI:              node.Location(),
 			ExpectedChecksum: node.Checksum(),
 			ActualChecksum:   sum,
 		}
 	}
 
-	var tf ast.Taskfile
+	var tf ast.Ritefile
 	if err := yaml.Unmarshal(b, &tf); err != nil {
-		taskfileDecodeErr := &errors.TaskfileDecodeError{}
+		taskfileDecodeErr := &errors.RitefileDecodeError{}
 		if errors.As(err, &taskfileDecodeErr) {
 			snippet := NewSnippet(b,
 				WithLine(taskfileDecodeErr.Line),
@@ -205,11 +205,11 @@ func (r *Reader) readNode(node Node) (*ast.Taskfile, error) {
 			)
 			return nil, taskfileDecodeErr.WithFileInfo(node.Location(), snippet.String())
 		}
-		return nil, &errors.TaskfileInvalidError{URI: filepathext.TryAbsToRel(node.Location()), Err: err}
+		return nil, &errors.RitefileInvalidError{URI: filepathext.TryAbsToRel(node.Location()), Err: err}
 	}
 
 	if tf.Version == nil {
-		return nil, &errors.TaskfileVersionCheckError{URI: node.Location()}
+		return nil, &errors.RitefileVersionCheckError{URI: node.Location()}
 	}
 
 	tf.Location = node.Location()
@@ -217,8 +217,8 @@ func (r *Reader) readNode(node Node) (*ast.Taskfile, error) {
 		if task == nil {
 			task = &ast.Task{}
 		}
-		if task.Location.Taskfile == "" {
-			task.Location.Taskfile = tf.Location
+		if task.Location.Ritefile == "" {
+			task.Location.Ritefile = tf.Location
 		}
 	}
 

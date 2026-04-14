@@ -222,7 +222,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 			}
 
 			// Get the fingerprinting method to use
-			method := e.Taskfile.Method
+			method := e.Ritefile.Method
 			if t.Method != "" {
 				method = t.Method
 			}
@@ -237,7 +237,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 			}
 
 			if upToDate && preCondMet {
-				if e.Verbose || (!call.Silent && !t.IsSilent() && !e.Taskfile.Silent && !e.Silent) {
+				if e.Verbose || (!call.Silent && !t.IsSilent() && !e.Ritefile.Silent && !e.Silent) {
 					name := t.Name()
 					if e.OutputStyle.Name == "prefixed" {
 						name = t.Prefix
@@ -392,7 +392,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			return nil
 		}
 
-		if e.Verbose || (!call.Silent && !cmd.Silent && !t.IsSilent() && !e.Taskfile.Silent && !e.Silent) {
+		if e.Verbose || (!call.Silent && !cmd.Silent && !t.IsSilent() && !e.Ritefile.Silent && !e.Silent) {
 			e.Logger.Errf(logger.Green, "rite: [%s] %s\n", t.Name(), cmd.Cmd)
 		}
 
@@ -415,8 +415,8 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			Command:   cmd.Cmd,
 			Dir:       t.Dir,
 			Env:       env.Get(t),
-			PosixOpts: slicesext.UniqueJoin(e.Taskfile.Set, t.Set, cmd.Set),
-			BashOpts:  slicesext.UniqueJoin(e.Taskfile.Shopt, t.Shopt, cmd.Shopt),
+			PosixOpts: slicesext.UniqueJoin(e.Ritefile.Set, t.Set, cmd.Set),
+			BashOpts:  slicesext.UniqueJoin(e.Ritefile.Shopt, t.Shopt, cmd.Shopt),
 			Stdin:     e.Stdin,
 			Stdout:    stdOut,
 			Stderr:    stdErr,
@@ -479,12 +479,12 @@ func (e *Executor) FindMatchingTasks(call *Call) ([]*MatchingTask, error) {
 	}
 	var matchingTasks []*MatchingTask
 	// If there is a direct match, return it
-	if task, ok := e.Taskfile.Tasks.Get(call.Task); ok {
+	if task, ok := e.Ritefile.Tasks.Get(call.Task); ok {
 		matchingTasks = append(matchingTasks, &MatchingTask{Task: task, Wildcards: nil})
 		return matchingTasks, nil
 	}
 	var aliasedTasks []string
-	for task := range e.Taskfile.Tasks.Values(nil) {
+	for task := range e.Ritefile.Tasks.Values(nil) {
 		if slices.Contains(task.Aliases, call.Task) {
 			aliasedTasks = append(aliasedTasks, task.Task)
 			matchingTasks = append(matchingTasks, &MatchingTask{Task: task, Wildcards: nil})
@@ -504,7 +504,7 @@ func (e *Executor) FindMatchingTasks(call *Call) ([]*MatchingTask, error) {
 	}
 
 	// Attempt a wildcard match
-	for _, value := range e.Taskfile.Tasks.All(nil) {
+	for _, value := range e.Ritefile.Tasks.All(nil) {
 		if match, wildcards := value.WildcardMatch(call.Task); match {
 			matchingTasks = append(matchingTasks, &MatchingTask{
 				Task:      value,
@@ -550,7 +550,7 @@ func (e *Executor) GetTask(call *Call) (*ast.Task, error) {
 type FilterFunc func(task *ast.Task) bool
 
 func (e *Executor) GetTaskList(filters ...FilterFunc) ([]*ast.Task, error) {
-	tasks := make([]*ast.Task, 0, e.Taskfile.Tasks.Len())
+	tasks := make([]*ast.Task, 0, e.Ritefile.Tasks.Len())
 
 	// Create an error group to wait for each task to be compiled
 	var g errgroup.Group
@@ -561,7 +561,7 @@ func (e *Executor) GetTaskList(filters ...FilterFunc) ([]*ast.Task, error) {
 	}
 
 	// Filter tasks based on the given filter functions
-	for task := range e.Taskfile.Tasks.Values(e.TaskSorter) {
+	for task := range e.Ritefile.Tasks.Values(e.TaskSorter) {
 		var shouldFilter bool
 		for _, filter := range filters {
 			if filter(task) {

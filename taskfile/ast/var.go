@@ -53,7 +53,7 @@ func (v *Var) UnmarshalYAML(node *yaml.Node) error {
 				Export *bool
 			}
 			if err := node.Decode(&m); err != nil {
-				return errors.NewTaskfileDecodeError(err, node)
+				return errors.NewRitefileDecodeError(err, node)
 			}
 			v.Sh = m.Sh
 			v.Ref = m.Ref
@@ -66,12 +66,12 @@ func (v *Var) UnmarshalYAML(node *yaml.Node) error {
 			}
 			return nil
 		default:
-			return errors.NewTaskfileDecodeError(nil, node).WithMessage(`%q is not a valid variable type. Try "sh", "ref", "map", "value" or using a scalar value`, firstKey)
+			return errors.NewRitefileDecodeError(nil, node).WithMessage(`%q is not a valid variable type. Try "sh", "ref", "map", "value" or using a scalar value`, firstKey)
 		}
 	default:
 		var value any
 		if err := node.Decode(&value); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		v.Value = value
 		return nil

@@ -12,36 +12,36 @@ import (
 const defaultFilename = "Ritefile.yml"
 
 //go:embed templates/default.yml
-var DefaultTaskfile string
+var DefaultRitefile string
 
-// InitTaskfile creates a new Ritefile at path.
+// InitRitefile creates a new Ritefile at path.
 //
 // path can be either a file path or a directory path.
 // If path is a directory, path/Ritefile.yml will be created.
 //
 // The final file path is always returned and may be different from the input path.
-func InitTaskfile(path string) (string, error) {
+func InitRitefile(path string) (string, error) {
 	info, err := os.Stat(path)
 	if err == nil && !info.IsDir() {
-		return path, errors.TaskfileAlreadyExistsError{}
+		return path, errors.RitefileAlreadyExistsError{}
 	}
 
 	if info != nil && info.IsDir() {
 		// path was a directory, check if there is a Ritefile already
-		if hasDefaultTaskfile(path) {
-			return path, errors.TaskfileAlreadyExistsError{}
+		if hasDefaultRitefile(path) {
+			return path, errors.RitefileAlreadyExistsError{}
 		}
 		path = filepathext.SmartJoin(path, defaultFilename)
 	}
 
-	if err := os.WriteFile(path, []byte(DefaultTaskfile), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(DefaultRitefile), 0o644); err != nil {
 		return path, err
 	}
 	return path, nil
 }
 
-func hasDefaultTaskfile(dir string) bool {
-	for _, name := range taskfile.DefaultTaskfiles {
+func hasDefaultRitefile(dir string) bool {
+	for _, name := range taskfile.DefaultRitefiles {
 		if _, err := os.Stat(filepathext.SmartJoin(dir, name)); err == nil {
 			return true
 		}

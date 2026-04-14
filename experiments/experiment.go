@@ -16,7 +16,7 @@ type Experiment struct {
 
 // New creates a new experiment with the given name and sets the values that can
 // enable it.
-func New(xName string, config *ast.TaskRC, allowedValues ...int) Experiment {
+func New(xName string, config *ast.Riterc, allowedValues ...int) Experiment {
 	var value int
 	if config != nil {
 		value = config.Experiments[xName]

@@ -38,7 +38,7 @@ func DefaultDir(entrypoint, dir string) string {
 }
 
 // ResolveDir returns an absolute path to the directory that the task should be
-// run in. If the entrypoint and dir are BOTH set, then the Taskfile will not
+// run in. If the entrypoint and dir are BOTH set, then the Ritefile will not
 // sit inside the directory specified by dir and we should ensure that the dir
 // is absolute. Otherwise, the dir will always be the parent directory of the
 // resolved entrypoint, so we should return that parent directory.

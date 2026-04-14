@@ -108,7 +108,7 @@ func (matrix *Matrix) UnmarshalYAML(node *yaml.Node) error {
 				// Decode the value node into a Matrix struct
 				var v []any
 				if err := valueNode.Decode(&v); err != nil {
-					return errors.NewTaskfileDecodeError(err, node)
+					return errors.NewRitefileDecodeError(err, node)
 				}
 
 				// Add the row to the ordered map
@@ -122,7 +122,7 @@ func (matrix *Matrix) UnmarshalYAML(node *yaml.Node) error {
 					Ref string
 				}
 				if err := valueNode.Decode(&refStruct); err != nil {
-					return errors.NewTaskfileDecodeError(err, node)
+					return errors.NewRitefileDecodeError(err, node)
 				}
 
 				// Add the reference to the ordered map
@@ -131,11 +131,11 @@ func (matrix *Matrix) UnmarshalYAML(node *yaml.Node) error {
 				})
 
 			default:
-				return errors.NewTaskfileDecodeError(nil, node).WithMessage("matrix values must be an array or a reference")
+				return errors.NewRitefileDecodeError(nil, node).WithMessage("matrix values must be an array or a reference")
 			}
 		}
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("matrix")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("matrix")
 }

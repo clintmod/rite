@@ -32,7 +32,7 @@ func (d *Dep) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var task string
 		if err := node.Decode(&task); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		d.Task = task
 		return nil
@@ -45,7 +45,7 @@ func (d *Dep) UnmarshalYAML(node *yaml.Node) error {
 			Silent bool
 		}
 		if err := node.Decode(&taskCall); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		d.Task = taskCall.Task
 		d.For = taskCall.For
@@ -54,5 +54,5 @@ func (d *Dep) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("dependency")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("dependency")
 }

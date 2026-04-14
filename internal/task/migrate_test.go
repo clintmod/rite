@@ -124,10 +124,14 @@ tasks:
 	}
 	got := string(out)
 
+	// The special-var rename (.TASK → .RITE_NAME, .TASK_DIR → .RITE_TASK_DIR)
+	// feeds into the modernization pass, so the final on-disk form is the
+	// `${VAR}` shell-preprocessor surface. Both passes together are what
+	// users see when they run `rite migrate` — this test locks that in.
 	wantFrags := []string{
-		"echo {{.RITE_NAME}}",
-		"running {{ .RITE_NAME }} in {{.RITE_TASK_DIR}}",
-		"{{.MY_TASK_DIR}}",     // user var stays untouched
+		"echo ${RITE_NAME}",
+		"running ${RITE_NAME} in ${RITE_TASK_DIR}",
+		"${MY_TASK_DIR}",       // user var modernizes too (bare ref)
 		"# .TASK in a comment", // non-template occurrence stays untouched
 	}
 	for _, w := range wantFrags {
@@ -139,6 +143,7 @@ tasks:
 	unwantFrags := []string{
 		".RITE_NAME_DIR",  // sanity: don't half-rename .TASK_DIR
 		".RITE_TASK_DIR_", // no cascading
+		"{{.TASK",         // no stale Go-template special refs
 	}
 	for _, w := range unwantFrags {
 		if strings.Contains(got, w) {
@@ -185,11 +190,13 @@ tasks:
 	}
 	got := string(out)
 
+	// As with TestMigrateRewritesSpecialVars, the rename pass feeds the
+	// modernization pass, so the final output uses `${VAR}` form.
 	wantFrags := []string{
-		`{{.RITEFILE}} lives in {{.RITEFILE_DIR}}`,
-		`root is {{.ROOT_RITEFILE}}`,
-		`version {{.RITE_VERSION}}`,
-		`{{.MY_TASKFILE}}`,         // user var stays untouched
+		`${RITEFILE} lives in ${RITEFILE_DIR}`,
+		`root is ${ROOT_RITEFILE}`,
+		`version ${RITE_VERSION}`,
+		`${MY_TASKFILE}`,           // user var modernizes too
 		`# .TASKFILE in a comment`, // non-template occurrence stays untouched
 	}
 	for _, w := range wantFrags {
@@ -199,12 +206,15 @@ tasks:
 	}
 
 	unwantFrags := []string{
-		".TASKFILE}",      // old name should not survive inside a template
-		".TASKFILE_DIR}",  // ditto
-		".ROOT_TASKFILE}", // ditto
-		".TASK_VERSION}",  // ditto
-		".RITEFILE_DIR_",  // no cascading
-		".ROOT_RITEFILE_", // no cascading
+		".TASKFILE}",       // old name should not survive inside a template
+		".TASKFILE_DIR}",   // ditto
+		".ROOT_TASKFILE}",  // ditto
+		".TASK_VERSION}",   // ditto
+		"{{.RITEFILE",      // modernized away
+		"{{.ROOT_RITEFILE", // modernized away
+		"{{.RITE_VERSION",  // modernized away
+		".RITEFILE_DIR_",   // no cascading
+		".ROOT_RITEFILE_",  // no cascading
 	}
 	for _, w := range unwantFrags {
 		if strings.Contains(got, w) {
@@ -250,9 +260,13 @@ func TestMigrateRewritesAdjacentSpecialVars(t *testing.T) {
 			want: []string{`{{printf "%s/%s" .RITE_NAME .RITE_TASK_DIR}}`},
 		},
 		{
+			// Adjacent single-ref expressions get both renamed AND
+			// modernized to the shell-preprocessor form — each
+			// `{{ .VAR }}` is a bare ref so the modernization pass
+			// rewrites it to `${VAR}`.
 			name: "separate_expressions_still_work",
 			cmd:  `echo {{.TASK}}{{.TASK_DIR}}`,
-			want: []string{"{{.RITE_NAME}}{{.RITE_TASK_DIR}}"},
+			want: []string{"${RITE_NAME}${RITE_TASK_DIR}"},
 		},
 	}
 	for _, c := range cases {
@@ -600,6 +614,104 @@ func TestMigrateIncludedRitefilePath(t *testing.T) {
 	}
 }
 
+// TestMigrateModernizesTemplates locks in the #74 rewrite table: safe
+// Go-template variable shapes become rite-native `${VAR}` /
+// `${VAR:-fallback}` form during migrate. Both halves resolve through
+// the same templater pipeline (Go-template first, then ExpandShell, then
+// mvdan/sh for cmd exec), so the semantics round-trip for exported vars
+// — which is the common case and the only one `rite migrate` claims to
+// rewrite safely.
+func TestMigrateModernizesTemplates(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, cmd, want string
+	}{
+		{"bare", `echo {{.FOO}}`, `echo ${FOO}`},
+		{"bare_whitespace", `echo {{ .FOO }}`, `echo ${FOO}`},
+		{"bare_trim_markers", `echo {{- .FOO -}}`, `echo ${FOO}`},
+		{"pipe_default_double", `echo {{.FOO | default "bar"}}`, `echo ${FOO:-bar}`},
+		{"pipe_default_single", `echo {{.FOO | default 'bar'}}`, `echo ${FOO:-bar}`},
+		{"pipe_default_dotted", `echo {{.FOO | default .OTHER}}`, `echo ${FOO:-${OTHER}}`},
+		{"prefix_default_double", `echo {{default "bar" .FOO}}`, `echo ${FOO:-bar}`},
+		{"prefix_default_dotted", `echo {{default .OTHER .FOO}}`, `echo ${FOO:-${OTHER}}`},
+		{"pipe_default_whitespace", `echo {{ .FOO  |  default  "bar" }}`, `echo ${FOO:-bar}`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			src := filepath.Join(dir, "Taskfile.yml")
+			input := "version: '3'\ntasks:\n  t:\n    cmds:\n      - " + c.cmd + "\n"
+			require.NoError(t, os.WriteFile(src, []byte(input), 0o644))
+			dst, err := task.Migrate(src, io.Discard)
+			require.NoError(t, err)
+			out, err := os.ReadFile(dst)
+			require.NoError(t, err)
+			if !strings.Contains(string(out), c.want) {
+				t.Errorf("output missing %q\nGOT:\n%s", c.want, string(out))
+			}
+			if strings.Contains(string(out), "{{") {
+				t.Errorf("output still contains {{…}} — not modernized\nGOT:\n%s", string(out))
+			}
+		})
+	}
+}
+
+// TestMigrateTemplateKeptWarning locks in the TEMPLATE-KEPT warning class:
+// Go-template constructs that can't be safely rewritten to `${VAR}` form
+// (if/range/printf/index/unknown helpers) are left verbatim in the output
+// AND reported with a file:line label so the user can find and rewrite
+// them by hand.
+func TestMigrateTemplateKeptWarning(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	src := filepath.Join(dir, "Taskfile.yml")
+	input := `version: '3'
+tasks:
+  t:
+    cmds:
+      - echo {{if .CI}}ci{{else}}local{{end}}
+      - echo {{range .ITEMS}}{{.}}{{end}}
+      - echo {{printf "%s/%s" .A .B}}
+      - echo {{index .MATCH 0}}
+      - echo {{.FOO | upper}}
+`
+	require.NoError(t, os.WriteFile(src, []byte(input), 0o644))
+	var warn bytes.Buffer
+	dst, err := task.Migrate(src, &warn)
+	require.NoError(t, err)
+	got, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	gotS := string(got)
+	warnS := warn.String()
+
+	// All of these must survive verbatim in the output.
+	for _, frag := range []string{
+		`{{if .CI}}`,
+		`{{else}}`,
+		`{{end}}`,
+		`{{range .ITEMS}}`,
+		`{{printf "%s/%s" .A .B}}`,
+		`{{index .MATCH 0}}`,
+		`{{.FOO | upper}}`,
+	} {
+		if !strings.Contains(gotS, frag) {
+			t.Errorf("output missing kept template %q\nGOT:\n%s", frag, gotS)
+		}
+	}
+
+	// One warning per kept expression, tagged with file:line.
+	if !strings.Contains(warnS, "TEMPLATE-KEPT") {
+		t.Fatalf("expected TEMPLATE-KEPT warnings\nGOT:\n%s", warnS)
+	}
+	// Spot-check: at least one warning points at each line we planted.
+	for _, line := range []string{":5:", ":6:", ":7:", ":8:", ":9:"} {
+		if !strings.Contains(warnS, line) {
+			t.Errorf("expected TEMPLATE-KEPT warning referencing line %q\nGOT:\n%s", line, warnS)
+		}
+	}
+}
+
 // TestMigrateRewritesIncludeForNestedFiles covers the scenario where a
 // migrated included file itself has includes pointing further down. Every
 // level's includes: block has to be rewritten to the new per-source paths,
@@ -632,6 +744,73 @@ tasks: {from-a: {cmds: ['echo A']}}
 	}
 	if _, err := os.Stat(filepath.Join(dir, "ci", "sub", "b.Ritefile.yml")); err != nil {
 		t.Errorf("expected migrated grandchild at ci/sub/b.Ritefile.yml: %v", err)
+	}
+}
+
+// TestMigrateKeepGoTemplatesOptOut locks in the --keep-go-templates
+// escape hatch: users who want the old template surface preserved opt
+// out and get a migrate that only handles the path/special-var
+// rewrites, leaving every `{{…}}` expression intact.
+func TestMigrateKeepGoTemplatesOptOut(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	src := filepath.Join(dir, "Taskfile.yml")
+	input := `version: '3'
+tasks:
+  t:
+    cmds:
+      - echo {{.FOO}}
+      - echo {{.BAR | default "x"}}
+`
+	require.NoError(t, os.WriteFile(src, []byte(input), 0o644))
+	var warn bytes.Buffer
+	dst, err := task.Migrate(src, &warn, task.WithKeepGoTemplates(true))
+	require.NoError(t, err)
+	got, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	gotS := string(got)
+
+	for _, frag := range []string{`{{.FOO}}`, `{{.BAR | default "x"}}`} {
+		if !strings.Contains(gotS, frag) {
+			t.Errorf("output missing %q — opt-out did not preserve\nGOT:\n%s", frag, gotS)
+		}
+	}
+	// No TEMPLATE-KEPT warning: the flag suppresses the whole pass.
+	if strings.Contains(warn.String(), "TEMPLATE-KEPT") {
+		t.Errorf("unexpected TEMPLATE-KEPT warning under opt-out\nGOT:\n%s", warn.String())
+	}
+}
+
+// TestMigrateModernizeIdempotent: running migrate on an already-migrated
+// file is a no-op. The `${VAR}` form produces no `{{…}}` matches, so
+// the modernization pass can't do anything on a second pass — but we
+// lock it in regardless because "idempotent migrate" is a user-visible
+// contract for re-running against partial conversions.
+func TestMigrateModernizeIdempotent(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	src := filepath.Join(dir, "Taskfile.yml")
+	input := `version: '3'
+tasks:
+  t:
+    cmds:
+      - echo {{.FOO}}
+      - echo ${ALREADY}
+`
+	require.NoError(t, os.WriteFile(src, []byte(input), 0o644))
+	first, err := task.Migrate(src, io.Discard)
+	require.NoError(t, err)
+	firstBytes, err := os.ReadFile(first)
+	require.NoError(t, err)
+
+	// Point migrate at the migrated file; should produce identical bytes.
+	second, err := task.Migrate(first, io.Discard)
+	require.NoError(t, err)
+	secondBytes, err := os.ReadFile(second)
+	require.NoError(t, err)
+
+	if string(firstBytes) != string(secondBytes) {
+		t.Errorf("second migrate changed content — not idempotent\nFIRST:\n%s\nSECOND:\n%s", firstBytes, secondBytes)
 	}
 }
 

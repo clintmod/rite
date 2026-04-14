@@ -192,6 +192,9 @@ func emitMigratedFile(absSrc string, pathMap map[string]string, o migrateOptions
 	rewrites := computeIncludeRewrites(doc, srcDir, pathMap)
 	out := rewriteIncludePathsWithMap(string(data), rewrites)
 	out = rewriteSpecialVarRefs(out)
+	if !o.keepGoTemplates {
+		out = modernizeTemplates(out, absSrc, warn)
+	}
 	if hasTaskfileDevSchemaPointer(out) {
 		fmt.Fprintf(warn, "rite migrate: SCHEMA-URL %s: `$schema=https://taskfile.dev/schema.json` references upstream docs; rite's schema is not yet published (Phase 5 docs).\n", absSrc)
 	}
@@ -217,13 +220,22 @@ func emitMigratedFile(absSrc string, pathMap map[string]string, o migrateOptions
 type MigrateOption func(*migrateOptions)
 
 type migrateOptions struct {
-	dryRun bool
+	dryRun          bool
+	keepGoTemplates bool
 }
 
 // WithDryRun returns a MigrateOption that, when true, parses and emits
 // warnings but writes no files. Intended for `rite --migrate --dry-run`.
 func WithDryRun(enabled bool) MigrateOption {
 	return func(o *migrateOptions) { o.dryRun = enabled }
+}
+
+// WithKeepGoTemplates returns a MigrateOption that, when true, suppresses
+// the Go-template → `${VAR}` modernization pass. Intended for
+// `rite migrate --keep-go-templates` when a user deliberately wants the
+// old template surface preserved verbatim.
+func WithKeepGoTemplates(enabled bool) MigrateOption {
+	return func(o *migrateOptions) { o.keepGoTemplates = enabled }
 }
 
 // RitefilePathForTest exports ritefilePath under a test-only name so
@@ -508,6 +520,128 @@ var (
 		{regexp.MustCompile(`(^|[^.\w])\.TASK_DIR([^\w]|$)`), "${1}.RITE_TASK_DIR${2}"},
 		{regexp.MustCompile(`(^|[^.\w])\.TASK([^_\w]|$)`), "${1}.RITE_NAME${2}"},
 	}
+)
+
+// modernizeTemplates walks every `{{ … }}` expression in s. Expressions
+// that are simple variable references (or `default`-pipe variants) are
+// rewritten to the equivalent rite-native `${VAR}` / `${VAR:-fallback}`
+// form — both resolve through `internal/templater.ExpandShell` and the
+// mvdan/sh cmd interpreter so the semantics round-trip for exported
+// vars (the common case). Expressions that use Go-template control flow
+// (`if` / `range`), function calls (`printf`, `index`, sprig helpers),
+// or any multi-step pipe beyond the `default` shape are left untouched
+// and reported via a TEMPLATE-KEPT warning so the user can rewrite them
+// by hand.
+//
+// Idempotent — a Ritefile that already uses `${VAR}` has no `{{}}`
+// matches for this pass to touch.
+//
+// Caveat: `{{.VAR | default "x"}}` rewrites to `${VAR:-x}`, which
+// resolves via the shell interpreter at cmd-exec time. For rite vars
+// marked `export: false` that default is consulted *even when the
+// rite-side var is set*, because the cmd shell only sees exported vars.
+// That's a semantic difference from the Go-template form, which sees
+// every rite var regardless of export. The shell-native form is still
+// the idiomatic rewrite — users who hit this can opt out with
+// `--keep-go-templates` or add `export: true` if the default was
+// previously silently unreachable.
+func modernizeTemplates(s, srcPath string, warn io.Writer) string {
+	matches := rxTemplateExpr.FindAllStringIndex(s, -1)
+	if len(matches) == 0 {
+		return s
+	}
+	var out strings.Builder
+	out.Grow(len(s))
+	prev := 0
+	for _, m := range matches {
+		out.WriteString(s[prev:m[0]])
+		expr := s[m[0]:m[1]]
+		if repl, ok := modernizeTemplateExpr(expr); ok {
+			out.WriteString(repl)
+		} else {
+			out.WriteString(expr)
+			line := 1 + strings.Count(s[:m[0]], "\n")
+			fmt.Fprintf(warn,
+				"rite migrate: TEMPLATE-KEPT %s:%d: kept Go-template syntax %q — no equivalent ${VAR} form; review manually.\n",
+				srcPath, line, expr)
+		}
+		prev = m[1]
+	}
+	out.WriteString(s[prev:])
+	return out.String()
+}
+
+// modernizeTemplateExpr maps a full `{{ … }}` match to the equivalent
+// shell-preprocessor form, or returns false if the expression isn't a
+// shape we know how to translate. Shapes handled:
+//
+//	{{ .VAR }}                      -> ${VAR}
+//	{{ .VAR | default "x" }}        -> ${VAR:-x}
+//	{{ .VAR | default 'x' }}        -> ${VAR:-x}
+//	{{ .VAR | default .OTHER }}     -> ${VAR:-${OTHER}}
+//	{{ default "x" .VAR }}          -> ${VAR:-x}   (alternate ordering)
+//	{{ default .OTHER .VAR }}       -> ${VAR:-${OTHER}}
+//
+// Leading/trailing `-` whitespace-trim markers (`{{- … -}}`) are
+// tolerated and discarded — rite's shell-preprocessor form has no
+// equivalent trim marker, and the trim behavior is effectively a no-op
+// once the rewrite is in place (no surrounding whitespace is produced
+// by `${VAR}` expansion itself).
+func modernizeTemplateExpr(expr string) (string, bool) {
+	inner := strings.TrimSpace(expr[2 : len(expr)-2])
+	inner = strings.TrimPrefix(inner, "-")
+	inner = strings.TrimSuffix(inner, "-")
+	inner = strings.TrimSpace(inner)
+
+	if m := rxBareVar.FindStringSubmatch(inner); m != nil {
+		return "${" + m[1] + "}", true
+	}
+	if m := rxPipeDefault.FindStringSubmatch(inner); m != nil {
+		def, ok := modernizeDefaultArg(m[2])
+		if !ok {
+			return "", false
+		}
+		return "${" + m[1] + ":-" + def + "}", true
+	}
+	if m := rxPrefixDefault.FindStringSubmatch(inner); m != nil {
+		def, ok := modernizeDefaultArg(m[1])
+		if !ok {
+			return "", false
+		}
+		return "${" + m[2] + ":-" + def + "}", true
+	}
+	return "", false
+}
+
+// modernizeDefaultArg translates a Go-template `default` argument to its
+// shell-preprocessor form: a quoted string becomes its unquoted payload,
+// a dotted identifier becomes a `${…}` reference. Returns false on any
+// shape we don't translate (bare numbers, function calls, nested pipes).
+func modernizeDefaultArg(arg string) (string, bool) {
+	arg = strings.TrimSpace(arg)
+	if len(arg) >= 2 {
+		first, last := arg[0], arg[len(arg)-1]
+		if (first == '"' && last == '"') || (first == '\'' && last == '\'') {
+			// Reject embedded quotes of the same kind — they break the
+			// naive unquote and almost never appear in real Taskfiles.
+			inner := arg[1 : len(arg)-1]
+			if strings.ContainsRune(inner, rune(first)) {
+				return "", false
+			}
+			return inner, true
+		}
+	}
+	if m := rxDottedIdent.FindStringSubmatch(arg); m != nil {
+		return "${" + m[1] + "}", true
+	}
+	return "", false
+}
+
+var (
+	rxBareVar       = regexp.MustCompile(`^\.([A-Za-z_][A-Za-z0-9_]*)$`)
+	rxDottedIdent   = regexp.MustCompile(`^\.([A-Za-z_][A-Za-z0-9_]*)$`)
+	rxPipeDefault   = regexp.MustCompile(`^\.([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*default\s+(.+?)$`)
+	rxPrefixDefault = regexp.MustCompile(`^default\s+(.+?)\s+\.([A-Za-z_][A-Za-z0-9_]*)$`)
 )
 
 // migrateDoc captures the minimal shape we need for warning detection and

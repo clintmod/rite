@@ -340,6 +340,166 @@ tasks:
 	}
 }
 
+// TestMigrateWalksIncludes locks in the #41 fix: `rite migrate` has to walk
+// the entrypoint's `includes:` block and migrate each local file too,
+// otherwise the rewritten include paths point at files that don't exist on
+// disk and the migrated Ritefile fails to load.
+func TestMigrateWalksIncludes(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".taskfiles"), 0o755))
+
+	// Entrypoint with mixed include shapes: scalar shortcut, long form with
+	// `taskfile:` key, and a URL (must be skipped).
+	entry := filepath.Join(dir, "Taskfile.yml")
+	require.NoError(t, os.WriteFile(entry, []byte(`version: '3'
+includes:
+  short: .taskfiles/short.Taskfile.yml
+  long:
+    taskfile: .taskfiles/long.Taskfile.yml
+    optional: true
+  remote:
+    taskfile: https://example.com/remote.yml
+tasks:
+  hi:
+    cmds:
+      - echo hi
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".taskfiles", "short.Taskfile.yml"),
+		[]byte(`version: '3'
+tasks:
+  from-short:
+    cmds: ['echo short']
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".taskfiles", "long.Taskfile.yml"),
+		[]byte(`version: '3'
+tasks:
+  from-long:
+    cmds: ['echo long']
+`), 0o644))
+
+	var warn bytes.Buffer
+	dst, err := task.Migrate(entry, &warn)
+	require.NoError(t, err)
+	require.Equal(t, filepath.Join(dir, "Ritefile.yml"), dst)
+
+	// Every included local file must now exist as a sibling Ritefile.yml.
+	for _, want := range []string{
+		filepath.Join(dir, "Ritefile.yml"),
+		filepath.Join(dir, ".taskfiles", "short.Ritefile.yml"),
+		filepath.Join(dir, ".taskfiles", "long.Ritefile.yml"),
+	} {
+		if _, err := os.Stat(want); err != nil {
+			t.Errorf("expected migrated file at %s: %v", want, err)
+		}
+	}
+	// Original Taskfile.yml must be left in place — migration is non-destructive.
+	for _, want := range []string{
+		entry,
+		filepath.Join(dir, ".taskfiles", "short.Taskfile.yml"),
+		filepath.Join(dir, ".taskfiles", "long.Taskfile.yml"),
+	} {
+		if _, err := os.Stat(want); err != nil {
+			t.Errorf("expected original Taskfile preserved at %s: %v", want, err)
+		}
+	}
+	// URL include must be reported, not migrated.
+	warnS := warn.String()
+	require.Contains(t, warnS, "skipping remote include")
+	require.Contains(t, warnS, "https://example.com/remote.yml")
+	// Included-file writes are logged for the user.
+	require.Contains(t, warnS, "wrote ")
+	require.Contains(t, warnS, "short.Ritefile.yml")
+	require.Contains(t, warnS, "long.Ritefile.yml")
+}
+
+// TestMigrateWalksIncludesMissingNonOptional surfaces the difference in
+// behavior between required and optional includes pointing at missing files:
+// a missing required include earns a warning; a missing optional one is
+// silent. In both cases, migration of the entrypoint still succeeds.
+func TestMigrateWalksIncludesMissingNonOptional(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	entry := filepath.Join(dir, "Taskfile.yml")
+	require.NoError(t, os.WriteFile(entry, []byte(`version: '3'
+includes:
+  missing: .taskfiles/gone.Taskfile.yml
+  optmissing:
+    taskfile: .taskfiles/alsogone.Taskfile.yml
+    optional: true
+tasks: {hi: {cmds: ['echo hi']}}
+`), 0o644))
+
+	var warn bytes.Buffer
+	dst, err := task.Migrate(entry, &warn)
+	require.NoError(t, err)
+	require.FileExists(t, dst)
+	warnS := warn.String()
+	require.Contains(t, warnS, `include "missing"`)
+	require.NotContains(t, warnS, `include "optmissing"`)
+}
+
+// TestMigrateWalksIncludesCycle confirms that a cycle in the includes graph
+// (A → B → A) does not cause infinite recursion. Each file is migrated
+// exactly once.
+func TestMigrateWalksIncludesCycle(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	a := filepath.Join(dir, "Taskfile.yml")
+	b := filepath.Join(dir, "Taskfile-b.yml")
+	require.NoError(t, os.WriteFile(a, []byte(`version: '3'
+includes:
+  b: Taskfile-b.yml
+tasks: {hi: {cmds: ['echo hi']}}
+`), 0o644))
+	require.NoError(t, os.WriteFile(b, []byte(`version: '3'
+includes:
+  a: Taskfile.yml
+tasks: {bye: {cmds: ['echo bye']}}
+`), 0o644))
+
+	_, err := task.Migrate(a, io.Discard)
+	require.NoError(t, err)
+	require.FileExists(t, filepath.Join(dir, "Ritefile.yml"))
+	require.FileExists(t, filepath.Join(dir, "Ritefile-b.yml"))
+}
+
+// TestMigrateDryRun confirms no files are written in dry-run mode, but
+// warnings + "would write" announcements still land in the warn writer for
+// every file (root + includes).
+func TestMigrateDryRun(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "sub"), 0o755))
+	entry := filepath.Join(dir, "Taskfile.yml")
+	require.NoError(t, os.WriteFile(entry, []byte(`version: '3'
+includes:
+  s: sub/Taskfile.yml
+tasks: {hi: {cmds: ['echo hi']}}
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "sub", "Taskfile.yml"),
+		[]byte("version: '3'\ntasks: {x: {cmds: ['echo x']}}\n"), 0o644))
+
+	var warn bytes.Buffer
+	_, err := task.Migrate(entry, &warn, task.WithDryRun(true))
+	require.NoError(t, err)
+
+	// Nothing on disk.
+	for _, p := range []string{
+		filepath.Join(dir, "Ritefile.yml"),
+		filepath.Join(dir, "sub", "Ritefile.yml"),
+	} {
+		if _, err := os.Stat(p); !os.IsNotExist(err) {
+			t.Errorf("expected %s to not exist in dry-run, got err=%v", p, err)
+		}
+	}
+	// Nested file still gets a `would write` announcement; the entrypoint
+	// is suppressed because the CLI announces it separately.
+	warnS := warn.String()
+	require.Contains(t, warnS, "would write ")
+	require.Contains(t, warnS, filepath.Join(dir, "sub", "Ritefile.yml"))
+}
+
 func TestMigrateRitefilePath(t *testing.T) {
 	t.Parallel()
 	// filepath.Join on Windows normalizes to backslash separators, so express

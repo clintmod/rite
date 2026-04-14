@@ -14,10 +14,10 @@ const defaultFilename = "Ritefile.yml"
 //go:embed templates/default.yml
 var DefaultTaskfile string
 
-// InitTaskfile creates a new Taskfile at path.
+// InitTaskfile creates a new Ritefile at path.
 //
 // path can be either a file path or a directory path.
-// If path is a directory, path/Taskfile.yml will be created.
+// If path is a directory, path/Ritefile.yml will be created.
 //
 // The final file path is always returned and may be different from the input path.
 func InitTaskfile(path string) (string, error) {
@@ -27,7 +27,7 @@ func InitTaskfile(path string) (string, error) {
 	}
 
 	if info != nil && info.IsDir() {
-		// path was a directory, check if there is a Taskfile already
+		// path was a directory, check if there is a Ritefile already
 		if hasDefaultTaskfile(path) {
 			return path, errors.TaskfileAlreadyExistsError{}
 		}

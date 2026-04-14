@@ -23,7 +23,7 @@ Runs the named task(s), passing any `KEY=value` pairs as CLI-tier vars (tier 2).
 | `--set KEY=value` | Explicit form of the positional `KEY=value` |
 | `--dry` | Show what would run, don't execute |
 | `--status` | Non-zero exit if any named task is not up-to-date |
-| `--migrate [FILE]` | Convert a go-task Taskfile to a Ritefile. See [Migration](/migration) |
+| `--migrate [FILE]` | Deprecated alias for `rite migrate [FILE]`. See [Migration](/migration) |
 | `--completion SHELL` | Print completion script (bash, zsh, fish, powershell) |
 | `--experiments` | List experiment flags |
 | `--version` | Print version |

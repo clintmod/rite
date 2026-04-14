@@ -1,0 +1,13 @@
+version: '3'
+
+# run: once exercises the dedupe path in startExecution (GetHash returns a
+# non-empty hash). Before #51 was fixed, the executionHashes map persisted
+# across top-level Run() calls, so a second Run with the same hash would
+# hit the dedupe path and silently no-op because the stored ctx was
+# already cancelled.
+run: once
+
+tasks:
+  default:
+    cmds:
+      - echo "ran"

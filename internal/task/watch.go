@@ -81,6 +81,16 @@ func (e *Executor) watchTasks(calls ...*Call) error {
 				cancel()
 				ctx, cancel = context.WithCancel(context.Background())
 
+				// Clear the within-run dedupe map between watch iterations
+				// so `run: once` / `run: when_changed` tasks re-execute on
+				// each fsnotify event instead of silently no-op'ing on the
+				// cancelled ctx from the previous iteration (see #51). The
+				// map also prevents unbounded growth in long-running watch
+				// sessions.
+				e.executionHashesMutex.Lock()
+				e.executionHashes = make(map[string]context.Context, len(e.executionHashes))
+				e.executionHashesMutex.Unlock()
+
 				// Dynamic-var caches are per-resolution now (SPEC §Dynamic
 				// Variables), so there's no compiler-global cache to clear
 				// between watch iterations.

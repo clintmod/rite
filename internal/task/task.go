@@ -40,6 +40,17 @@ type MatchingTask struct {
 
 // Run runs Task
 func (e *Executor) Run(ctx context.Context, calls ...*Call) error {
+	// Reset the within-run dedupe/memoization map so a second top-level Run
+	// call (e.g. from an embedder or across `--watch` iterations) sees a
+	// clean slate. Without this, entries from the previous run — whose
+	// contexts are already cancelled — would cause the same `(task, vars)`
+	// hash to be silently skipped (see #51). The map still accumulates
+	// within a single Run so `run: once` / `run: when_changed` dedupe
+	// across the dependency graph continues to work.
+	e.executionHashesMutex.Lock()
+	e.executionHashes = make(map[string]context.Context, len(e.executionHashes))
+	e.executionHashesMutex.Unlock()
+
 	// check if given tasks exist
 	for _, call := range calls {
 		task, err := e.GetTask(call)

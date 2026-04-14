@@ -713,6 +713,32 @@ func TestCmdsVariables(t *testing.T) {
 	assert.Contains(t, buff.String(), tf)
 }
 
+// TestSequentialReRunExecutes guards #51: a second Run of the same
+// (task, vars) on a still-alive Executor used to silently no-op because
+// executionHashes retained the cancelled ctx from the first run and
+// `<-ctx.Done()` satisfies immediately. With the fix, the dedupe entry is
+// cleared when the task completes, so the task re-runs.
+func TestSequentialReRunExecutes(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/execution_hashes_repeat"
+
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+		task.WithSilent(true),
+	)
+	require.NoError(t, e.Setup())
+
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "default"}))
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "default"}))
+
+	assert.Equal(t, 2, strings.Count(buff.String(), "ran"),
+		"expected task to run twice across sequential Run calls, got: %q", buff.String())
+}
+
 func TestCyclicDep(t *testing.T) {
 	t.Parallel()
 

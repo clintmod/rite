@@ -36,12 +36,11 @@ Listed from **highest priority (wins)** to **lowest priority (default)**:
 
 1. **Shell environment** — variables set in the calling shell. Never overridden by anything in a Ritefile.
 2. **CLI invocation** — `FOO=bar rite build` or `rite build FOO=bar`. Overrides Ritefile-internal values for this invocation only.
-3. **`rite --set FOO=bar`** — explicit flag form of above. Identical precedence.
-4. **Entrypoint `.env` files** — `dotenv:` declared at the top of the entrypoint Ritefile.
-5. **Entrypoint `vars:`** — top-level `vars:` of the Ritefile that was directly invoked.
-6. **Included Ritefile vars** — vars passed at the include site (`include: { file: ..., vars: {...} }`), then vars declared at the top of the included file.
-7. **Task-scope `vars:`** — declared inside a specific task. **These are defaults only.** If any higher tier set this variable, the task-scope value is ignored.
-8. **Built-in variables** — `RITE_DIR`, `RITE_ROOT`, etc. Lowest priority so any user-set value wins.
+3. **Entrypoint `.env` files** — `dotenv:` declared at the top of the entrypoint Ritefile.
+4. **Entrypoint `vars:`** — top-level `vars:` of the Ritefile that was directly invoked.
+5. **Included Ritefile vars** — vars passed at the include site (`include: { file: ..., vars: {...} }`), then vars declared at the top of the included file.
+6. **Task-scope `vars:`** — declared inside a specific task. **These are defaults only.** If any higher tier set this variable, the task-scope value is ignored.
+7. **Built-in variables** — `RITE_DIR`, `RITE_ROOT`, etc. Lowest priority so any user-set value wins.
 
 ### Worked example
 

@@ -5,7 +5,7 @@
 **Status: v1.0.1 shipped.** See [`CHANGELOG.md`](./CHANGELOG.md) for per-release notes and [`RELEASING.md`](./RELEASING.md) for the cut procedure.
 
 - Binary builds, test suite green on Linux / macOS / Windows × Go 1.26.
-- SPEC's 8-tier variable precedence and `${VAR}` shell-native preprocessor are live.
+- SPEC's 7-tier variable precedence and `${VAR}` shell-native preprocessor are live.
 - `rite --migrate <path>` converts a `Taskfile.yml` → `Ritefile.yml`, walks `includes:` recursively, and flags anything that changes meaning under rite's semantics.
 - All six legacy special vars (`.TASK`, `.TASK_DIR`, `.TASKFILE`, `.TASKFILE_DIR`, `.ROOT_TASKFILE`, `.TASK_VERSION`) are rewritten at migrate time and runtime-aliased for Ritefiles that predate the rename.
 - `includes:` paths are sandboxed to the Ritefile tree; remote URLs, `../` escape, and symlink escape are rejected.
@@ -75,7 +75,7 @@ A **rite** is a ritual — a prescribed set of actions performed the same way ev
 
 See [`SPEC.md`](./SPEC.md) for the full design contract, including:
 
-- The 8-tier variable precedence model
+- The 7-tier variable precedence model
 - Scoping rules for included Ritefiles
 - Dynamic (`sh:`) variable semantics
 - `vars` / `env` unification

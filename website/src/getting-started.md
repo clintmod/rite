@@ -83,10 +83,9 @@ Three ways, in precedence order (highest wins):
 ```sh
 FOO=bar rite build             # 1. Shell env — tier 1
 rite build FOO=bar             # 2. CLI arg   — tier 2
-# 3. rite build --set FOO=bar  #    explicit flag form of #2
 ```
 
-For variables declared inside a Ritefile, see the [precedence model](/precedence) for all eight tiers.
+For variables declared inside a Ritefile, see the [precedence model](/precedence) for all seven tiers.
 
 ## A more interesting example
 
@@ -113,7 +112,7 @@ Note both `${VAR}` and <span v-pre>`{{.VAR}}`</span> reference variables. They'r
 
 ## Next
 
-- [Variable precedence](/precedence) — the eight-tier model, one table.
+- [Variable precedence](/precedence) — the seven-tier model, one table.
 - [Syntax reference](/syntax) — what goes where in a Ritefile.
 - [.riterc config](/riterc) — optional user-config file for CLI defaults and experiments.
 - [Migration from go-task](/migration) — what's different and why.

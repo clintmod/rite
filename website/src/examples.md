@@ -14,7 +14,7 @@ Each recipe below lives in [`examples/recipes/`](https://github.com/clintmod/rit
 | Recipe | What it shows |
 |---|---|
 | [`hello/`](https://github.com/clintmod/rite/tree/main/examples/recipes/hello) | The smallest possible Ritefile and the `default:` dispatcher |
-| [`variables/`](https://github.com/clintmod/rite/tree/main/examples/recipes/variables) | 8-tier variable precedence — rite's headline behavior |
+| [`variables/`](https://github.com/clintmod/rite/tree/main/examples/recipes/variables) | 7-tier variable precedence — rite's headline behavior |
 | [`shell-preprocessor/`](https://github.com/clintmod/rite/tree/main/examples/recipes/shell-preprocessor) | `${VAR}` / `${VAR:-default}` / `${VAR:?required}` |
 | [`includes/`](https://github.com/clintmod/rite/tree/main/examples/recipes/includes) | Namespaced sub-Ritefiles with scope isolation |
 | [`dotenv/`](https://github.com/clintmod/rite/tree/main/examples/recipes/dotenv) | Entrypoint vs task-level `dotenv:` precedence |

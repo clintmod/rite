@@ -2,18 +2,17 @@
 
 The defining feature of rite. One table. Read top-to-bottom, highest priority first. The first tier that sets a variable wins — every lower tier becomes a default that's ignored.
 
-## The eight tiers
+## The seven tiers
 
 | # | Tier | Where it's declared | Example |
 |---|---|---|---|
 | 1 | Shell environment | The calling shell's env | `export FOO=bar; rite …` |
 | 2 | CLI invocation | Positional `KEY=value` on the rite command line | `rite build FOO=bar` |
-| 3 | `rite --set` | Explicit flag form of #2, same precedence | `rite --set FOO=bar build` |
-| 4 | Entrypoint dotenv | `dotenv:` at the top of the invoked Ritefile | `dotenv: ['.env']` |
-| 5 | Entrypoint `vars:` | Top-level `vars:` of the invoked Ritefile | `vars:\n  FOO: bar` |
-| 6 | Included file | Vars at the include site, then top of the included file | `include: {file: x, vars: {FOO: bar}}` |
-| 7 | Task-scope `vars:` | `vars:` inside a single task — **defaults only** | `tasks:\n  build:\n    vars:\n      FOO: bar` |
-| 8 | Built-in specials | `RITEFILE`, `TASK`, `ROOT_DIR`, `RITE_VERSION`, etc. | Implicit |
+| 3 | Entrypoint dotenv | `dotenv:` at the top of the invoked Ritefile | `dotenv: ['.env']` |
+| 4 | Entrypoint `vars:` | Top-level `vars:` of the invoked Ritefile | `vars:\n  FOO: bar` |
+| 5 | Included file | Vars at the include site, then top of the included file | `include: {file: x, vars: {FOO: bar}}` |
+| 6 | Task-scope `vars:` | `vars:` inside a single task — **defaults only** | `tasks:\n  build:\n    vars:\n      FOO: bar` |
+| 7 | Built-in specials | `RITEFILE`, `TASK`, `ROOT_DIR`, `RITE_VERSION`, etc. | Implicit |
 
 Shell environment is law. Nothing in a Ritefile can override it.
 
@@ -67,15 +66,15 @@ A variable declared inside an included Ritefile cannot leak into its parent. Res
 
 `env:` blocks follow the **same precedence model as `vars:`** — they're unified under one resolver. Anything you can declare in `vars:` you can declare in `env:`; the only difference is `env:` values are exported to the cmd shell environ by default (and `vars:` are too, unless marked `export: false`).
 
-Where `env:` lives, mapped to the same eight tiers:
+Where `env:` lives, mapped to the same seven tiers:
 
 | Tier | Form | Example |
 |---|---|---|
 | 1 | Shell environment | `export DATABASE_URL=… ; rite migrate` |
-| 4 | `dotenv:` files | `dotenv: ['.env.local', '.env']` at the Ritefile root |
-| 5 | Top-level `env:` block | `env: { DATABASE_URL: 'sqlite:./dev.db' }` |
-| 6 | Included file's `env:` | `env:` at top of an included Ritefile |
-| 7 | Task-scope `env:` block | `env:` inside a single task definition |
+| 3 | `dotenv:` files | `dotenv: ['.env.local', '.env']` at the Ritefile root |
+| 4 | Top-level `env:` block | `env: { DATABASE_URL: 'sqlite:./dev.db' }` |
+| 5 | Included file's `env:` | `env:` at top of an included Ritefile |
+| 6 | Task-scope `env:` block | `env:` inside a single task definition |
 
 **Shell env always wins.** A task-scope `env: { DATABASE_URL: foo }` is a *fallback default* — if `DATABASE_URL` is set in your shell, the task sees the shell value, not `foo`.
 

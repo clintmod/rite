@@ -6,7 +6,7 @@ outline: deep
 
 # Ritefile Schema Reference
 
-This page documents every property of the Ritefile schema (version 3) and the types it accepts. The shape is near-identical to go-task's Taskfile v3 schema; the *semantics* are where rite differs — see [precedence](/precedence) for the eight-tier variable model and [migration](/migration) for the five user-visible breaks.
+This page documents every property of the Ritefile schema (version 3) and the types it accepts. The shape is near-identical to go-task's Taskfile v3 schema; the *semantics* are where rite differs — see [precedence](/precedence) for the seven-tier variable model and [migration](/migration) for the five user-visible breaks.
 
 > **JSON schema URLs.** Two copies are published; pick based on how much
 > churn you're willing to tolerate:

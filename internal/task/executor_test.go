@@ -442,10 +442,17 @@ func TestParams(t *testing.T) {
 
 func TestDeps(t *testing.T) {
 	t.Parallel()
+	// `output: group` buffers each cmd's writes and flushes with one
+	// Write to the shared stdout on close. Without it, mvdan/sh implements
+	// `echo 'd12'` as two Writes (`d12`, `\n`); under concurrent deps those
+	// Writes interleave (`d12d13\n\n`) and tank the sorted-lines golden
+	// under `-race -run '^TestDeps$'` isolation. SyncBuffer atomicity is
+	// per-Write, so it can't coalesce the echo-split alone. See #68.
 	NewExecutorTest(t,
 		WithExecutorOptions(
 			task.WithDir("testdata/deps"),
 			task.WithSilent(true),
+			task.WithOutputStyle(ast.Output{Name: "group"}),
 		),
 		WithPostProcessFn(PPSortedLines),
 	)

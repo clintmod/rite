@@ -13,9 +13,14 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-04-14
+
+Patch release: one UX feature, one new flag, concurrency hardening, test-corpus expansion, and a docs pass.
+
 ### Added
 
 - `rite --validate [path]` — parse + schema + semantic check without executing `sh:` / `preconditions:` / `status:` / tasks. Usable in pre-commit hooks and CI without side effects. `--json` for machine-readable output. Exit codes match existing `errors/errors.go` codes. (#75)
+- Bare `rite` with no `default:` task now runs `rite --list --silent` instead of erroring. Empty Ritefile prints a "run `rite --init`" hint. Removes the boilerplate `default: rite -l` pattern from every new Ritefile. (#102)
 - `internal/task/testdata/migrate_kitchen_sink/` — synthetic fixture
   exercising every migrate code path in a single tree (sibling + nested
   + 3-deep includes, all five warning classes, all six legacy
@@ -29,6 +34,28 @@ for archaeological reference only; they do not describe rite behavior.
   barf on idioms synthetic fixtures can't anticipate. Branch
   coverage belongs to the kitchen-sink next door. Upstream
   attribution + pinned SHA per file. (#44)
+- `examples/migrated/` subtree — migrated output of `go-task/examples` via `rite --migrate`, shipped alongside `examples/recipes/` as reference material. Upstream MIT attribution + pinned SHA. (#101)
+
+### Changed
+
+- **Concurrency:** `taskfile/ast.graph.Merge` now actually parallelizes per-edge merges. Prior to this, `g.Wait()` was called inside the per-edge loop, serializing what looked like concurrent work. Safe because `Vars.Merge` got a write-lock in v1.0.1. (#49)
+- `rite --init` now emits the versioned `$schema=.../schema/v3.json` directive so editor-pinned schemas don't silently break when a future v4 schema ships.
+- Install examples across README, website, and migration docs now use the single-command form: `brew install clintmod/tap/rite` (no explicit `brew tap` step).
+
+### Fixed
+
+- `rite install` task's `sources:` list now includes `internal/version/version.txt` and `go.{mod,sum}`. Previously, bumping `version.txt` between tags didn't bust the install task's checksum, so local `go install` silently reported "up to date" and users got the old binary. (#94)
+- `TestDeps` no longer flakes under `-race -run '^TestDeps$'` isolation. `mvdan/sh`'s echo builtin splits each line into two separate `Write` calls (data + newline), so per-Write atomicity in the existing `SyncBuffer` wasn't enough; we now wrap in `output.Group{}`, which buffers per-task and emits atomically on close. 10/10 clean post-fix (was 4/20). (#68)
+
+### Docs
+
+- New "Why the braced form is preferred" + "Defensive `${VAR:-}` conventions" sections on the syntax page. Explains the collision-avoidance reason rite uses `${…}` over bare `$VAR`, and when the `:-` form is non-redundant (set -u resilience, shellcheck signal, two-pass resolution). (#100, #105)
+- Migrate-page TEMPLATE-KEPT example fixed for horizontal overflow (long line + raw `<pre v-pre>` wrapping).
+- Vue-tokenizer sweep: hardened remaining fenced `{{if}}`/`{{eq}}`/`{{range}}` cases so future docs rebuilds don't hit the same trap that bit #103. (#106)
+- Home-page feature cards now link to their respective docs pages.
+- Removed fictional `rite --set` flag references across the docs; renumbered the precedence tier table from eight to seven tiers. No behavior change — the flag never existed.
+- Softened tone around upstream in SPEC (`structurally broken` → `inverts Unix precedence`); dropped the false "one letter off from `rake`" claim (it's two).
+- Added "Why the name?" section on the docs homepage for parity with README.
 
 ## [1.0.1] - 2026-04-14
 

@@ -21,14 +21,19 @@ import (
 // a near-superset of ours and most of it round-trips unchanged. What we DO
 // transform on disk:
 //
-//   - Input file is copied to <dir>/Ritefile<ext>; `Taskfile` substring in
-//     include-path literals is rewritten to `Ritefile`.
-//   - Any local file referenced from the entrypoint's `includes:` block is
-//     recursively migrated the same way — a project structured as
-//     `Taskfile.yml` + `.taskfiles/*.Taskfile.yml` ends up as a complete
-//     `Ritefile.yml` + `.taskfiles/*.Ritefile.yml` tree in one shot. URL
-//     includes and files that don't exist on disk are skipped with a
-//     warning; the caller gets a single-file migration in that case.
+//   - The entrypoint is written as `<dir>/Ritefile<ext>` (e.g.
+//     `Taskfile.yml` → `Ritefile.yml`, `Taskfile.dist.yaml` →
+//     `Ritefile.dist.yaml`).
+//   - Any local file referenced from any walked file's `includes:` block is
+//     recursively migrated. Each included source gets a per-source
+//     destination name derived from its basename (`ci/a.yml` →
+//     `ci/a.Ritefile.yml`; `.taskfiles/android.Taskfile.yml` →
+//     `.taskfiles/android.Ritefile.yml`). The root is the only file that
+//     claims the canonical `Ritefile<ext>` name.
+//   - Every `includes:` entry whose target resolves to a file we migrated is
+//     rewritten to point at the new destination. URL includes and files
+//     that don't exist on disk are skipped with a warning and left unchanged
+//     in the rewritten YAML.
 //
 // Everything else flows through verbatim, preserving user comments and
 // formatting (we string-substitute rather than re-serialize the AST).
@@ -53,13 +58,158 @@ import (
 // callers can echo it. Included-file destinations are not surfaced through
 // the return value; they appear as `would write …` / `wrote …` lines in
 // warn.
+//
+// Implementation is two-phase: Phase 1 walks the include tree and builds a
+// map from absolute source path to absolute destination path, choosing a
+// unique destination per source. Phase 2 emits each file using that map to
+// rewrite include targets in one coordinated pass. A prior single-pass
+// version (pre-#76) picked `<dir>/Ritefile.yml` for every walked source,
+// which meant N sibling includes all wrote to the same destination path
+// (silent clobber) and the root's `includes:` block kept pointing at the
+// original `.yml` filenames (no rewrite possible without per-source
+// identity).
 func Migrate(srcPath string, warn io.Writer, opts ...MigrateOption) (dstPath string, err error) {
 	o := migrateOptions{}
 	for _, fn := range opts {
 		fn(&o)
 	}
-	visited := map[string]struct{}{}
-	return migrateOne(srcPath, warn, &o, visited, true)
+
+	rootAbs, err := filepath.Abs(srcPath)
+	if err != nil {
+		return "", err
+	}
+
+	// Phase 1: discover the tree.
+	pathMap := map[string]string{rootAbs: mustAbs(ritefilePath(srcPath))}
+	order := []string{rootAbs}
+	collectIncludeTree(rootAbs, pathMap, &order, warn)
+
+	// Phase 2: emit each file with coordinated include-target rewrites.
+	for _, absSrc := range order {
+		isEntrypoint := absSrc == rootAbs
+		if err := emitMigratedFile(absSrc, pathMap, o, warn, isEntrypoint); err != nil {
+			return "", err
+		}
+	}
+	return ritefilePath(srcPath), nil
+}
+
+// mustAbs resolves to an absolute path or returns the input unchanged on
+// error. Absolute-ification failure is unusual (filepath.Abs falls back to
+// cwd lookup); if it does fail the downstream WriteFile will surface a
+// clearer error than we could construct here.
+func mustAbs(p string) string {
+	a, err := filepath.Abs(p)
+	if err != nil {
+		return p
+	}
+	return a
+}
+
+// collectIncludeTree populates pathMap (absSrc → absDst) and order (BFS
+// insertion order, root first) for every local Taskfile reachable from
+// srcAbs via `includes:` edges. Failures — parse errors, missing required
+// includes, cycles — drop the offending child from the tree but don't abort;
+// the emit phase will report them. Cycles are detected by the pathMap
+// presence check.
+func collectIncludeTree(srcAbs string, pathMap map[string]string, order *[]string, warn io.Writer) {
+	data, err := os.ReadFile(srcAbs)
+	if err != nil {
+		return
+	}
+	var doc migrateDoc
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return
+	}
+	srcDir := filepath.Dir(srcAbs)
+	for _, inc := range doc.Includes {
+		p := inc.path()
+		if p == "" || isURL(p) {
+			continue
+		}
+		resolved := p
+		if !filepath.IsAbs(resolved) {
+			resolved = filepath.Join(srcDir, resolved)
+		}
+		resolved, derr := resolveIncludedTaskfile(resolved)
+		if derr != nil {
+			continue
+		}
+		childAbs, err := filepath.Abs(resolved)
+		if err != nil {
+			continue
+		}
+		if _, seen := pathMap[childAbs]; seen {
+			continue
+		}
+		pathMap[childAbs] = mustAbs(includedRitefilePath(childAbs))
+		*order = append(*order, childAbs)
+		collectIncludeTree(childAbs, pathMap, order, warn)
+	}
+}
+
+// emitMigratedFile reads the source at absSrc, applies all rewrites, and
+// writes (or announces, under dry-run) to pathMap[absSrc]. The entrypoint's
+// `wrote …` / `would write …` line is suppressed because the CLI announces
+// the entrypoint destination separately; nested files get the announcement
+// so the user can see the tree walk.
+func emitMigratedFile(absSrc string, pathMap map[string]string, o migrateOptions, warn io.Writer, isEntrypoint bool) error {
+	data, err := os.ReadFile(absSrc)
+	if err != nil {
+		return err
+	}
+
+	var doc migrateDoc
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		fmt.Fprintf(warn, "rite migrate: skipping semantic analysis — YAML parse failed: %v\n", err)
+	} else {
+		doc.emitWarnings(absSrc, warn)
+	}
+
+	// Warn once per missing/remote include — only on the parent that
+	// declares it, and only in the emit phase so we don't double-announce.
+	srcDir := filepath.Dir(absSrc)
+	for namespace, inc := range doc.Includes {
+		p := inc.path()
+		if p == "" {
+			continue
+		}
+		if isURL(p) {
+			fmt.Fprintf(warn, "rite migrate: skipping remote include %q (%s) — rite does not support URL-based includes; migrate the file manually if you need it.\n", namespace, p)
+			continue
+		}
+		resolved := p
+		if !filepath.IsAbs(resolved) {
+			resolved = filepath.Join(srcDir, resolved)
+		}
+		if _, derr := resolveIncludedTaskfile(resolved); derr != nil {
+			if !inc.Optional {
+				fmt.Fprintf(warn, "rite migrate: include %q (%s): %v — skipping recursive migration.\n", namespace, p, derr)
+			}
+		}
+	}
+
+	rewrites := computeIncludeRewrites(doc, srcDir, pathMap)
+	out := rewriteIncludePathsWithMap(string(data), rewrites)
+	out = rewriteSpecialVarRefs(out)
+	if hasTaskfileDevSchemaPointer(out) {
+		fmt.Fprintf(warn, "rite migrate: SCHEMA-URL %s: `$schema=https://taskfile.dev/schema.json` references upstream docs; rite's schema is not yet published (Phase 5 docs).\n", absSrc)
+	}
+
+	dst := pathMap[absSrc]
+	if o.dryRun {
+		if !isEntrypoint {
+			fmt.Fprintf(warn, "rite migrate: would write %s\n", dst)
+		}
+		return nil
+	}
+	if err := os.WriteFile(dst, []byte(out), 0o644); err != nil {
+		return err
+	}
+	if !isEntrypoint {
+		fmt.Fprintf(warn, "rite migrate: wrote %s\n", dst)
+	}
+	return nil
 }
 
 // MigrateOption configures Migrate. Functional-options keep the two-arg
@@ -76,97 +226,23 @@ func WithDryRun(enabled bool) MigrateOption {
 	return func(o *migrateOptions) { o.dryRun = enabled }
 }
 
-// migrateOne performs a single-file migration and recurses into includes.
-// visited holds absolute source paths already migrated in this run to
-// prevent include cycles (upstream accepts a Taskfile A including B while B
-// includes A; only the first visit migrates). isEntrypoint suppresses the
-// `wrote …` / `would write …` chatter for the top-level call because the
-// CLI already announces the entrypoint.
-func migrateOne(srcPath string, warn io.Writer, o *migrateOptions, visited map[string]struct{}, isEntrypoint bool) (dstPath string, err error) {
-	abs, err := filepath.Abs(srcPath)
-	if err != nil {
-		return "", err
-	}
-	if _, seen := visited[abs]; seen {
-		return ritefilePath(srcPath), nil
-	}
-	visited[abs] = struct{}{}
-
-	data, err := os.ReadFile(srcPath)
-	if err != nil {
-		return "", err
-	}
-
-	dstPath = ritefilePath(srcPath)
-
-	var doc migrateDoc
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		fmt.Fprintf(warn, "rite migrate: skipping semantic analysis — YAML parse failed: %v\n", err)
-	} else {
-		doc.emitWarnings(srcPath, warn)
-	}
-
-	out := rewriteIncludePaths(string(data))
-	out = rewriteSpecialVarRefs(out)
-	if hasTaskfileDevSchemaPointer(out) {
-		fmt.Fprintf(warn, "rite migrate: SCHEMA-URL %s: `$schema=https://taskfile.dev/schema.json` references upstream docs; rite's schema is not yet published (Phase 5 docs).\n", srcPath)
-	}
-
-	if o.dryRun {
-		if !isEntrypoint {
-			fmt.Fprintf(warn, "rite migrate: would write %s\n", dstPath)
-		}
-	} else {
-		if err := os.WriteFile(dstPath, []byte(out), 0o644); err != nil {
-			return "", err
-		}
-		if !isEntrypoint {
-			fmt.Fprintf(warn, "rite migrate: wrote %s\n", dstPath)
-		}
-	}
-
-	// Recurse into includes. Failures are reported, not fatal — a missing
-	// included file shouldn't abort the whole migration, since the user may
-	// have a partial checkout or an intentionally-optional include.
-	srcDir := filepath.Dir(srcPath)
-	for namespace, inc := range doc.Includes {
-		p := inc.path()
-		if p == "" {
-			continue
-		}
-		if isURL(p) {
-			fmt.Fprintf(warn, "rite migrate: skipping remote include %q (%s) — rite does not support URL-based includes; migrate the file manually if you need it.\n", namespace, p)
-			continue
-		}
-		resolved := p
-		if !filepath.IsAbs(resolved) {
-			resolved = filepath.Join(srcDir, resolved)
-		}
-		resolved, derr := resolveIncludedTaskfile(resolved)
-		if derr != nil {
-			if !inc.Optional {
-				fmt.Fprintf(warn, "rite migrate: include %q (%s): %v — skipping recursive migration.\n", namespace, p, derr)
-			}
-			continue
-		}
-		if _, err := migrateOne(resolved, warn, o, visited, false); err != nil {
-			fmt.Fprintf(warn, "rite migrate: include %q (%s): %v — skipping.\n", namespace, resolved, err)
-		}
-	}
-
-	return dstPath, nil
-}
-
 // RitefilePathForTest exports ritefilePath under a test-only name so
 // migrate_test.go can table-test filename mapping without promoting the
 // helper to the public API.
 func RitefilePathForTest(srcPath string) string { return ritefilePath(srcPath) }
 
-// ritefilePath maps a source Taskfile path to its Ritefile counterpart in the
-// same directory. Handles both the plain "Taskfile.yml" case and compounded
-// forms like "Taskfile.dist.yaml", "Taskfile-inc.yml", etc. A source whose
-// basename doesn't contain "Taskfile" gets "Ritefile.yml" as a fallback —
-// unusual but ensures we always produce a valid rite filename.
+// IncludedRitefilePathForTest exports includedRitefilePath for the same
+// reason as RitefilePathForTest.
+func IncludedRitefilePathForTest(srcPath string) string { return includedRitefilePath(srcPath) }
+
+// ritefilePath maps the ENTRYPOINT source path to its Ritefile counterpart.
+// Handles the plain "Taskfile.yml" case and compounded forms like
+// "Taskfile.dist.yaml", "Taskfile-inc.yml", etc. A source whose basename
+// doesn't contain "Taskfile" gets "Ritefile.yml" as a fallback — unusual
+// for a top-level invocation, but preserves the canonical discovery name.
+// This is only called for the entrypoint; nested includes go through
+// includedRitefilePath so two sibling includes can't collide on the same
+// destination filename.
 func ritefilePath(srcPath string) string {
 	dir, base := filepath.Split(srcPath)
 	if strings.Contains(base, "Taskfile") {
@@ -179,16 +255,123 @@ func ritefilePath(srcPath string) string {
 	return filepath.Join(dir, base)
 }
 
-// rewriteIncludePaths swaps `Taskfile` substrings inside the `includes:`
-// block's path values. Line-scoped rewrite that walks the YAML as text so
-// user comments and formatting survive — a full AST round-trip would throw
-// most of that away.
+// includedRitefilePath maps a NESTED include source to its migrated
+// destination. Unlike the entrypoint case, every included source needs a
+// distinct filename so N sibling includes don't all collapse onto one
+// `<dir>/Ritefile.yml` (the #76 regression from the original walk). Rule:
 //
-// Scope kept deliberately narrow: only lines that are (a) the
-// `includes:` header or (b) lines nested under it until a new top-level key
-// appears. Anywhere else in the document we leave `Taskfile` alone, because
-// the user might be writing about Taskfiles in desc/summary/etc.
-func rewriteIncludePaths(s string) string {
+//   - Basename contains "Taskfile" → swap to "Ritefile" (e.g.
+//     "android.Taskfile.yml" → "android.Ritefile.yml"). The source basename
+//     already carries its own identity, so a simple swap preserves it.
+//   - Basename contains "taskfile" (lowercase) → same swap on lowercase.
+//   - Basename has no Taskfile/taskfile marker (e.g. "a.yml", "android.yml") →
+//     insert ".Ritefile" before the extension: "a.yml" → "a.Ritefile.yml".
+//     This preserves the stem as disambiguation and the compound
+//     "*.Ritefile.*" suffix signals the file is a migration artifact.
+//   - Basename with no extension → append ".Ritefile.yml".
+//
+// Files produced by this function are discoverable by rite only if the user
+// renames them later, but that's by design: the include-target rewrite in
+// emitMigratedFile updates the parent's `includes:` block to point directly
+// at the new path, so discovery isn't needed in the normal case.
+func includedRitefilePath(srcPath string) string {
+	dir, base := filepath.Split(srcPath)
+	if strings.Contains(base, "Taskfile") {
+		return filepath.Join(dir, strings.Replace(base, "Taskfile", "Ritefile", 1))
+	}
+	if strings.Contains(base, "taskfile") {
+		return filepath.Join(dir, strings.Replace(base, "taskfile", "ritefile", 1))
+	}
+	ext := filepath.Ext(base)
+	stem := strings.TrimSuffix(base, ext)
+	if ext == "" {
+		return filepath.Join(dir, stem+".Ritefile.yml")
+	}
+	return filepath.Join(dir, stem+".Ritefile"+ext)
+}
+
+// includeRewrite records a path literal to rewrite in an `includes:` block.
+// oldLiteral is the exact string the user wrote for the include target
+// (e.g. `./lib/Taskfile.yml`); newLiteral is the relative path to the
+// migrated destination from the parent file's directory. Both are kept as
+// strings so the rewrite stays at the line level and user comments/
+// formatting survive unchanged — a full YAML AST round-trip would lose
+// both.
+type includeRewrite struct {
+	oldLiteral string
+	newLiteral string
+}
+
+// computeIncludeRewrites turns the parent doc's `includes:` entries into a
+// list of (oldLiteral, newLiteral) pairs, using pathMap to find the
+// destination each local include was migrated to. Entries we skipped during
+// the tree walk (URLs, missing files) produce no rewrite — they stay
+// unchanged in the emitted YAML so the user sees their original reference
+// and can decide what to do manually.
+func computeIncludeRewrites(doc migrateDoc, parentDir string, pathMap map[string]string) []includeRewrite {
+	var rewrites []includeRewrite
+	for _, inc := range doc.Includes {
+		p := inc.path()
+		if p == "" || isURL(p) {
+			continue
+		}
+		resolved := p
+		if !filepath.IsAbs(resolved) {
+			resolved = filepath.Join(parentDir, resolved)
+		}
+		resolved, derr := resolveIncludedTaskfile(resolved)
+		if derr != nil {
+			continue
+		}
+		childAbs, err := filepath.Abs(resolved)
+		if err != nil {
+			continue
+		}
+		newAbs, ok := pathMap[childAbs]
+		if !ok {
+			continue
+		}
+		newRel, err := filepath.Rel(parentDir, newAbs)
+		if err != nil {
+			continue
+		}
+		newRel = filepath.ToSlash(newRel)
+		// Preserve the leading `./` convention if the original had one;
+		// filepath.Rel strips it.
+		if strings.HasPrefix(p, "./") && !strings.HasPrefix(newRel, ".") {
+			newRel = "./" + newRel
+		}
+		rewrites = append(rewrites, includeRewrite{oldLiteral: p, newLiteral: newRel})
+	}
+	return rewrites
+}
+
+// rewriteIncludePathsWithMap performs include-target substitution inside the
+// `includes:` block. Line-scoped so user comments and formatting survive
+// unchanged. Scope stays narrow: only lines inside `includes:` (from the
+// header until a line begins with a new top-level YAML key) are candidates.
+//
+// Rewrites land in two tiers:
+//
+//  1. Exact-match against `rewrites` (built from the migrated tree): if the
+//     parent's include line contains a literal path we know corresponds to a
+//     file we migrated, substitute the relative path to the new destination.
+//     This is the correct case — the YAML ends up pointing at a real
+//     migrated file.
+//
+//  2. Fallback `Taskfile`/`taskfile` substring swap on any remaining line
+//     (same line-level rewrite the pre-#76 tool did). This keeps migrations
+//     useful even when the included file isn't on disk at migrate time
+//     (partial checkout, intentionally missing include, etc.) — the user
+//     gets a filename that matches rite's discovery rules even though we
+//     couldn't recurse into it.
+//
+// Each rewrite is applied once per line via strings.Replace(_, _, _, 1), so
+// two include entries sharing the same literal path would each get a
+// separate substitution on the correct line. One include value per line is
+// the YAML convention; mixed-shape forms (scalar vs mapping) still keep the
+// value on its own line.
+func rewriteIncludePathsWithMap(s string, rewrites []includeRewrite) string {
 	var out strings.Builder
 	out.Grow(len(s))
 	lines := strings.Split(s, "\n")
@@ -205,10 +388,18 @@ func rewriteIncludePaths(s string) string {
 		if inIncludes && rxDedentTopLevel.MatchString(line) {
 			inIncludes = false
 		}
-		if inIncludes && (strings.Contains(line, "Taskfile") || strings.Contains(line, "taskfile")) {
-			// Inside an `includes:` block, path-ish values here refer to
-			// other ritefiles. Rewrite Taskfile/taskfile.
-			line = rewriteInsideIncludesLine(line)
+		if inIncludes {
+			rewritten := false
+			for _, r := range rewrites {
+				if strings.Contains(line, r.oldLiteral) {
+					line = strings.Replace(line, r.oldLiteral, r.newLiteral, 1)
+					rewritten = true
+					break
+				}
+			}
+			if !rewritten && (strings.Contains(line, "Taskfile") || strings.Contains(line, "taskfile")) {
+				line = rewriteInsideIncludesLineFallback(line)
+			}
 		}
 		out.WriteString(line)
 		if i < len(lines)-1 {
@@ -218,33 +409,31 @@ func rewriteIncludePaths(s string) string {
 	return out.String()
 }
 
+// rewriteInsideIncludesLineFallback swaps Taskfile/taskfile in file-path
+// positions while leaving the YAML key `taskfile:` (a schema keyword) alone.
+// Used only when the exact-path rewriter couldn't match — i.e. the include
+// target wasn't reachable from disk during the tree walk.
+func rewriteInsideIncludesLineFallback(line string) string {
+	idx := strings.Index(line, ":")
+	if idx < 0 {
+		// Scalar shortcut form like `  - Taskfile2.yml` — no separate value.
+		return rxTaskfileWord.ReplaceAllString(line, "Ritefile")
+	}
+	key := line[:idx+1]
+	value := line[idx+1:]
+	value = rxTaskfileWord.ReplaceAllString(value, "Ritefile")
+	value = rxtaskfileWord.ReplaceAllStringFunc(value, func(m string) string {
+		return "ritefile." + m[len(m)-1:]
+	})
+	return key + value
+}
+
 var (
 	rxIncludesKey    = regexp.MustCompile(`^includes\s*:\s*(?:#.*)?$`)
 	rxDedentTopLevel = regexp.MustCompile(`^[A-Za-z]`) // a new top-level YAML key
 	rxTaskfileWord   = regexp.MustCompile(`\bTaskfile\b`)
 	rxtaskfileWord   = regexp.MustCompile(`\btaskfile\.\w`) // lowercase filename
 )
-
-// rewriteInsideIncludesLine swaps Taskfile/taskfile in file-path positions
-// while leaving the YAML key `taskfile:` (which is a schema keyword) alone.
-// Schema key is preceded by whitespace, followed by `:`. File-path tokens
-// appear on the right of a colon or as bare scalar values.
-func rewriteInsideIncludesLine(line string) string {
-	// Split at the first colon; left = key (leave alone), right = value (rewrite).
-	idx := strings.Index(line, ":")
-	if idx < 0 {
-		// Scalar shortcut form like `  name: Taskfile2.yml` — no separate value.
-		return rxTaskfileWord.ReplaceAllString(line, "Ritefile")
-	}
-	key := line[:idx+1]
-	value := line[idx+1:]
-	value = rxTaskfileWord.ReplaceAllString(value, "Ritefile")
-	// Lowercase Taskfile*.yml as embedded filenames (rare but exists in docs).
-	value = rxtaskfileWord.ReplaceAllStringFunc(value, func(m string) string {
-		return "ritefile." + m[len(m)-1:]
-	})
-	return key + value
-}
 
 func hasTaskfileDevSchemaPointer(s string) bool {
 	return strings.Contains(s, "taskfile.dev/schema")

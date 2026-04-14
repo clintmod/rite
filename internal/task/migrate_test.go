@@ -500,6 +500,141 @@ tasks: {hi: {cmds: ['echo hi']}}
 	require.Contains(t, warnS, filepath.Join(dir, "sub", "Ritefile.yml"))
 }
 
+// TestMigrateSiblingIncludesDontClobber is the #76 regression test: multiple
+// sibling includes whose source basenames don't contain "Taskfile" (e.g.
+// `ci/a.yml`, `ci/b.yml`, `ci/c.yml`) used to all migrate to the same
+// destination filename (`ci/Ritefile.yml`), clobbering each other. Now each
+// gets a per-source destination (`ci/a.Ritefile.yml`, `ci/b.Ritefile.yml`,
+// `ci/c.Ritefile.yml`) and the root's `includes:` block is rewritten to
+// point at the new paths.
+func TestMigrateSiblingIncludesDontClobber(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "ci"), 0o755))
+
+	entry := filepath.Join(dir, "Taskfile.yml")
+	require.NoError(t, os.WriteFile(entry, []byte(`version: '3'
+includes:
+  a: ci/a.yml
+  b: ci/b.yml
+  c: ci/c.yml
+tasks:
+  default:
+    cmds: ['echo hi']
+`), 0o644))
+	for _, name := range []string{"a", "b", "c"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "ci", name+".yml"),
+			[]byte("version: '3'\ntasks:\n  from-"+name+":\n    cmds: ['echo "+name+"']\n"),
+			0o644))
+	}
+
+	var warn bytes.Buffer
+	dst, err := task.Migrate(entry, &warn)
+	require.NoError(t, err)
+	require.Equal(t, filepath.Join(dir, "Ritefile.yml"), dst)
+
+	// Each include must land at a distinct destination — not clobbered.
+	for _, name := range []string{"a", "b", "c"} {
+		p := filepath.Join(dir, "ci", name+".Ritefile.yml")
+		if _, err := os.Stat(p); err != nil {
+			t.Errorf("expected migrated include at %s: %v", p, err)
+			continue
+		}
+		body, err := os.ReadFile(p)
+		require.NoError(t, err)
+		if !strings.Contains(string(body), "from-"+name) {
+			t.Errorf("%s does not contain from-%s — likely clobbered\nGOT:\n%s", p, name, body)
+		}
+	}
+
+	// The old collapsed filename must not exist.
+	if _, err := os.Stat(filepath.Join(dir, "ci", "Ritefile.yml")); !os.IsNotExist(err) {
+		t.Errorf("unexpected legacy clobber path ci/Ritefile.yml (err=%v)", err)
+	}
+
+	// Root's includes: block must be rewritten to the new per-source paths.
+	rootBody, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	for _, want := range []string{
+		"a: ci/a.Ritefile.yml",
+		"b: ci/b.Ritefile.yml",
+		"c: ci/c.Ritefile.yml",
+	} {
+		if !strings.Contains(string(rootBody), want) {
+			t.Errorf("root Ritefile.yml missing rewritten include %q\nGOT:\n%s", want, rootBody)
+		}
+	}
+
+	// The original Taskfiles must be preserved — migration is non-destructive.
+	for _, name := range []string{"a", "b", "c"} {
+		p := filepath.Join(dir, "ci", name+".yml")
+		if _, err := os.Stat(p); err != nil {
+			t.Errorf("expected original %s preserved: %v", p, err)
+		}
+	}
+}
+
+// TestMigrateIncludedRitefilePath is the unit-level counterpart to
+// TestMigrateSiblingIncludesDontClobber: it exercises the per-source
+// destination-name mapping directly. The entrypoint case stays on
+// ritefilePath (canonical Ritefile.yml); nested includes go through
+// includedRitefilePath, which must preserve stems.
+func TestMigrateIncludedRitefilePath(t *testing.T) {
+	t.Parallel()
+	join := func(parts ...string) string { return filepath.Join(parts...) }
+	cases := []struct {
+		src, want string
+	}{
+		{join("ci", "a.yml"), join("ci", "a.Ritefile.yml")},
+		{join("ci", "android.yaml"), join("ci", "android.Ritefile.yaml")},
+		{join("ci", "android.Taskfile.yml"), join("ci", "android.Ritefile.yml")},
+		{join("ci", "Taskfile.yml"), join("ci", "Ritefile.yml")},
+		{join("ci", "taskfile.yml"), join("ci", "ritefile.yml")},
+		{join("ci", "noext"), join("ci", "noext.Ritefile.yml")},
+	}
+	for _, c := range cases {
+		got := task.IncludedRitefilePathForTest(c.src)
+		if got != c.want {
+			t.Errorf("IncludedRitefilePath(%q) = %q, want %q", c.src, got, c.want)
+		}
+	}
+}
+
+// TestMigrateRewritesIncludeForNestedFiles covers the scenario where a
+// migrated included file itself has includes pointing further down. Every
+// level's includes: block has to be rewritten to the new per-source paths,
+// not just the root's.
+func TestMigrateRewritesIncludeForNestedFiles(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "ci", "sub"), 0o755))
+	entry := filepath.Join(dir, "Taskfile.yml")
+	require.NoError(t, os.WriteFile(entry, []byte(`version: '3'
+includes:
+  a: ci/a.yml
+tasks: {hi: {cmds: ['echo hi']}}
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "ci", "a.yml"), []byte(`version: '3'
+includes:
+  b: sub/b.yml
+tasks: {from-a: {cmds: ['echo A']}}
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "ci", "sub", "b.yml"),
+		[]byte("version: '3'\ntasks: {from-b: {cmds: ['echo B']}}\n"), 0o644))
+
+	_, err := task.Migrate(entry, io.Discard)
+	require.NoError(t, err)
+
+	aBody, err := os.ReadFile(filepath.Join(dir, "ci", "a.Ritefile.yml"))
+	require.NoError(t, err)
+	if !strings.Contains(string(aBody), "b: sub/b.Ritefile.yml") {
+		t.Errorf("a's includes not rewritten to point at b.Ritefile.yml\nGOT:\n%s", aBody)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "ci", "sub", "b.Ritefile.yml")); err != nil {
+		t.Errorf("expected migrated grandchild at ci/sub/b.Ritefile.yml: %v", err)
+	}
+}
+
 func TestMigrateRitefilePath(t *testing.T) {
 	t.Parallel()
 	// filepath.Join on Windows normalizes to backslash separators, so express

@@ -70,10 +70,10 @@ cmds:
 sources:
   - "src/**/*.{{.LANG}}"
 cmds:
-  - "{{if eq .MODE \"release\"}}cargo build --release{{else}}cargo build{{end}}"
+  - echo "building {{.TARGET}}"
 ```
 
-Go-template syntax carries the full [template function set](https://pkg.go.dev/text/template) — useful for conditionals, list operations, and template functions.
+Go-template syntax carries the full [template function set](https://pkg.go.dev/text/template) — useful for conditionals, list operations, and template functions. A conditional cmd looks like <span v-pre>`"{{if eq .MODE \"release\"}}cargo build --release{{else}}cargo build{{end}}"`</span>; see [`rite/internal/task/testdata/if/Ritefile.yml`](https://github.com/clintmod/rite/blob/main/internal/task/testdata/if/Ritefile.yml) for a working fixture.
 
 **Both syntaxes resolve against the same variable set with identical precedence.** Pick whichever reads cleaner in context — usually `${VAR}` for inline value interpolation, <span v-pre>`{{…}}`</span> for conditionals and pipelines.
 

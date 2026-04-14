@@ -21,12 +21,12 @@ import (
 	"github.com/clintmod/rite/taskfile/ast"
 )
 
-const usage = `Usage: task [flags...] [task...]
+const usage = `Usage: rite [flags...] [task...]
 
 Runs the specified task(s). Falls back to the "default" task if no task name
 was specified, or lists all tasks if an unknown task name was specified.
 
-Example: 'task hello' with the following 'Ritefile.yml' file will generate an
+Example: 'rite hello' with the following 'Ritefile.yml' file will generate an
 'output.txt' file with the content "hello".
 
 '''
@@ -110,10 +110,10 @@ func init() {
 		pflag.PrintDefaults()
 	}
 
-	pflag.BoolVar(&Version, "version", false, "Show Task version.")
-	pflag.BoolVarP(&Help, "help", "h", false, "Shows Task usage.")
+	pflag.BoolVar(&Version, "version", false, "Show rite version.")
+	pflag.BoolVarP(&Help, "help", "h", false, "Shows rite usage.")
 	pflag.BoolVarP(&Init, "init", "i", false, "Creates a new Ritefile.yml in the current folder.")
-	pflag.BoolVar(&Migrate, "migrate", false, "Converts a go-task Ritefile to a Ritefile. Takes a file path as a positional arg, or autodetects in the current directory.")
+	pflag.BoolVar(&Migrate, "migrate", false, "Converts a go-task Taskfile to a Ritefile. Takes a file path as a positional arg, or autodetects in the current directory.")
 	pflag.BoolVar(&MigrateKeepGoTpl, "keep-go-templates", false, "During migrate, leave Go-template `{{.VAR}}` expressions as-is instead of rewriting safe variable refs to the rite-native `${VAR}` form. Only affects `rite migrate` / `--migrate`.")
 	pflag.StringVar(&Completion, "completion", "", "Generates shell completion script.")
 	pflag.BoolVarP(&List, "list", "l", false, "Lists tasks with description of current Ritefile.")
@@ -133,7 +133,7 @@ func init() {
 	pflag.BoolVarP(&Dry, "dry", "n", getConfig(config, "DRY", func() *bool { return nil }, false), "Compiles and prints tasks in the order that they would be run, without executing them.")
 	pflag.BoolVar(&Summary, "summary", false, "Show summary about a task.")
 	pflag.BoolVarP(&ExitCode, "exit-code", "x", false, "Pass-through the exit code of the task command.")
-	pflag.StringVarP(&Dir, "dir", "d", "", "Sets the directory in which Task will execute and look for a Ritefile.")
+	pflag.StringVarP(&Dir, "dir", "d", "", "Sets the directory in which rite will execute and look for a Ritefile.")
 	pflag.StringVarP(&Entrypoint, "taskfile", "t", "", `Choose which Ritefile to run. Defaults to "Ritefile.yml".`)
 	pflag.StringVarP(&Output.Name, "output", "o", "", "Sets output style: [interleaved|group|prefixed].")
 	pflag.StringVar(&Output.Group.Begin, "output-group-begin", "", "Message template to print before a task's grouped output.")
@@ -143,7 +143,7 @@ func init() {
 	pflag.IntVarP(&Concurrency, "concurrency", "C", getConfig(config, "CONCURRENCY", func() *int { return config.Concurrency }, 0), "Limit number of tasks to run concurrently.")
 	pflag.DurationVarP(&Interval, "interval", "I", 0, "Interval to watch for changes.")
 	pflag.BoolVarP(&Failfast, "failfast", "F", getConfig(config, "FAILFAST", func() *bool { return &config.Failfast }, false), "When running tasks in parallel, stop all tasks if one fails.")
-	pflag.BoolVarP(&Global, "global", "g", false, "Runs global Ritefile, from $HOME/{T,t}askfile.{yml,yaml}.")
+	pflag.BoolVarP(&Global, "global", "g", false, "Runs global Ritefile, from $HOME/{R,r}itefile.{yml,yaml}.")
 	pflag.BoolVar(&Experiments, "experiments", false, "Lists all the available experiments and whether or not they are enabled.")
 
 	// Gentle force experiment will override the force flag and add a new force-all flag

@@ -51,6 +51,9 @@ import (
 //	SECRET-VAR      var name pattern-matches a secret (TOKEN/KEY/SECRET/
 //	                PASSWORD/…) and lacks `export: false` — rite auto-exports
 //	                `vars:` now, so this would leak to every cmd shell.
+//	TEMPLATE-KEPT   a Go-template expression (`{{if}}`, `{{range}}`, sprig
+//	                helper, etc.) that has no equivalent ${VAR} form was
+//	                left verbatim — review manually.
 //
 // The yaml-language-server `$schema=` directive pointing at taskfile.dev is
 // rewritten to rite's hosted schema in place; the previous SCHEMA-URL

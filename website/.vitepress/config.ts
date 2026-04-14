@@ -72,7 +72,7 @@ export default defineConfig({
           { text: 'Syntax', link: '/syntax' },
           { text: 'CLI', link: '/cli' },
           { text: 'Forwarding CLI args', link: '/cli-args' },
-          { text: 'Special CLI_* vars', link: '/special-vars' },
+          { text: 'Special variables', link: '/special-vars' },
           { text: 'File discovery', link: '/file-discovery' },
           { text: 'CI integration', link: '/ci' },
           { text: 'Schema', link: '/schema' },

@@ -25,8 +25,12 @@ func IsAbs(path string) bool {
 	return filepath.IsAbs(path)
 }
 
+// knownAbsDirs lists special-var references whose expansions are always
+// absolute paths. `.TASKFILE_DIR` is kept as a compat alias for
+// `.RITEFILE_DIR` (same pattern as getSpecialVars / isEnvVar).
 var knownAbsDirs = []string{
 	".ROOT_DIR",
+	".RITEFILE_DIR",
 	".TASKFILE_DIR",
 	".USER_WORKING_DIR",
 }

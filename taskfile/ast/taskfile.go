@@ -13,7 +13,15 @@ import (
 // NamespaceSeparator contains the character that separates namespaces
 const NamespaceSeparator = ":"
 
-var V3 = semver.MustParse("3")
+var (
+	V3 = semver.MustParse("3")
+	// V4 marks the first unsupported future schema version. `doVersionChecks`
+	// rejects any schema `>= V4` so a Ritefile authored against a future
+	// schema fails loudly on an older rite instead of silently degrading to
+	// v3 semantics — the same fail-loudly philosophy as the v2 rejection
+	// below V3.
+	V4 = semver.MustParse("4")
+)
 
 // ErrIncludedRitefilesCantHaveDotenvs is returned when an included Ritefile contains dotenvs
 var ErrIncludedRitefilesCantHaveDotenvs = errors.New("rite: Included Ritefiles can't have dotenv declarations. Please, move the dotenv declaration to the main Ritefile")

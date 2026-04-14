@@ -255,5 +255,16 @@ func (e *Executor) doVersionChecks() error {
 		}
 	}
 
+	// Error if the schema version is at or above the next major. Without this
+	// bound, `version: '4'` / `version: '999'` silently parse and run under v3
+	// semantics. See issue #46.
+	if schemaVersion.GreaterThanEqual(ast.V4) {
+		return &errors.RitefileVersionCheckError{
+			URI:           e.Ritefile.Location,
+			SchemaVersion: schemaVersion,
+			Message:       `is not supported. rite currently supports schema version 3`,
+		}
+	}
+
 	return nil
 }

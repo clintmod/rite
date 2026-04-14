@@ -87,40 +87,23 @@ func run() error {
 		return log.PrintExperiments()
 	}
 
+	// Subcommand form: `rite migrate [path]`. Shadows any task named
+	// "migrate"; callers who need the token as a task name can still use
+	// the `--migrate` flag form, which stays as an alias.
+	positional, _, err := args.Get()
+	if err != nil {
+		return err
+	}
+	if path, ok := migrateSubcommand(positional); ok {
+		return runMigrate(log, path)
+	}
+
 	if flags.Migrate {
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		args, _, err := args.Get()
-		if err != nil {
-			return err
-		}
 		src := ""
-		if len(args) > 0 {
-			src = args[0]
-		} else {
-			// Autodetect: first existing Ritefile* in cwd.
-			for _, name := range []string{"Ritefile.yml", "Ritefile.yaml", "Ritefile.dist.yml", "Ritefile.dist.yaml"} {
-				p := filepathext.SmartJoin(wd, name)
-				if _, err := os.Stat(p); err == nil {
-					src = p
-					break
-				}
-			}
-			if src == "" {
-				return fmt.Errorf("rite: no Ritefile found in %s; pass a path as the first argument", wd)
-			}
+		if len(positional) > 0 {
+			src = positional[0]
 		}
-		if !filepath.IsAbs(src) {
-			src = filepathext.SmartJoin(wd, src)
-		}
-		dst, err := task.Migrate(src, os.Stderr)
-		if err != nil {
-			return err
-		}
-		log.Outf(logger.Green, "Ritefile written: %s\n", filepathext.TryAbsToRel(dst))
-		return nil
+		return runMigrate(log, src)
 	}
 
 	if flags.Init {
@@ -237,4 +220,48 @@ func run() error {
 	}
 
 	return e.Run(ctx, calls...)
+}
+
+// migrateSubcommand reports whether the first positional arg is the literal
+// "migrate" token, meaning the user invoked `rite migrate [path]`. The
+// returned path is the second positional arg or "" if the user relied on
+// autodetection. Extra args past the path are ignored (the existing
+// --migrate flag form has the same behavior).
+func migrateSubcommand(positional []string) (string, bool) {
+	if len(positional) == 0 || positional[0] != "migrate" {
+		return "", false
+	}
+	if len(positional) > 1 {
+		return positional[1], true
+	}
+	return "", true
+}
+
+func runMigrate(log *logger.Logger, src string) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if src == "" {
+		// Autodetect: first existing Ritefile* in cwd.
+		for _, name := range []string{"Ritefile.yml", "Ritefile.yaml", "Ritefile.dist.yml", "Ritefile.dist.yaml"} {
+			p := filepathext.SmartJoin(wd, name)
+			if _, err := os.Stat(p); err == nil {
+				src = p
+				break
+			}
+		}
+		if src == "" {
+			return fmt.Errorf("rite: no Ritefile found in %s; pass a path as the first argument", wd)
+		}
+	}
+	if !filepath.IsAbs(src) {
+		src = filepathext.SmartJoin(wd, src)
+	}
+	dst, err := task.Migrate(src, os.Stderr)
+	if err != nil {
+		return err
+	}
+	log.Outf(logger.Green, "Ritefile written: %s\n", filepathext.TryAbsToRel(dst))
+	return nil
 }

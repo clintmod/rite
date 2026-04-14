@@ -33,6 +33,15 @@ over.
       and diff against what the code actually does.
 - [ ] `website/src/migration.md` and `website/src/cli.md` examples use
       current CLI surface (`rite migrate <path>`, not `rite --migrate`).
+- [ ] **Install examples reference the new tag.** Grep the repo for the
+      previous version and bump each hit to the version you're about to
+      cut. Typical places: `README.md` (install.sh pin, `ubi:` mise
+      line), `website/src/` (`getting-started.md`, `index.md`, `ci.md`
+      — both `go install @v*` and `install.sh … v*` lines).
+      `rg -n 'v0\.\d+\.\d+|@v\d+\.\d+\.\d+|ubi:clintmod/rite = "v' README.md website/src/`
+      Do NOT bump historical roadmap bullets in README (Phase 5 really
+      shipped v0.1.0) or anything in CHANGELOG (that's history, not
+      examples).
 - [ ] `internal/version/version.txt` contains `v0.1.0` (the fallback
       for `go install` when ldflags are NOT injected). **Do not bump.**
       Release archives get the correct version from goreleaser's

@@ -25,13 +25,13 @@ brew install rite
 ```
 curl -sSL https://raw.githubusercontent.com/clintmod/rite/main/install.sh | sh -s -- -b ~/bin
 ```
-Downloads the latest release archive, verifies its SHA-256 against `rite_checksums.txt`, and drops `rite` into `~/bin`. Pass a tag as the last argument to pin a version (`… | sh -s -- -b ~/bin v0.1.0`). Default bindir is `./bin` if `-b` is omitted.
+Downloads the latest release archive, verifies its SHA-256 against `rite_checksums.txt`, and drops `rite` into `~/bin`. Pass a tag as the last argument to pin a version (`… | sh -s -- -b ~/bin v1.0.0`). Default bindir is `./bin` if `-b` is omitted.
 
 **mise**:
 ```toml
 # mise.toml
 [tools]
-"ubi:clintmod/rite" = "v0.1.0"
+"ubi:clintmod/rite" = "v1.0.0"
 ```
 (Older mise? See [getting-started](https://clintmod.github.io/rite/getting-started#mise) for the `go:` fallback.)
 

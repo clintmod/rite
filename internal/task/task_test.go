@@ -776,6 +776,23 @@ func TestTaskVersion(t *testing.T) {
 	}
 }
 
+// TestTaskVersionDecoupledFromAppVersion guards against regressing #31: the
+// schema version check must not be compared against the app's own semver.
+// rite's app version (v0.x) will forever be lower than schema v3, so any
+// upper-bound check against version.GetVersion() rejects every valid Ritefile.
+func TestTaskVersionDecoupledFromAppVersion(t *testing.T) {
+	t.Parallel()
+
+	e := task.NewExecutor(
+		task.WithDir("testdata/version/v3"),
+		task.WithStdout(io.Discard),
+		task.WithStderr(io.Discard),
+		task.WithVersionCheck(true),
+	)
+	require.NoError(t, e.Setup())
+	assert.Equal(t, semver.MustParse("3"), e.Taskfile.Version)
+}
+
 func TestTaskIgnoreErrors(t *testing.T) {
 	t.Parallel()
 

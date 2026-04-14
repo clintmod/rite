@@ -1,0 +1,45 @@
+# Source: https://github.com/bagashiz/go-pos
+# Pinned: 30833c4511e18ad9f02210e24f2a3b08dc84518e (Taskfile.yml)
+# License: MIT — Copyright (c) 2023 Bagas Hizbullah
+#
+# Stripped for migrate-corpus: preserved shape of the original
+# (vars with interpolated DSN, dotenv, docker/migrate tasks, `requires.vars`)
+# but trimmed the task list to keep the fixture compact. SECRET-VAR fires
+# on the DSN value because it interpolates `${DB_PASSWORD}`.
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  DBML_FILE: "./schema.dbml"
+  DSN: "${DB_CONNECTION}://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable"
+
+dotenv:
+  - ".env"
+
+tasks:
+  default:
+    desc: "Gettings started"
+    cmds:
+      - task: install
+
+  install:
+    desc: "Install dependencies"
+    cmds:
+      - go mod download
+      - go install github.com/go-task/task/v3/cmd/task@latest
+
+  db:create:
+    desc: "Create database if not exists"
+    cmd: docker exec -it go-pos_postgres sh -c "psql -U ${DB_USER} -c 'SELECT 1' -d ${DB_NAME} &>/dev/null || psql -U ${DB_USER} -c 'CREATE DATABASE ${DB_NAME};'"
+    requires:
+      vars:
+        - DB_USER
+        - DB_NAME
+
+  migrate:up:
+    desc: "Run database migrations"
+    cmd: migrate -path ./internal/adapter/storage/postgres/migrations -database ${DSN} -verbose up ${CLI_ARGS}
+    requires:
+      vars:
+        - DSN

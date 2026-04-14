@@ -1,0 +1,1 @@
+rite migrate: SECRET-VAR Taskfile.yml vars.DSN: name matches a secret pattern and will auto-export to cmd shells in rite. Add `export: false` to keep it Ritefile-internal.

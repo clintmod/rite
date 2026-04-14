@@ -1,0 +1,11 @@
+version: '3'
+
+vars:
+  PLATFORM: android
+  SIGNING_KEY: ignored-by-name-match
+
+tasks:
+  build:
+    desc: Build android APK.
+    cmds:
+      - echo "${PLATFORM} build in ${RITEFILE_DIR}"

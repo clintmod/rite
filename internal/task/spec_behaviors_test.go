@@ -25,6 +25,31 @@ func TestPrecedenceShellVsCLI(t *testing.T) {
 	)
 }
 
+// TestPrecedenceDotenvVsVars asserts SPEC §Variable Precedence tier-3
+// (entrypoint `env:` / dotenv) slots correctly between tier-2 (CLI) and
+// tier-4 (entrypoint `vars:`): a dotenv entry beats an entrypoint-vars
+// default of the same name, but loses to a CLI override.
+func TestPrecedenceDotenvVsVars(t *testing.T) {
+	t.Parallel()
+	NewExecutorTest(t,
+		WithName("dotenv-beats-entrypoint-vars"),
+		WithExecutorOptions(
+			task.WithDir("testdata/precedence_dotenv_vs_vars"),
+			task.WithSilent(true),
+			task.WithForce(true),
+		),
+	)
+	NewExecutorTest(t,
+		WithName("cli-beats-dotenv"),
+		WithExecutorOptions(
+			task.WithDir("testdata/precedence_dotenv_vs_vars"),
+			task.WithSilent(true),
+			task.WithForce(true),
+		),
+		WithVar("VAR", "cli"),
+	)
+}
+
 // TestExportFalse asserts SPEC §Non-exported variables: a var declared with
 // `export: false` is visible to Go-template rendering but is not exported to
 // the cmd shell environ.

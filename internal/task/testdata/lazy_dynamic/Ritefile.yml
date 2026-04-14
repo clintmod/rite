@@ -10,6 +10,6 @@ tasks:
   expensive:
     vars:
       EXPENSIVE:
-        sh: 'touch "$LAZY_SENTINEL_PATH" && echo triggered'
+        sh: ': > "$LAZY_SENTINEL_PATH" && echo triggered'
     cmds:
       - 'echo "{{.EXPENSIVE}}"'

@@ -1,0 +1,15 @@
+version: '3'
+
+silent: true
+
+dotenv:
+  - '.env'
+
+vars:
+  VAR: entrypoint-vars
+
+tasks:
+  default:
+    cmds:
+      - 'echo "tmpl={{.VAR}}"'
+      - 'echo "env=$VAR"'

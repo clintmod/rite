@@ -67,10 +67,12 @@ tasks:
 		}
 	}
 
-	// `Taskfile` elsewhere (schema comment here) is left alone — docs
-	// cleanup is the user's call after they see the SCHEMA-URL warning.
-	if !strings.Contains(got, "taskfile.dev/schema.json") {
-		t.Error("schema URL was rewritten — should be left verbatim so the warning lands on real text")
+	// Schema directive is rewritten to rite's hosted schema (#72).
+	if strings.Contains(got, "taskfile.dev") {
+		t.Errorf("schema URL still references taskfile.dev\nGOT:\n%s", got)
+	}
+	if !strings.Contains(got, "https://clintmod.github.io/rite/schema/v3.json") {
+		t.Errorf("schema URL not rewritten to rite's hosted schema\nGOT:\n%s", got)
 	}
 
 	// Check warnings.
@@ -79,12 +81,108 @@ tasks:
 		"OVERRIDE-VAR", // GLOBAL shadowed
 		"OVERRIDE-ENV", // NODE_ENV shadowed
 		"SECRET-VAR",   // GITHUB_TOKEN name pattern
-		"SCHEMA-URL",   // taskfile.dev pointer
 	}
 	for _, w := range wantWarns {
 		if !strings.Contains(warnS, w) {
 			t.Errorf("warnings missing %q\nGOT:\n%s", w, warnS)
 		}
+	}
+	// SCHEMA-URL is no longer a warning class — migrate fixes it in place.
+	if strings.Contains(warnS, "SCHEMA-URL") {
+		t.Errorf("unexpected SCHEMA-URL warning (migrate should rewrite, not warn)\nGOT:\n%s", warnS)
+	}
+}
+
+// TestMigrateRewritesSchemaPointer exercises #72: the yaml-language-server
+// schema directive should be rewritten from taskfile.dev → clintmod.github.io
+// across whitespace, quoting, and path variants. Non-taskfile.dev URLs and
+// files without the directive are left alone.
+func TestMigrateRewritesSchemaPointer(t *testing.T) {
+	t.Parallel()
+
+	const riteURL = "https://clintmod.github.io/rite/schema/v3.json"
+
+	cases := []struct {
+		name     string
+		in       string
+		wantHave string // substring that must appear
+		wantGone string // substring that must NOT appear (empty = no check)
+	}{
+		{
+			name:     "canonical go-task directive",
+			in:       "# yaml-language-server: $schema=https://taskfile.dev/schema.json\n",
+			wantHave: "$schema=" + riteURL,
+			wantGone: "taskfile.dev",
+		},
+		{
+			name:     "double-quoted URL",
+			in:       `# yaml-language-server: $schema="https://taskfile.dev/schema.json"` + "\n",
+			wantHave: `$schema="` + riteURL + `"`,
+			wantGone: "taskfile.dev",
+		},
+		{
+			name:     "single-quoted URL",
+			in:       `# yaml-language-server: $schema='https://taskfile.dev/schema.json'` + "\n",
+			wantHave: `$schema='` + riteURL + `'`,
+			wantGone: "taskfile.dev",
+		},
+		{
+			name:     "extra whitespace around colon and equals",
+			in:       "#   yaml-language-server:   $schema =  https://taskfile.dev/schema.json\n",
+			wantHave: riteURL,
+			wantGone: "taskfile.dev",
+		},
+		{
+			name:     "versioned path at taskfile.dev is still rewritten",
+			in:       "# yaml-language-server: $schema=https://taskfile.dev/v3/schema.json\n",
+			wantHave: riteURL,
+			wantGone: "taskfile.dev",
+		},
+		{
+			name:     "indented directive (inside an included file)",
+			in:       "  # yaml-language-server: $schema=https://taskfile.dev/schema.json\n",
+			wantHave: "  # yaml-language-server: $schema=" + riteURL,
+			wantGone: "taskfile.dev",
+		},
+		{
+			name:     "non-taskfile.dev URL is untouched",
+			in:       "# yaml-language-server: $schema=https://json.schemastore.org/taskfile.json\n",
+			wantHave: "https://json.schemastore.org/taskfile.json",
+			wantGone: "clintmod.github.io",
+		},
+		{
+			name:     "no directive present — nothing injected",
+			in:       "version: '3'\ntasks:\n  default:\n    cmds: [echo hi]\n",
+			wantHave: "version: '3'",
+			wantGone: "yaml-language-server",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			src := filepath.Join(dir, "Taskfile.yml")
+			body := tc.in + "version: '3'\ntasks:\n  default:\n    cmds: [echo ok]\n"
+			if err := os.WriteFile(src, []byte(body), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			dst, err := task.Migrate(src, io.Discard)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(dst)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gs := string(got)
+			if !strings.Contains(gs, tc.wantHave) {
+				t.Errorf("missing %q\nGOT:\n%s", tc.wantHave, gs)
+			}
+			if tc.wantGone != "" && strings.Contains(gs, tc.wantGone) {
+				t.Errorf("should not contain %q\nGOT:\n%s", tc.wantGone, gs)
+			}
+		})
 	}
 }
 

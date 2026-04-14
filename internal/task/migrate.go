@@ -51,8 +51,11 @@ import (
 //	SECRET-VAR      var name pattern-matches a secret (TOKEN/KEY/SECRET/
 //	                PASSWORD/…) and lacks `export: false` — rite auto-exports
 //	                `vars:` now, so this would leak to every cmd shell.
-//	SCHEMA-URL      `# yaml-language-server: $schema=…taskfile.dev/schema.json`
-//	                left in the file — cosmetic pointer at upstream docs.
+//
+// The yaml-language-server `$schema=` directive pointing at taskfile.dev is
+// rewritten to rite's hosted schema in place; the previous SCHEMA-URL
+// warning class is gone — migrate fixes the pointer instead of complaining
+// about it.
 //
 // dstPath is the entrypoint's destination — returned even in dry-run mode so
 // callers can echo it. Included-file destinations are not surfaced through
@@ -192,11 +195,9 @@ func emitMigratedFile(absSrc string, pathMap map[string]string, o migrateOptions
 	rewrites := computeIncludeRewrites(doc, srcDir, pathMap)
 	out := rewriteIncludePathsWithMap(string(data), rewrites)
 	out = rewriteSpecialVarRefs(out)
+	out = rewriteSchemaPointer(out)
 	if !o.keepGoTemplates {
 		out = modernizeTemplates(out, absSrc, warn)
-	}
-	if hasTaskfileDevSchemaPointer(out) {
-		fmt.Fprintf(warn, "rite migrate: SCHEMA-URL %s: `$schema=https://taskfile.dev/schema.json` references upstream docs; rite's schema is not yet published (Phase 5 docs).\n", absSrc)
 	}
 
 	dst := pathMap[absSrc]
@@ -447,8 +448,31 @@ var (
 	rxtaskfileWord   = regexp.MustCompile(`\btaskfile\.\w`) // lowercase filename
 )
 
-func hasTaskfileDevSchemaPointer(s string) bool {
-	return strings.Contains(s, "taskfile.dev/schema")
+// rxSchemaPointer matches a yaml-language-server `$schema=` directive whose
+// URL contains `taskfile.dev`, tolerating:
+//   - indentation before `#`
+//   - optional whitespace around `yaml-language-server:` and after `=`
+//   - optional single- or double-quoted URL
+//   - any path after the host (schema.json, schema/v3.json, etc.)
+//
+// Group 1 is everything up to and including the opening quote (if any);
+// group 2 is the URL; group 3 is the trailing quote + anything after.
+var rxSchemaPointer = regexp.MustCompile(
+	`(?m)^(\s*#\s*yaml-language-server:\s*\$schema\s*=\s*["']?)` +
+		`(https?://[^\s"'#]*taskfile\.dev[^\s"'#]*)` +
+		`(["']?.*)$`,
+)
+
+// riteSchemaURL is the hosted schema for Ritefiles; see clintmod/rite #73.
+const riteSchemaURL = "https://clintmod.github.io/rite/schema/v3.json"
+
+// rewriteSchemaPointer swaps any yaml-language-server `$schema=` URL that
+// points at taskfile.dev to rite's hosted schema, preserving indentation,
+// surrounding whitespace, quoting, and any trailing comment. Users who
+// pointed at a non-taskfile.dev schema chose it deliberately and are left
+// alone. Files without the directive get nothing injected.
+func rewriteSchemaPointer(s string) string {
+	return rxSchemaPointer.ReplaceAllString(s, "${1}"+riteSchemaURL+"$3")
 }
 
 // rewriteSpecialVarRefs rewrites references to go-task's special vars

@@ -2,14 +2,12 @@ package errors
 
 import (
 	"fmt"
-	"net/http"
 	"path/filepath"
-	"time"
 
 	"github.com/Masterminds/semver/v3"
 )
 
-// TaskfileNotFoundError is returned when no appropriate Taskfile is found when
+// TaskfileNotFoundError is returned when no appropriate Ritefile is found when
 // searching the filesystem.
 type TaskfileNotFoundError struct {
 	URI         string
@@ -35,7 +33,7 @@ func (err TaskfileNotFoundError) Code() int {
 	return CodeTaskfileNotFound
 }
 
-// TaskfileAlreadyExistsError is returned on creating a Taskfile if one already
+// TaskfileAlreadyExistsError is returned on creating a Ritefile if one already
 // exists.
 type TaskfileAlreadyExistsError struct{}
 
@@ -47,7 +45,7 @@ func (err TaskfileAlreadyExistsError) Code() int {
 	return CodeTaskfileAlreadyExists
 }
 
-// TaskfileInvalidError is returned when the Taskfile contains syntax errors or
+// TaskfileInvalidError is returned when the Ritefile contains syntax errors or
 // cannot be parsed for some reason.
 type TaskfileInvalidError struct {
 	URI string
@@ -62,79 +60,9 @@ func (err TaskfileInvalidError) Code() int {
 	return CodeTaskfileInvalid
 }
 
-// TaskfileFetchFailedError is returned when no appropriate Taskfile is found when
-// searching the filesystem.
-type TaskfileFetchFailedError struct {
-	URI            string
-	HTTPStatusCode int
-}
-
-func (err TaskfileFetchFailedError) Error() string {
-	var statusText string
-	if err.HTTPStatusCode != 0 {
-		statusText = fmt.Sprintf(" with status code %d (%s)", err.HTTPStatusCode, http.StatusText(err.HTTPStatusCode))
-	}
-	return fmt.Sprintf(`rite: Download of %q failed%s`, filepath.ToSlash(err.URI), statusText)
-}
-
-func (err TaskfileFetchFailedError) Code() int {
-	return CodeTaskfileFetchFailed
-}
-
-// TaskfileNotTrustedError is returned when the user does not accept the trust
-// prompt when downloading a remote Taskfile.
-type TaskfileNotTrustedError struct {
-	URI string
-}
-
-func (err *TaskfileNotTrustedError) Error() string {
-	return fmt.Sprintf(
-		`rite: Ritefile %q not trusted by user`,
-		filepath.ToSlash(err.URI),
-	)
-}
-
-func (err *TaskfileNotTrustedError) Code() int {
-	return CodeTaskfileNotTrusted
-}
-
-// TaskfileNotSecureError is returned when the user attempts to download a
-// remote Taskfile over an insecure connection.
-type TaskfileNotSecureError struct {
-	URI string
-}
-
-func (err *TaskfileNotSecureError) Error() string {
-	return fmt.Sprintf(
-		`rite: Ritefile %q cannot be downloaded over an insecure connection. You can override this by using the --insecure flag`,
-		filepath.ToSlash(err.URI),
-	)
-}
-
-func (err *TaskfileNotSecureError) Code() int {
-	return CodeTaskfileNotSecure
-}
-
-// TaskfileCacheNotFoundError is returned when the user attempts to use an offline
-// (cached) Taskfile but the files does not exist in the cache.
-type TaskfileCacheNotFoundError struct {
-	URI string
-}
-
-func (err *TaskfileCacheNotFoundError) Error() string {
-	return fmt.Sprintf(
-		`rite: Ritefile %q was not found in the cache. Remove the --offline flag to use a remote copy or download it using the --download flag`,
-		filepath.ToSlash(err.URI),
-	)
-}
-
-func (err *TaskfileCacheNotFoundError) Code() int {
-	return CodeTaskfileCacheNotFound
-}
-
 // TaskfileVersionCheckError is returned when the user attempts to run a
-// Taskfile that does not contain a Taskfile schema version key or if they try
-// to use a feature that is not supported by the schema version.
+// Ritefile that does not contain a schema version key or if they try to use a
+// feature that is not supported by the schema version.
 type TaskfileVersionCheckError struct {
 	URI           string
 	SchemaVersion *semver.Version
@@ -160,26 +88,8 @@ func (err *TaskfileVersionCheckError) Code() int {
 	return CodeTaskfileVersionCheckError
 }
 
-// TaskfileNetworkTimeoutError is returned when the user attempts to use a remote
-// Taskfile but a network connection could not be established within the timeout.
-type TaskfileNetworkTimeoutError struct {
-	URI     string
-	Timeout time.Duration
-}
-
-func (err *TaskfileNetworkTimeoutError) Error() string {
-	return fmt.Sprintf(
-		`rite: Network connection timed out after %s while attempting to download Ritefile %q`,
-		err.Timeout, filepath.ToSlash(err.URI),
-	)
-}
-
-func (err *TaskfileNetworkTimeoutError) Code() int {
-	return CodeTaskfileNetworkTimeout
-}
-
-// TaskfileCycleError is returned when we detect that a Taskfile includes a
-// set of Taskfiles that include each other in a cycle.
+// TaskfileCycleError is returned when we detect that a Ritefile includes a
+// set of Ritefiles that include each other in a cycle.
 type TaskfileCycleError struct {
 	Source      string
 	Destination string
@@ -196,8 +106,8 @@ func (err TaskfileCycleError) Code() int {
 	return CodeTaskfileCycle
 }
 
-// TaskfileDoesNotMatchChecksum is returned when a Taskfile's checksum does not
-// match the one pinned in the parent Taskfile.
+// TaskfileDoesNotMatchChecksum is returned when a Ritefile's checksum does not
+// match the one pinned in the parent Ritefile.
 type TaskfileDoesNotMatchChecksum struct {
 	URI              string
 	ExpectedChecksum string

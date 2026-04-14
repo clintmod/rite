@@ -59,11 +59,6 @@ func (node *FileNode) Read() ([]byte, error) {
 }
 
 func (node *FileNode) ResolveEntrypoint(entrypoint string) (string, error) {
-	// If the file is remote, we don't need to resolve the path
-	if isRemoteEntrypoint(entrypoint) {
-		return entrypoint, nil
-	}
-
 	path, err := execext.ExpandLiteral(entrypoint)
 	if err != nil {
 		return "", err

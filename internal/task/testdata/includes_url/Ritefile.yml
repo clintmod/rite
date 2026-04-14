@@ -1,0 +1,4 @@
+version: '3'
+
+includes:
+  shared: https://example.com/shared.yml

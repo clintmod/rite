@@ -24,10 +24,6 @@ func (node *StdinNode) Location() string {
 	return "__stdin__"
 }
 
-func (node *StdinNode) Remote() bool {
-	return false
-}
-
 func (node *StdinNode) Read() ([]byte, error) {
 	var stdin []byte
 	scanner := bufio.NewScanner(os.Stdin)
@@ -41,11 +37,6 @@ func (node *StdinNode) Read() ([]byte, error) {
 }
 
 func (node *StdinNode) ResolveEntrypoint(entrypoint string) (string, error) {
-	// If the file is remote, we don't need to resolve the path
-	if isRemoteEntrypoint(entrypoint) {
-		return entrypoint, nil
-	}
-
 	path, err := execext.ExpandLiteral(entrypoint)
 	if err != nil {
 		return "", err

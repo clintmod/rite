@@ -80,7 +80,6 @@ complete -c $GO_TASK_PROGNAME -s f -l force                     -d 'force execut
 complete -c $GO_TASK_PROGNAME -s g -l global                    -d 'run global Taskfile from home directory'
 complete -c $GO_TASK_PROGNAME -s h -l help                      -d 'show help'
 complete -c $GO_TASK_PROGNAME -s i -l init                      -d 'create new Taskfile'
-complete -c $GO_TASK_PROGNAME      -l insecure                  -d 'allow insecure Taskfile downloads'
 complete -c $GO_TASK_PROGNAME -s I -l interval                  -d 'interval to watch for changes'
 complete -c $GO_TASK_PROGNAME -s j -l json                      -d 'format task list as JSON'
 complete -c $GO_TASK_PROGNAME -s l -l list                      -d 'list tasks with descriptions'
@@ -106,15 +105,3 @@ complete -c $GO_TASK_PROGNAME -s y -l yes                       -d 'assume yes t
 # GentleForce experiment
 complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled GENTLE_FORCE" -l force-all -d 'force execution of task and all dependencies'
 
-# RemoteTaskfiles experiment - Options
-complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled REMOTE_TASKFILES" -l offline          -d 'use only local or cached Taskfiles'
-complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled REMOTE_TASKFILES" -l timeout          -d 'timeout for remote Taskfile downloads'
-complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled REMOTE_TASKFILES" -l expiry           -d 'cache expiry duration'
-complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled REMOTE_TASKFILES" -l remote-cache-dir -d 'directory to cache remote Taskfiles' -xa "(__fish_complete_directories)"
-complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled REMOTE_TASKFILES" -l cacert           -d 'custom CA certificate for TLS' -r
-complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled REMOTE_TASKFILES" -l cert             -d 'client certificate for mTLS' -r
-complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled REMOTE_TASKFILES" -l cert-key         -d 'client certificate private key' -r
-
-# RemoteTaskfiles experiment - Operations
-complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled REMOTE_TASKFILES" -l download    -d 'download remote Taskfile'
-complete -c $GO_TASK_PROGNAME -n "__task_is_experiment_enabled REMOTE_TASKFILES" -l clear-cache -d 'clear remote Taskfile cache'

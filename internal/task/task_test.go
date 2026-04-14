@@ -4,12 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/fs"
 	"maps"
-	rand "math/rand/v2"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,7 +14,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/sebdah/goldie/v2"
@@ -415,7 +409,6 @@ func (fct fileContentTest) Run(t *testing.T) {
 	e := task.NewExecutor(
 		task.WithDir(fct.Dir),
 		task.WithTempDir(task.TempDir{
-			Remote:      filepathext.SmartJoin(fct.Dir, ".rite"),
 			Fingerprint: filepathext.SmartJoin(fct.Dir, ".rite"),
 		}),
 		task.WithEntrypoint(fct.Entrypoint),
@@ -521,7 +514,6 @@ func TestStatusChecksum(t *testing.T) { // nolint:paralleltest // cannot run in 
 
 			var buff bytes.Buffer
 			tempDir := task.TempDir{
-				Remote:      filepathext.SmartJoin(dir, ".rite"),
 				Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 			}
 			e := task.NewExecutor(
@@ -563,7 +555,6 @@ func TestStatusTimestamp(t *testing.T) { // nolint:paralleltest // cannot run in
 
 	generatedFile := filepathext.SmartJoin(dir, "generated.txt")
 	tempDir := task.TempDir{
-		Remote:      filepathext.SmartJoin(dir, ".rite"),
 		Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 	}
 
@@ -612,7 +603,6 @@ func TestStatusChecksumMissingGenerated(t *testing.T) { // nolint:paralleltest /
 
 	generatedFile := filepathext.SmartJoin(dir, "generated.txt")
 	tempDir := task.TempDir{
-		Remote:      filepathext.SmartJoin(dir, ".rite"),
 		Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 	}
 
@@ -665,7 +655,6 @@ func TestStatusVariables(t *testing.T) {
 	e := task.NewExecutor(
 		task.WithDir(dir),
 		task.WithTempDir(task.TempDir{
-			Remote:      filepathext.SmartJoin(dir, ".rite"),
 			Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 		}),
 		task.WithStdout(&buff),
@@ -701,7 +690,6 @@ func TestCmdsVariables(t *testing.T) {
 	e := task.NewExecutor(
 		task.WithDir(dir),
 		task.WithTempDir(task.TempDir{
-			Remote:      filepathext.SmartJoin(dir, ".rite"),
 			Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 		}),
 		task.WithStdout(&buff),
@@ -870,7 +858,6 @@ func TestDryChecksum(t *testing.T) {
 	e := task.NewExecutor(
 		task.WithDir(dir),
 		task.WithTempDir(task.TempDir{
-			Remote:      filepathext.SmartJoin(dir, ".rite"),
 			Fingerprint: filepathext.SmartJoin(dir, ".rite"),
 		}),
 		task.WithStdout(io.Discard),
@@ -931,138 +918,6 @@ func TestIncludesMultiLevel(t *testing.T) {
 	})
 }
 
-func TestIncludesRemote(t *testing.T) {
-	enableExperimentForTest(t, &experiments.RemoteTaskfiles, 1)
-
-	dir := "testdata/includes_remote"
-	os.RemoveAll(filepath.Join(dir, ".rite", "remote"))
-
-	srv := httptest.NewServer(http.FileServer(http.Dir(dir)))
-	defer srv.Close()
-
-	tcs := []struct {
-		firstRemote  string
-		secondRemote string
-	}{
-		{
-			firstRemote:  srv.URL + "/first/Ritefile.yml",
-			secondRemote: srv.URL + "/first/second/Ritefile.yml",
-		},
-		{
-			firstRemote:  srv.URL + "/first/Ritefile.yml",
-			secondRemote: "./second/Ritefile.yml",
-		},
-		{
-			firstRemote:  srv.URL + "/first/",
-			secondRemote: srv.URL + "/first/second/",
-		},
-	}
-
-	taskCalls := []*task.Call{
-		{Task: "first:write-file"},
-		{Task: "first:second:write-file"},
-	}
-
-	for i, tc := range tcs {
-		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			t.Setenv("FIRST_REMOTE_URL", tc.firstRemote)
-			t.Setenv("SECOND_REMOTE_URL", tc.secondRemote)
-
-			var buff SyncBuffer
-
-			// Extract host from server URL for trust testing
-			parsedURL, err := url.Parse(srv.URL)
-			require.NoError(t, err)
-			trustedHost := parsedURL.Host
-
-			executors := []struct {
-				name     string
-				executor *task.Executor
-			}{
-				{
-					name: "online, always download",
-					executor: task.NewExecutor(
-						task.WithDir(dir),
-						task.WithStdout(&buff),
-						task.WithStderr(&buff),
-						task.WithTimeout(time.Minute),
-						task.WithInsecure(true),
-						task.WithStdout(&buff),
-						task.WithStderr(&buff),
-						task.WithVerbose(true),
-
-						// Without caching
-						task.WithAssumeYes(true),
-						task.WithDownload(true),
-					),
-				},
-				{
-					name: "offline, use cache",
-					executor: task.NewExecutor(
-						task.WithDir(dir),
-						task.WithStdout(&buff),
-						task.WithStderr(&buff),
-						task.WithTimeout(time.Minute),
-						task.WithInsecure(true),
-						task.WithStdout(&buff),
-						task.WithStderr(&buff),
-						task.WithVerbose(true),
-
-						// With caching
-						task.WithAssumeYes(false),
-						task.WithDownload(false),
-						task.WithOffline(true),
-					),
-				},
-				{
-					name: "with trusted hosts, no prompts",
-					executor: task.NewExecutor(
-						task.WithDir(dir),
-						task.WithStdout(&buff),
-						task.WithStderr(&buff),
-						task.WithTimeout(time.Minute),
-						task.WithInsecure(true),
-						task.WithStdout(&buff),
-						task.WithStderr(&buff),
-						task.WithVerbose(true),
-
-						// With trusted hosts
-						task.WithTrustedHosts([]string{trustedHost}),
-						task.WithDownload(true),
-					),
-				},
-			}
-
-			for _, e := range executors {
-				t.Run(e.name, func(t *testing.T) {
-					require.NoError(t, e.executor.Setup())
-
-					for k, taskCall := range taskCalls {
-						t.Run(taskCall.Task, func(t *testing.T) {
-							expectedContent := fmt.Sprint(rand.Int64())
-							t.Setenv("CONTENT", expectedContent)
-
-							outputFile := fmt.Sprintf("%d.%d.txt", i, k)
-							t.Setenv("OUTPUT_FILE", outputFile)
-
-							path := filepath.Join(dir, outputFile)
-							require.NoError(t, os.RemoveAll(path))
-
-							require.NoError(t, e.executor.Run(t.Context(), taskCall))
-
-							actualContent, err := os.ReadFile(path)
-							require.NoError(t, err)
-							assert.Equal(t, expectedContent, strings.TrimSpace(string(actualContent)))
-						})
-					}
-				})
-			}
-
-			t.Log("\noutput:\n", buff.buf.String())
-		})
-	}
-}
-
 func TestIncludeCycle(t *testing.T) {
 	t.Parallel()
 
@@ -1099,6 +954,29 @@ func TestIncludesIncorrect(t *testing.T) {
 	assert.Contains(t, err.Error(), "Failed to parse testdata/includes_incorrect/incomplete.yml:", err.Error())
 }
 
+// TestIncludesURLRejected locks in the non-goal that remote Ritefiles are
+// unsupported. A URL in `includes:` must fail loudly with the "remote
+// Ritefiles are not supported" error rather than silently falling through
+// to a "file not found" (which is what happens if the URL slips past the
+// scheme check into filepath.Join, where "://" collapses to ":/").
+func TestIncludesURLRejected(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/includes_url"
+
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+		task.WithSilent(true),
+	)
+
+	err := e.Setup()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "remote Ritefiles are not supported")
+}
+
 func TestIncludesEmptyMain(t *testing.T) {
 	t.Parallel()
 
@@ -1114,91 +992,6 @@ func TestIncludesEmptyMain(t *testing.T) {
 		t.Parallel()
 		tt.Run(t)
 	})
-}
-
-func TestIncludesHttp(t *testing.T) {
-	enableExperimentForTest(t, &experiments.RemoteTaskfiles, 1)
-
-	dir, err := filepath.Abs("testdata/includes_http")
-	require.NoError(t, err)
-
-	srv := httptest.NewServer(http.FileServer(http.Dir(dir)))
-	defer srv.Close()
-
-	t.Cleanup(func() {
-		// This test fills the .rite/remote directory with cache entries because the include URL
-		// is different on every test due to the dynamic nature of the TCP port in srv.URL
-		if err := os.RemoveAll(filepath.Join(dir, ".rite")); err != nil {
-			t.Logf("error cleaning up: %s", err)
-		}
-	})
-
-	taskfiles, err := fs.Glob(os.DirFS(dir), "root-taskfile-*.yml")
-	require.NoError(t, err)
-
-	remotes := []struct {
-		name string
-		root string
-	}{
-		{
-			name: "local",
-			root: ".",
-		},
-		{
-			name: "http-remote",
-			root: srv.URL,
-		},
-	}
-
-	for _, taskfile := range taskfiles {
-		t.Run(taskfile, func(t *testing.T) {
-			for _, remote := range remotes {
-				t.Run(remote.name, func(t *testing.T) {
-					t.Setenv("INCLUDE_ROOT", remote.root)
-					entrypoint := filepath.Join(dir, taskfile)
-
-					var buff SyncBuffer
-					e := task.NewExecutor(
-						task.WithEntrypoint(entrypoint),
-						task.WithDir(dir),
-						task.WithStdout(&buff),
-						task.WithStderr(&buff),
-						task.WithInsecure(true),
-						task.WithDownload(true),
-						task.WithAssumeYes(true),
-						task.WithStdout(&buff),
-						task.WithStderr(&buff),
-						task.WithVerbose(true),
-						task.WithTimeout(time.Minute),
-					)
-					require.NoError(t, e.Setup())
-					defer func() { t.Log("output:", buff.buf.String()) }()
-
-					tcs := []struct {
-						name, dir string
-					}{
-						{
-							name: "second-with-dir-1:third-with-dir-1:default",
-							dir:  filepath.Join(dir, "dir-1"),
-						},
-						{
-							name: "second-with-dir-1:third-with-dir-2:default",
-							dir:  filepath.Join(dir, "dir-2"),
-						},
-					}
-
-					for _, tc := range tcs {
-						t.Run(tc.name, func(t *testing.T) {
-							t.Parallel()
-							task, err := e.CompiledTask(&task.Call{Task: tc.name})
-							require.NoError(t, err)
-							assert.Equal(t, tc.dir, task.Dir)
-						})
-					}
-				})
-			}
-		})
-	}
 }
 
 func TestIncludesDependencies(t *testing.T) {
@@ -2942,20 +2735,4 @@ tasks:
 	if _, err := os.Stat(filepath.Join(dir, ".task")); !os.IsNotExist(err) {
 		t.Fatalf(".task/ was created (err=%v); rite must not write into go-task's cache namespace", err)
 	}
-}
-
-// enableExperimentForTest enables the experiment behind pointer e for the duration of test t and sub-tests,
-// with the experiment being restored to its previous state when tests complete.
-//
-// Typically experiments are controlled via TASK_X_ env vars, but we cannot use those in tests
-// because the experiment settings are parsed during experiments.init(), before any tests run.
-func enableExperimentForTest(t *testing.T, e *experiments.Experiment, val int) {
-	t.Helper()
-	prev := *e
-	*e = experiments.Experiment{
-		Name:          prev.Name,
-		AllowedValues: []int{val},
-		Value:         val,
-	}
-	t.Cleanup(func() { *e = prev })
 }

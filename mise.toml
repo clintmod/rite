@@ -5,7 +5,7 @@
 [tools]
 # Correctness-sensitive: compilation, site build, dep resolution.
 # Bump in lock-step with .github/workflows/{lint,test,release,pages}.yml.
-go = "1.26"             # CI matrix: [1.25.x, 1.26.x]; release uses 1.26.x
+go = "1.26"             # CI matrix: [1.26.x]; release uses 1.26.x
 node = "22"             # pages.yml pins node-version: '22'
 pnpm = "latest"         # website/pnpm-lock.yaml is the authoritative lockfile
 golangci-lint = "2.11.4" # lint.yml action `version:` input

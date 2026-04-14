@@ -52,11 +52,7 @@ func (e *Executor) Setup() error {
 }
 
 func (e *Executor) getRootNode() (taskfile.Node, error) {
-	node, err := taskfile.NewRootNode(e.Entrypoint, e.Dir, e.Insecure, e.Timeout,
-		taskfile.WithCACert(e.CACert),
-		taskfile.WithCert(e.Cert),
-		taskfile.WithCertKey(e.CertKey),
-	)
+	node, err := taskfile.NewRootNode(e.Entrypoint, e.Dir)
 	var taskNotFoundError errors.TaskfileNotFoundError
 	if errors.As(err, &taskNotFoundError) {
 		taskNotFoundError.AskInit = true
@@ -71,32 +67,14 @@ func (e *Executor) getRootNode() (taskfile.Node, error) {
 }
 
 func (e *Executor) readTaskfile(node taskfile.Node) error {
-	ctx, cf := context.WithTimeout(context.Background(), e.Timeout)
-	defer cf()
 	debugFunc := func(s string) {
 		e.Logger.VerboseOutf(logger.Magenta, s)
 	}
-	promptFunc := func(s string) error {
-		return e.Logger.Prompt(logger.Yellow, s, "n", "y", "yes")
-	}
 	reader := taskfile.NewReader(
-		taskfile.WithInsecure(e.Insecure),
-		taskfile.WithDownload(e.Download),
-		taskfile.WithOffline(e.Offline),
-		taskfile.WithTrustedHosts(e.TrustedHosts),
-		taskfile.WithTempDir(e.TempDir.Remote),
-		taskfile.WithCacheExpiryDuration(e.CacheExpiryDuration),
-		taskfile.WithReaderCACert(e.CACert),
-		taskfile.WithReaderCert(e.Cert),
-		taskfile.WithReaderCertKey(e.CertKey),
 		taskfile.WithDebugFunc(debugFunc),
-		taskfile.WithPromptFunc(promptFunc),
 	)
-	graph, err := reader.Read(ctx, node)
+	graph, err := reader.Read(context.Background(), node)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return &errors.TaskfileNetworkTimeoutError{URI: node.Location(), Timeout: e.Timeout}
-		}
 		return err
 	}
 	if e.Taskfile, err = graph.Merge(); err != nil {
@@ -134,7 +112,6 @@ func (e *Executor) setupTempDir() error {
 	tempDir := env.GetRiteEnv("TEMP_DIR")
 	if tempDir == "" {
 		e.TempDir = TempDir{
-			Remote:      filepathext.SmartJoin(e.Dir, ".rite"),
 			Fingerprint: filepathext.SmartJoin(e.Dir, ".rite"),
 		}
 	} else if filepath.IsAbs(tempDir) || strings.HasPrefix(tempDir, "~") {
@@ -145,27 +122,11 @@ func (e *Executor) setupTempDir() error {
 		projectDir, _ := filepath.Abs(e.Dir)
 		projectName := filepath.Base(projectDir)
 		e.TempDir = TempDir{
-			Remote:      tempDir,
 			Fingerprint: filepathext.SmartJoin(tempDir, projectName),
 		}
-
 	} else {
 		e.TempDir = TempDir{
-			Remote:      filepathext.SmartJoin(e.Dir, tempDir),
 			Fingerprint: filepathext.SmartJoin(e.Dir, tempDir),
-		}
-	}
-
-	// RemoteCacheDir from riterc/env can override the remote cache directory
-	if e.RemoteCacheDir != "" {
-		if filepath.IsAbs(e.RemoteCacheDir) || strings.HasPrefix(e.RemoteCacheDir, "~") {
-			remoteCacheDir, err := execext.ExpandLiteral(e.RemoteCacheDir)
-			if err != nil {
-				return err
-			}
-			e.TempDir.Remote = remoteCacheDir
-		} else {
-			e.TempDir.Remote = filepathext.SmartJoin(e.Dir, e.RemoteCacheDir)
 		}
 	}
 

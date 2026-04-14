@@ -57,7 +57,7 @@ rite hooks
 
 **File discovery:** `Ritefile`, `Ritefile.yml`, `Ritefile.yaml`, `Ritefile.dist.yml`, `Ritefile.dist.yaml` (plus lowercase variants). No Taskfile recognition.
 
-**Env var prefix:** `RITE_*` for rite-internal config. `RITE_X_*` for experiment flags (e.g. `RITE_X_REMOTE_TASKFILES=1`).
+**Env var prefix:** `RITE_*` for rite-internal config. `RITE_X_*` for experiment flags (e.g. `RITE_X_GENTLE_FORCE=1`).
 
 **Regenerating golden fixtures:** always pass both env vars or the snapshots bake in the local absolute path and CI explodes on cross-platform runners:
 ```bash
@@ -84,7 +84,7 @@ The Ritefile's `generate:fixtures` target already sets both.
 - **Releases:** `v0.1.0` published, archives for darwin/linux/windows/freebsd × amd64/arm64/arm/386/riscv64 + deb/rpm/apk. `goreleaser` runs on every `v*` tag. Config at `.goreleaser.yml` uses free goreleaser; `release.draft: false` so tags auto-publish.
 - **Homebrew tap:** `clintmod/homebrew-tap/Formula/rite.rb`. Pushed by goreleaser using the `HOMEBREW_TAP_TOKEN` secret (fine-grained PAT scoped to the tap only). Main repo release uses the default `GITHUB_TOKEN`. Users install: `brew tap clintmod/tap && brew install rite`.
 - **Docs site:** `website/` is a pure VitePress project; `.github/workflows/pages.yml` builds on every push that touches `website/**` and publishes to `clintmod.github.io/rite/` via GitHub Pages (Source: GitHub Actions — enabled via `gh api POST /repos/clintmod/rite/pages`). Custom domain can be added later by dropping `DOCS_BASE=/rite/` from `pages.yml`.
-- **CI:** Test (Go 1.25+1.26 × ubuntu+macos+windows), Lint (golangci-lint v2.11.4, config at `.golangci.yml`), Docs, goreleaser. All green on main at session end.
+- **CI:** Test (Go 1.26 × ubuntu+macos+windows), Lint (golangci-lint v2.11.4, config at `.golangci.yml`), Docs, goreleaser. All green on main at session end.
 - **Secrets on `clintmod/rite`:** `GH_PAT` (fine-grained, scoped to `clintmod/homebrew-tap`, exposed to workflow as `HOMEBREW_TAP_TOKEN`).
 
 ---
@@ -93,7 +93,6 @@ The Ritefile's `generate:fixtures` target already sets both.
 
 - **Core library lives at `internal/task/`, package name `task`.** The root of the module used to hold the library; it was moved under `internal/task/` to tidy the tree (rite is a CLI, not an import target). Most external callers (`cmd/rite/`, `args/`, `internal/flags/`) still use an explicit `task "github.com/clintmod/rite/internal/task"` alias — gci groups it under the local-module section. The alias is now redundant (path basename matches package name) but kept for consistency; goimports/golangci-lint won't flag either form.
 - **Embedded assets moved with the package.** `internal/task/completion/{bash,fish,ps,zsh}/...` and `internal/task/templates/default.yml` used to live at the repo root; they have to sit inside the package that `//go:embed`s them. Same for `internal/task/testdata/` (Go tests resolve `testdata/` relative to the test binary's package dir).
-- **`go install` binaries report the wrong version.** goreleaser's ldflags inject `internal/version.version=v0.1.0` for release builds only. A bare `go install github.com/clintmod/rite/cmd/rite@v0.1.0` embeds the fallback constant `3.49.1`. Brew, ubi, and release archives all report the correct version.
 - **VitePress + Shiki + Vue bug (broader than originally documented):** the Vue SFC compiler tokenizes every `{{…}}` it finds *anywhere* in rendered HTML, including inside `<pre><code>` from fenced blocks. Symptoms: `src/foo.md (L:C): Error parsing JavaScript expression`, with positions that don't match your source. Triggers:
   - **Multi-expression-per-line:** `cmd: GOOS={{.GOOS}} GOARCH={{.GOARCH}}` — sometimes works, sometimes not, depends on whether Vue can parse the JS-shaped content between markers.
   - **Go-template helpers with positional args:** `{{ index .MATCH 0 }}` — the literal `0` after `.MATCH` is invalid JS, hard error.
@@ -103,7 +102,6 @@ The Ritefile's `generate:fixtures` target already sets both.
   - Workarounds in order of effectiveness: (1) prefer `${VAR}` shell-preprocessor form everywhere — SPEC-preferred and Vue-invisible. (2) For inline prose, `<span v-pre>``{{.VAR}}``</span>` works. (3) For fenced blocks containing unavoidable Go-template syntax, the `<div v-pre>` / `<span v-pre>` wrapper does **not** work — Markdown wraps the fence in `<pre><code>` first. The pragmatic move is to describe the syntax in prose with backticks (which Vue tolerates) and put a working example in `testdata/` referenced by URL.
 - **Older mise + `ubi:` backend strips `v` prefixes.** Users on mise < 2026.4 hitting `"ubi:clintmod/rite" = "v0.1.0"` get a 404. Docs steer them to the `go:` backend fallback. When bumping mise in CI, use 2026.4.x+.
 - **`lint-jsonschema` job is gone until we publish a schema.** The upstream workflow validated `website/src/public/schema.json` (Taskfile schema). We deleted the file with the site rebuild; re-add the job when we host our own at `clintmod.github.io/rite/schema.json`.
-- **Remote-taskfile experiment (`RITE_X_REMOTE_TASKFILES=1`)** inherits upstream code paths we haven't audited. Docs note this. Don't assume production-grade behavior.
 
 ---
 

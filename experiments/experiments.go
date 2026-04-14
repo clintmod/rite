@@ -16,8 +16,7 @@ const envPrefix = "RITE_X_"
 
 // Active experiments.
 var (
-	GentleForce     Experiment
-	RemoteTaskfiles Experiment
+	GentleForce Experiment
 )
 
 // Inactive experiments. These are experiments that cannot be enabled, but are
@@ -40,7 +39,6 @@ func ParseWithConfig(dir string, config *ast.TaskRC) {
 	readDotEnv(dir)
 	// Initialize the experiments
 	GentleForce = New("GENTLE_FORCE", config, 1)
-	RemoteTaskfiles = New("REMOTE_TASKFILES", config, 1)
 	AnyVariables = New("ANY_VARIABLES", config)
 	MapVariables = New("MAP_VARIABLES", config)
 }

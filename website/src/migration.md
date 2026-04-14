@@ -1,6 +1,6 @@
 # Migrating from go-task
 
-This page is the doc to read **before** you run `rite migrate`. It walks through why rite exists, what semantically changes when you switch, what stays the same, and how to roll back if you're not ready.
+This page is the doc to read **before** you run `rite --migrate`. It walks through why rite exists, what semantically changes when you switch, what stays the same, and how to roll back if you're not ready.
 
 ## Why rite exists
 
@@ -56,7 +56,7 @@ rite --version
 ### 1. Run the migrate tool
 
 ```sh
-rite migrate Taskfile.yml
+rite --migrate Taskfile.yml
 ```
 
 The tool writes `Ritefile.yml` in the same directory. **The original `Taskfile.yml` is never touched.** The migrate tool also rewrites:
@@ -94,14 +94,14 @@ Once the team is happy, commit `Ritefile.yml`, drop `Taskfile.yml`, and uninstal
 
 ### Rollback
 
-`rite migrate` is **non-destructive**. Your original `Taskfile.yml` is untouched. If you decide not to proceed:
+`rite --migrate` is **non-destructive**. Your original `Taskfile.yml` is untouched. If you decide not to proceed:
 
 ```sh
 rm Ritefile.yml
 # Taskfile.yml is already untouched
 ```
 
-You're back to the pre-migration state. Re-run `rite migrate` any time to regenerate.
+You're back to the pre-migration state. Re-run `rite --migrate` any time to regenerate.
 
 ## The five user-visible semantic breaks
 

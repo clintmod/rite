@@ -6,7 +6,7 @@
 
 - Binary builds, test suite green on Linux / macOS / Windows × Go 1.26.
 - SPEC's 8-tier variable precedence and `${VAR}` shell-native preprocessor are live.
-- `rite migrate <path>` converts a `Taskfile.yml` → `Ritefile.yml`, walks `includes:` recursively, and flags anything that changes meaning under rite's semantics.
+- `rite --migrate <path>` converts a `Taskfile.yml` → `Ritefile.yml`, walks `includes:` recursively, and flags anything that changes meaning under rite's semantics.
 - All six legacy special vars (`.TASK`, `.TASK_DIR`, `.TASKFILE`, `.TASKFILE_DIR`, `.ROOT_TASKFILE`, `.TASK_VERSION`) are rewritten at migrate time and runtime-aliased for Ritefiles that predate the rename.
 - `includes:` paths are sandboxed to the Ritefile tree; remote URLs, `../` escape, and symlink escape are rejected.
 - Remote-Ritefile experiment removed — see [§Non-goals](#non-goals).
@@ -48,7 +48,7 @@ go install github.com/clintmod/rite/cmd/rite@latest
 rite --init                 # writes Ritefile.yml
 rite <task>                 # runs a task
 rite --list-all             # show all tasks
-rite migrate Taskfile.yml   # convert a go-task Taskfile to a Ritefile
+rite --migrate Taskfile.yml # convert a go-task Taskfile to a Ritefile
 ```
 
 The five-second mental model: variables are first-in-wins. Shell env beats CLI args beats `Ritefile` defaults. Task-scope `vars:` are defaults only; if any higher tier sets the name, the task value is ignored.
@@ -126,4 +126,4 @@ MIT. See [`LICENSE`](./LICENSE). Original copyright © 2016 Andrey Nering; fork 
 4. **`vars:` auto-exports to the cmd shell environ.** Add `export: false` on any var holding a secret that shouldn't leak.
 5. **Shell env always wins over Ritefile env:** SPEC tier 1 has no opt-out.
 
-Run `rite migrate <path/to/Taskfile.yml>` and it will: (a) write a `Ritefile.yml` with include-paths rewritten, and (b) emit warnings to stderr for every site where the old and new meanings differ (OVERRIDE-VAR, OVERRIDE-ENV, DOTENV-ENTRY, SECRET-VAR, SCHEMA-URL).
+Run `rite --migrate <path/to/Taskfile.yml>` and it will: (a) write a `Ritefile.yml` with include-paths rewritten, and (b) emit warnings to stderr for every site where the old and new meanings differ (OVERRIDE-VAR, OVERRIDE-ENV, DOTENV-ENTRY, SECRET-VAR, SCHEMA-URL).

@@ -100,7 +100,10 @@ func (vars *Vars) Values() iter.Seq[Var] {
 func (vars *Vars) ToCacheMap() (m map[string]any) {
 	defer vars.mutex.RUnlock()
 	vars.mutex.RLock()
-	m = make(map[string]any, vars.Len())
+	// Use vars.om.Len() directly — the outer RLock already protects om,
+	// and calling the public Vars.Len() would re-acquire the same
+	// non-reentrant RWMutex and can deadlock behind a queued writer.
+	m = make(map[string]any, vars.om.Len())
 	for k, v := range vars.All() {
 		if v.Sh != nil && *v.Sh != "" {
 			// Dynamic variable is not yet resolved; trigger

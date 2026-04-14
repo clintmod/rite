@@ -1,12 +1,8 @@
 # Changelog
 
 All notable changes to **rite** are documented here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-
-Starting with **v2026.4.14**, rite uses **CalVer** (`v<YYYY>.<M>.<D>`,
-no leading zeros). v1.0.0 stands as the last SemVer tag and represents
-the closed contract for the initial stable release; see
-[RELEASING.md](./RELEASING.md) for the cut procedure.
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 `rite` is a hard fork of [`go-task/task`](https://github.com/go-task/task) —
 the variable-precedence model is intentionally inverted (see
@@ -17,10 +13,9 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
-## [2026.4.14] - 2026-04-14
+## [1.0.1] - 2026-04-14
 
-First CalVer release. Bundles every fix merged after v1.0.0 and marks
-the switch of the versioning scheme.
+Patch release bundling every fix merged after v1.0.0.
 
 ### Changed
 
@@ -75,8 +70,9 @@ the switch of the versioning scheme.
   migrate subcommand, updated schema URLs, and corrected the SPEC's
   §Out of Scope section. (#77)
 - Install examples in README, website, and the release checklist
-  bumped to v1.0.0. (#70) Today's release re-bumps them to v2026.4.14
-  as part of the CalVer pivot.
+  bumped to v1.0.1. Fallback `internal/version/version.txt` now tracks
+  the last-shipped tag so local `go install` builds report a current
+  version instead of the historical fallback. (#70)
 
 ## [1.0.0] - 2026-04-14
 

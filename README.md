@@ -2,7 +2,7 @@
 
 > An idempotent task runner with Unix-native variable precedence.
 
-**Status: v1.0.0 shipped (closed SemVer contract); continuous releases use CalVer (e.g. `v2026.4.14`). See [`CHANGELOG.md`](./CHANGELOG.md) for per-release notes and [`RELEASING.md`](./RELEASING.md) for the cut procedure.**
+**Status: v1.0.1 shipped.** See [`CHANGELOG.md`](./CHANGELOG.md) for per-release notes and [`RELEASING.md`](./RELEASING.md) for the cut procedure.
 
 - Binary builds, test suite green on Linux / macOS / Windows × Go 1.26.
 - SPEC's 8-tier variable precedence and `${VAR}` shell-native preprocessor are live.
@@ -10,7 +10,7 @@
 - All six legacy special vars (`.TASK`, `.TASK_DIR`, `.TASKFILE`, `.TASKFILE_DIR`, `.ROOT_TASKFILE`, `.TASK_VERSION`) are rewritten at migrate time and runtime-aliased for Ritefiles that predate the rename.
 - `includes:` paths are sandboxed to the Ritefile tree; remote URLs, `../` escape, and symlink escape are rejected.
 - Remote-Ritefile experiment removed — see [§Non-goals](#non-goals).
-- Public API locked at v1.0.0: `Ritefile*` / `Rite*` types and exit-code numbers stand as the closed contract. CalVer tags after v1.0.0 ship fixes + additions; removals call themselves out in the CHANGELOG.
+- Public API locked at v1.0.0: `Ritefile*` / `Rite*` types and exit-code numbers stand as the closed contract. Patch and minor releases ship fixes + additions; breaking changes call themselves out in the CHANGELOG.
 - Docs: [clintmod.github.io/rite](https://clintmod.github.io/rite/) · design contract in [`SPEC.md`](./SPEC.md) · full release log in [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## Install
@@ -25,13 +25,13 @@ brew install rite
 ```
 curl -sSL https://raw.githubusercontent.com/clintmod/rite/main/install.sh | sh -s -- -b ~/bin
 ```
-Downloads the latest release archive, verifies its SHA-256 against `rite_checksums.txt`, and drops `rite` into `~/bin`. Pass a tag as the last argument to pin a version (`… | sh -s -- -b ~/bin v2026.4.14`). Default bindir is `./bin` if `-b` is omitted.
+Downloads the latest release archive, verifies its SHA-256 against `rite_checksums.txt`, and drops `rite` into `~/bin`. Pass a tag as the last argument to pin a version (`… | sh -s -- -b ~/bin v1.0.1`). Default bindir is `./bin` if `-b` is omitted.
 
 **mise**:
 ```toml
 # mise.toml
 [tools]
-"ubi:clintmod/rite" = "v2026.4.14"
+"ubi:clintmod/rite" = "v1.0.1"
 ```
 (Older mise? See [getting-started](https://clintmod.github.io/rite/getting-started#mise) for the `go:` fallback.)
 
@@ -114,7 +114,7 @@ MIT. See [`LICENSE`](./LICENSE). Original copyright © 2016 Andrey Nering; fork 
 - [x] **Phase 5:** `rite migrate` tool, docs site, v0.1.0 release with Homebrew tap + mise support.
 - [x] **1.0 prep:** CHANGELOG, Migrating-from-go-task guide, remote-Ritefile removal, N-deep include env-export fix, full special-var rewrite/alias coverage, Go 1.25 dropped from CI.
 - [x] **v1.0.0:** public API rename (`Task*` → `Ritefile*`/`Rite*`), `rite --migrate` flag, schema-version upper bound, includes sandboxing (rejects `://`, `../`, symlink escape; redacts parse-error snippets from non-Ritefile targets), and concurrency hardening (`Vars.Merge` lock, signal-handler ctx cancel, `templater.Cache` race). The closed SemVer contract; see [`CHANGELOG.md`](./CHANGELOG.md).
-- [x] **Continuous releases (CalVer):** every tag after v1.0.0 is `v<YYYY>.<M>.<D>` — see [`CHANGELOG.md`](./CHANGELOG.md) for per-release notes.
+- [x] **v1.0.1:** migrate clobber fix (#76), template modernization (#74), docs audit cleanup, security hardening — see [`CHANGELOG.md`](./CHANGELOG.md) for the full list.
 
 ## Migrating from go-task
 

@@ -1,13 +1,8 @@
 # Releasing rite
 
-`rite` uses **CalVer** for continuous releases: tag format
-`v<YYYY>.<M>.<D>` with no leading zeros (Go's semver parser is strict —
-`v2026.04.14` is invalid, use `v2026.4.14`). v1.0.0 stands as the last
-SemVer tag and the closed contract for the initial stable release; every
-release after it is CalVer.
-
-Releases are cut by tagging `v*` on `main`; `goreleaser` publishes
-archives, packages, and the Homebrew tap in one pass.
+`rite` follows [semver](https://semver.org). Releases are cut by tagging
+`v*` on `main`; `goreleaser` publishes archives, packages, and the
+Homebrew tap in one pass.
 
 This doc is the pre-flight checklist. Work through it top to bottom; do
 not skip steps. If any step fails, fix first and restart — do not paper
@@ -66,40 +61,34 @@ over.
 
 ## Tag
 
-From a clean main checkout at the intended SHA. Replace `2026.4.14`
-with today's date (no leading zeros):
+From a clean main checkout at the intended SHA. Replace `<X.Y.Z>`
+with the semver you're cutting:
 
 ```bash
 git checkout main
 git pull origin main
-git tag -a v2026.4.14 -m "rite v2026.4.14"
-git push origin v2026.4.14
+git tag -a v<X.Y.Z> -m "rite v<X.Y.Z>"
+git push origin v<X.Y.Z>
 ```
 
 Do **not** force-push a tag once published. If the tag points at the
-wrong SHA or the release is broken, cut a new dated release (either
-bump to the next day, or — if a same-day re-release is unavoidable —
-append a prerelease suffix: `v2026.4.14-1`, `v2026.4.14-2`, …). Go
-semver sorts `v2026.4.14-1` **before** `v2026.4.14`, so only use
-prerelease suffixes when you've already planned for re-release; the
-simpler path is one release per day, bumping the date field for any
-re-cut.
+wrong SHA, cut a patch release instead.
 
 ## Post-tag verify (within ~10 minutes)
 
 - [ ] goreleaser workflow ran and is green:
       `gh run list --repo clintmod/rite --workflow goreleaser.yml --limit 3`
 - [ ] Release page populated at
-      `https://github.com/clintmod/rite/releases/tag/v2026.4.14` with
+      `https://github.com/clintmod/rite/releases/tag/v<X.Y.Z>` with
       archives for darwin / linux / windows / freebsd × amd64 / arm64 /
       arm / 386 / riscv64, plus `.deb` / `.rpm` / `.apk`.
 - [ ] Homebrew tap updated:
       `brew update && brew info clintmod/tap/rite` shows the new
       version.
 - [ ] `brew upgrade rite` on a dev box fetches the new binary, and
-      `rite --version` reports `v2026.4.14` (no `dirty`, no commit hash).
-- [ ] `go install github.com/clintmod/rite/cmd/rite@v2026.4.14` reports
-      `v2026.4.14` when run. (The `@v<tag>` route uses module build info
+      `rite --version` reports `v<X.Y.Z>` (no `dirty`, no commit hash).
+- [ ] `go install github.com/clintmod/rite/cmd/rite@v<X.Y.Z>` reports
+      `v<X.Y.Z>` when run. (The `@v<tag>` route uses module build info
       via #92; the `@latest` and local-checkout routes fall back to the
       embedded `version.txt` — which you just bumped to match the tag.)
 - [ ] Docs site rebuilt: `clintmod.github.io/rite/` renders the new
@@ -120,33 +109,25 @@ re-cut.
   `.goreleaser.yml`'s ldflags block points at
   `github.com/clintmod/rite/internal/version.version`.
 
-## CalVer bump rules
+## When to bump MAJOR vs MINOR vs PATCH
 
-- **Tag format:** `v<YYYY>.<M>.<D>` — e.g. `v2026.4.14`,
-  `v2026.11.3`. No zero-padding; Go's semver parser rejects
-  `v2026.04.14` and `v2026.4.04`.
-- **One release per day is the default.** If you need to cut again
-  today after publishing, prefer waiting until tomorrow and bumping the
-  date. Same-day re-releases are allowed via prerelease suffix `-N`
-  (`v2026.4.14-1`, then `-2`, etc.). Go semver sorts these **before**
-  the base version, so `-1` → `-2` → … → base isn't a meaningful
-  ordering of re-cuts; treat the suffix as an escape hatch, not a
-  routine.
-- **Never retag.** Once a tag is pushed, the next release gets a new
-  tag. Install scripts and Homebrew/mise caches pin against tag SHAs.
-- **No MAJOR/MINOR/PATCH distinction.** rite's SemVer contract ended
-  with v1.0.0. Breaking changes after that are still called out in the
-  CHANGELOG `### Changed` / `### Removed` sections, and the SPEC
-  records what's locked and what's fluid — but the tag itself carries
-  no compatibility promise.
+- **MAJOR (`X+1.0.0`)** — any change to: exit code numbers, CLI flag
+  meanings, file-discovery order, the variable-precedence tiers in
+  SPEC, or public API identifiers under the `rite` module path.
+  Rename-only changes to identifiers still count.
+- **MINOR (`X.Y+1.0`)** — new CLI flags, new migrate warning classes,
+  new special vars, added SPEC clauses that don't invalidate existing
+  Ritefiles.
+- **PATCH (`X.Y.Z+1`)** — bug fixes, doc updates, dependency bumps,
+  internal refactors with no observable behavior change.
 
-## Why CalVer
+When in doubt, err toward the larger bump. A spurious major release
+costs a CHANGELOG paragraph; a missed major release breaks users who
+trust the semver contract.
 
-rite is a continuously-evolving developer tool with a single primary
-maintainer. SemVer's value is communicating a compatibility contract
-to downstream consumers — useful when you have many; overhead when
-you don't. CalVer removes the MAJOR/MINOR/PATCH debate, makes
-release cadence legible at a glance, and matches what this project
-actually does (ship fixes as soon as they're ready). v1.0.0 stays as
-the final SemVer tag so anyone who pinned against it sees a stable,
-documented contract for that slice of history.
+**Why SemVer and not CalVer.** We briefly tried CalVer (`v<YYYY>.<M>.<D>`)
+and hit Go's semantic import versioning rule: any major version ≥ 2
+requires the module path to include a `/vN` suffix. A date-as-major
+tag like `v2026.4.14` would force `github.com/clintmod/rite/v2026/...`
+imports and yearly path rotations. SemVer stays under major 1 or 2
+and avoids the impedance mismatch entirely.

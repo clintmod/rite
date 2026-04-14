@@ -30,7 +30,7 @@ features:
 ## Install
 
 ```sh
-brew tap clintmod/tap && brew install rite      # Homebrew
+brew install clintmod/tap/rite                  # Homebrew
 ```
 ```toml
 # mise.toml

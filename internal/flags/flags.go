@@ -44,39 +44,40 @@ Options:
 `
 
 var (
-	Version      bool
-	Help         bool
-	Init         bool
-	Migrate      bool
-	Completion   string
-	List         bool
-	ListAll      bool
-	ListJson     bool
-	TaskSort     string
-	Status       bool
-	NoStatus     bool
-	Nested       bool
-	Force        bool
-	ForceAll     bool
-	Watch        bool
-	Verbose      bool
-	Silent       bool
-	DisableFuzzy bool
-	AssumeYes    bool
-	Dry          bool
-	Summary      bool
-	ExitCode     bool
-	Parallel     bool
-	Concurrency  int
-	Dir          string
-	Entrypoint   string
-	Output       ast.Output
-	Color        bool
-	Interval     time.Duration
-	Failfast     bool
-	Global       bool
-	Experiments  bool
-	Interactive  bool
+	Version          bool
+	Help             bool
+	Init             bool
+	Migrate          bool
+	MigrateKeepGoTpl bool
+	Completion       string
+	List             bool
+	ListAll          bool
+	ListJson         bool
+	TaskSort         string
+	Status           bool
+	NoStatus         bool
+	Nested           bool
+	Force            bool
+	ForceAll         bool
+	Watch            bool
+	Verbose          bool
+	Silent           bool
+	DisableFuzzy     bool
+	AssumeYes        bool
+	Dry              bool
+	Summary          bool
+	ExitCode         bool
+	Parallel         bool
+	Concurrency      int
+	Dir              string
+	Entrypoint       string
+	Output           ast.Output
+	Color            bool
+	Interval         time.Duration
+	Failfast         bool
+	Global           bool
+	Experiments      bool
+	Interactive      bool
 )
 
 func init() {
@@ -113,6 +114,7 @@ func init() {
 	pflag.BoolVarP(&Help, "help", "h", false, "Shows Task usage.")
 	pflag.BoolVarP(&Init, "init", "i", false, "Creates a new Ritefile.yml in the current folder.")
 	pflag.BoolVar(&Migrate, "migrate", false, "Converts a go-task Ritefile to a Ritefile. Takes a file path as a positional arg, or autodetects in the current directory.")
+	pflag.BoolVar(&MigrateKeepGoTpl, "keep-go-templates", false, "During migrate, leave Go-template `{{.VAR}}` expressions as-is instead of rewriting safe variable refs to the rite-native `${VAR}` form. Only affects `rite migrate` / `--migrate`.")
 	pflag.StringVar(&Completion, "completion", "", "Generates shell completion script.")
 	pflag.BoolVarP(&List, "list", "l", false, "Lists tasks with description of current Ritefile.")
 	pflag.BoolVarP(&ListAll, "list-all", "a", false, "Lists tasks with or without a description.")

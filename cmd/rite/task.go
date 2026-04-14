@@ -259,7 +259,11 @@ func runMigrate(log *logger.Logger, src string) error {
 	if !filepath.IsAbs(src) {
 		src = filepathext.SmartJoin(wd, src)
 	}
-	dst, err := task.Migrate(src, os.Stderr)
+	var opts []task.MigrateOption
+	if flags.MigrateKeepGoTpl {
+		opts = append(opts, task.WithKeepGoTemplates(true))
+	}
+	dst, err := task.Migrate(src, os.Stderr, opts...)
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -18,7 +17,6 @@ import (
 	"github.com/clintmod/rite/internal/filepathext"
 	"github.com/clintmod/rite/internal/logger"
 	"github.com/clintmod/rite/internal/output"
-	"github.com/clintmod/rite/internal/version"
 	"github.com/clintmod/rite/taskfile"
 	"github.com/clintmod/rite/taskfile/ast"
 )
@@ -254,22 +252,6 @@ func (e *Executor) doVersionChecks() error {
 			URI:           e.Taskfile.Location,
 			SchemaVersion: schemaVersion,
 			Message:       `no longer supported. Please use v3 or above`,
-		}
-	}
-
-	// Get the current version of Task
-	// If we can't parse the version (e.g. when its "devel"), then ignore the current version checks
-	currentVersion, err := semver.NewVersion(version.GetVersion())
-	if err != nil {
-		return nil
-	}
-
-	// Error if the Taskfile uses a schema version above the current version of Task
-	if schemaVersion.GreaterThan(currentVersion) {
-		return &errors.TaskfileVersionCheckError{
-			URI:           e.Taskfile.Location,
-			SchemaVersion: schemaVersion,
-			Message:       fmt.Sprintf(`is greater than the current version of Task (%s)`, currentVersion.String()),
 		}
 	}
 

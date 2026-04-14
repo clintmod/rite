@@ -57,7 +57,7 @@ rite hooks
 
 **File discovery:** `Ritefile`, `Ritefile.yml`, `Ritefile.yaml`, `Ritefile.dist.yml`, `Ritefile.dist.yaml` (plus lowercase variants). No Taskfile recognition.
 
-**Env var prefix:** `RITE_*` for rite-internal config. `RITE_X_*` for experiment flags (e.g. `RITE_X_ENV_PRECEDENCE=1`).
+**Env var prefix:** `RITE_*` for rite-internal config. `RITE_X_*` for experiment flags (e.g. `RITE_X_REMOTE_TASKFILES=1`).
 
 **Regenerating golden fixtures:** always pass both env vars or the snapshots bake in the local absolute path and CI explodes on cross-platform runners:
 ```bash

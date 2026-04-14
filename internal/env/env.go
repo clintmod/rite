@@ -70,9 +70,8 @@ func GetFromVars(env *ast.Vars) []string {
 			continue
 		}
 		// Shell env always wins per SPEC §Variable Precedence tier 1 —
-		// "never overridden by anything in a Ritefile." The upstream
-		// EnvPrecedence experiment let users flip this; rite hard-wires
-		// shell-wins because the SPEC admits no opt-out.
+		// "never overridden by anything in a Ritefile." The SPEC admits
+		// no opt-out, so this is unconditional.
 		if _, alreadySet := os.LookupEnv(k); alreadySet {
 			continue
 		}

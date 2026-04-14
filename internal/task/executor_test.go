@@ -240,19 +240,10 @@ func TestEmptyTaskfile(t *testing.T) {
 func TestEnv(t *testing.T) {
 	t.Setenv("QUX", "from_os")
 	NewExecutorTest(t,
-		WithName("env precedence disabled"),
 		WithExecutorOptions(
 			task.WithDir("testdata/env"),
 			task.WithSilent(true),
 		),
-	)
-	NewExecutorTest(t,
-		WithName("env precedence enabled"),
-		WithExecutorOptions(
-			task.WithDir("testdata/env"),
-			task.WithSilent(true),
-		),
-		WithExperiment(&experiments.EnvPrecedence, 1),
 	)
 }
 
@@ -979,7 +970,6 @@ func TestReference(t *testing.T) {
 }
 
 func TestVarInheritance(t *testing.T) {
-	enableExperimentForTest(t, &experiments.EnvPrecedence, 1)
 	tests := []struct {
 		name string
 		call string

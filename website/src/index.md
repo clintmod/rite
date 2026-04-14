@@ -24,7 +24,7 @@ features:
   - title: Every var exports
     details: "A declared variable reaches the cmd shell environ by default. Opt out with export: false. No more vars vs env asymmetry."
   - title: One-way migration
-    details: "rite --migrate Taskfile.yml produces a Ritefile and flags every site where first-in-wins would change the meaning of your existing config. No compatibility shim — an intentional break, documented line by line."
+    details: "rite migrate Taskfile.yml produces a Ritefile and flags every site where first-in-wins would change the meaning of your existing config. No compatibility shim — an intentional break, documented line by line."
 ---
 
 ## Install

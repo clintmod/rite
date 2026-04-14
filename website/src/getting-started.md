@@ -73,7 +73,7 @@ rite                 # runs the default task → Hello, world!
 | `rite --list` | Show tasks with descriptions |
 | `rite --list-all` | Show all tasks, including undescribed |
 | `rite --init` | Create a starter `Ritefile.yml` |
-| `rite --migrate Taskfile.yml` | Convert a go-task Taskfile to a Ritefile (warnings to stderr) |
+| `rite migrate Taskfile.yml` | Convert a go-task Taskfile to a Ritefile (warnings to stderr) |
 | `rite --watch <task>` | Rerun on file changes |
 
 ## Passing variables

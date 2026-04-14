@@ -8,13 +8,18 @@ outline: deep
 
 This page documents every property of the Ritefile schema (version 3) and the types it accepts. The shape is near-identical to go-task's Taskfile v3 schema; the *semantics* are where rite differs — see [precedence](/precedence) for the eight-tier variable model and [migration](/migration) for the five user-visible breaks.
 
-> **Note — a hosted JSON schema is not yet published.** We'll serve one at
-> `clintmod.github.io/rite/schema.json` once the docs site has a stable
-> URL. In the meantime, point your YAML language server at
-> [go-task's schema](https://taskfile.dev/schema.json) — the Ritefile
-> shape is a subset that validates fine against it. Pages like
-> "included-file top-level vars follow first-in-wins" are *runtime*
-> rules the schema can't express.
+> **JSON schema URL:** `https://clintmod.github.io/rite/schema.json`. Point
+> your YAML language server at it with a modeline at the top of your
+> Ritefile:
+>
+> ```yaml
+> # yaml-language-server: $schema=https://clintmod.github.io/rite/schema.json
+> ```
+>
+> The schema version is independent of the rite app version — rite may
+> ship releases without re-publishing the schema, and vice versa. Runtime
+> rules the schema can't express (e.g. "included-file top-level vars
+> follow first-in-wins") are documented here and enforced by the binary.
 
 ## Root Schema
 

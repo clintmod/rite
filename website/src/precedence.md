@@ -65,7 +65,7 @@ A variable declared inside an included Ritefile cannot leak into its parent. Res
 
 ## `env:` blocks
 
-`env:` blocks follow the **same precedence model as `vars:`** — they're unified under one resolver since Phase 4. Anything you can declare in `vars:` you can declare in `env:`; the only difference is `env:` values are exported to the cmd shell environ by default (and `vars:` are too, unless marked `export: false`).
+`env:` blocks follow the **same precedence model as `vars:`** — they're unified under one resolver. Anything you can declare in `vars:` you can declare in `env:`; the only difference is `env:` values are exported to the cmd shell environ by default (and `vars:` are too, unless marked `export: false`).
 
 Where `env:` lives, mapped to the same eight tiers:
 

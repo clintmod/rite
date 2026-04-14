@@ -176,9 +176,8 @@ Ritefiles must be checked into the project they build. Fetching a Ritefile over 
 
 If you want to share task definitions across repos, vendor them in: git submodule, subtree, a committed copy, or a generator script. `includes:` accepts local paths only, and any entrypoint containing `://` is rejected with a clear error.
 
-## Out of Scope (at least for v1)
+## Out of Scope
 
-- Watch mode (will come, not a v1 blocker).
 - Cross-Ritefile task graph visualization.
 - Plugin system.
 

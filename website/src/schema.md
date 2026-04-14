@@ -666,12 +666,14 @@ tasks:
     cmds:
       - ./deploy.sh
 
-  # Using Go template expressions
+  # Using a rite var via the ${VAR} shell preprocessor
   build-prod:
-    if: '{{eq .ENV "production"}}'
+    if: '[ "${ENV}" = "production" ]'
     cmds:
       - go build -ldflags="-s -w" ./...
 ```
+
+Go-template conditionals (see [Syntax](/syntax#go-template-var)) also work wherever a shell command does — they're evaluated first, then the result is handed to the shell.
 
 #### `dir`
 
@@ -1125,13 +1127,13 @@ tasks:
       # Only run in production
       - cmd: echo "Optimizing for production"
         if: '[ "$ENV" = "production" ]'
-      # Using Go templates
+      # Any rite var, via the ${VAR} shell preprocessor
       - cmd: echo "Feature enabled"
-        if: '{{eq .ENABLE_FEATURE "true"}}'
-      # Inside for loops (evaluated per iteration)
+        if: '[ "${ENABLE_FEATURE}" = "true" ]'
+      # Inside for loops (evaluated per iteration; ${ITEM} is the loop var)
       - for: [a, b, c]
-        cmd: echo "processing {{.ITEM}}"
-        if: '[ "{{.ITEM}}" != "b" ]'
+        cmd: echo "processing ${ITEM}"
+        if: '[ "${ITEM}" != "b" ]'
 ```
 
 ## Shell Options

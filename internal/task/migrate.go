@@ -23,6 +23,12 @@ import (
 //
 //   - Input file is copied to <dir>/Ritefile<ext>; `Taskfile` substring in
 //     include-path literals is rewritten to `Ritefile`.
+//   - Any local file referenced from the entrypoint's `includes:` block is
+//     recursively migrated the same way — a project structured as
+//     `Taskfile.yml` + `.taskfiles/*.Taskfile.yml` ends up as a complete
+//     `Ritefile.yml` + `.taskfiles/*.Ritefile.yml` tree in one shot. URL
+//     includes and files that don't exist on disk are skipped with a
+//     warning; the caller gets a single-file migration in that case.
 //
 // Everything else flows through verbatim, preserving user comments and
 // formatting (we string-substitute rather than re-serialize the AST).
@@ -41,7 +47,50 @@ import (
 //	                `vars:` now, so this would leak to every cmd shell.
 //	SCHEMA-URL      `# yaml-language-server: $schema=…taskfile.dev/schema.json`
 //	                left in the file — cosmetic pointer at upstream docs.
-func Migrate(srcPath string, warn io.Writer) (dstPath string, err error) {
+//
+// dstPath is the entrypoint's destination — returned even in dry-run mode so
+// callers can echo it. Included-file destinations are not surfaced through
+// the return value; they appear as `would write …` / `wrote …` lines in
+// warn.
+func Migrate(srcPath string, warn io.Writer, opts ...MigrateOption) (dstPath string, err error) {
+	o := migrateOptions{}
+	for _, fn := range opts {
+		fn(&o)
+	}
+	visited := map[string]struct{}{}
+	return migrateOne(srcPath, warn, &o, visited, true)
+}
+
+// MigrateOption configures Migrate. Functional-options keep the two-arg
+// signature callers rely on while leaving room for future knobs.
+type MigrateOption func(*migrateOptions)
+
+type migrateOptions struct {
+	dryRun bool
+}
+
+// WithDryRun returns a MigrateOption that, when true, parses and emits
+// warnings but writes no files. Intended for `rite --migrate --dry-run`.
+func WithDryRun(enabled bool) MigrateOption {
+	return func(o *migrateOptions) { o.dryRun = enabled }
+}
+
+// migrateOne performs a single-file migration and recurses into includes.
+// visited holds absolute source paths already migrated in this run to
+// prevent include cycles (upstream accepts a Taskfile A including B while B
+// includes A; only the first visit migrates). isEntrypoint suppresses the
+// `wrote …` / `would write …` chatter for the top-level call because the
+// CLI already announces the entrypoint.
+func migrateOne(srcPath string, warn io.Writer, o *migrateOptions, visited map[string]struct{}, isEntrypoint bool) (dstPath string, err error) {
+	abs, err := filepath.Abs(srcPath)
+	if err != nil {
+		return "", err
+	}
+	if _, seen := visited[abs]; seen {
+		return ritefilePath(srcPath), nil
+	}
+	visited[abs] = struct{}{}
+
 	data, err := os.ReadFile(srcPath)
 	if err != nil {
 		return "", err
@@ -49,30 +98,61 @@ func Migrate(srcPath string, warn io.Writer) (dstPath string, err error) {
 
 	dstPath = ritefilePath(srcPath)
 
-	// Warning pass — parse into a narrow shape that captures only what we
-	// need to diagnose. We don't reuse ast.Taskfile because it's tuned for
-	// execution, not migration, and it eagerly resolves things we want to
-	// inspect raw.
 	var doc migrateDoc
 	if err := yaml.Unmarshal(data, &doc); err != nil {
-		// Don't fail migration on parse error — the user may be converting a
-		// taskfile our parser can't handle, and the mechanical rewrite is
-		// still useful. Just skip the analysis.
 		fmt.Fprintf(warn, "rite migrate: skipping semantic analysis — YAML parse failed: %v\n", err)
 	} else {
 		doc.emitWarnings(srcPath, warn)
 	}
 
-	// Transform pass — mechanical string rewrites only.
 	out := rewriteIncludePaths(string(data))
 	out = rewriteSpecialVarRefs(out)
 	if hasTaskfileDevSchemaPointer(out) {
 		fmt.Fprintf(warn, "rite migrate: SCHEMA-URL %s: `$schema=https://taskfile.dev/schema.json` references upstream docs; rite's schema is not yet published (Phase 5 docs).\n", srcPath)
 	}
 
-	if err := os.WriteFile(dstPath, []byte(out), 0o644); err != nil {
-		return "", err
+	if o.dryRun {
+		if !isEntrypoint {
+			fmt.Fprintf(warn, "rite migrate: would write %s\n", dstPath)
+		}
+	} else {
+		if err := os.WriteFile(dstPath, []byte(out), 0o644); err != nil {
+			return "", err
+		}
+		if !isEntrypoint {
+			fmt.Fprintf(warn, "rite migrate: wrote %s\n", dstPath)
+		}
 	}
+
+	// Recurse into includes. Failures are reported, not fatal — a missing
+	// included file shouldn't abort the whole migration, since the user may
+	// have a partial checkout or an intentionally-optional include.
+	srcDir := filepath.Dir(srcPath)
+	for namespace, inc := range doc.Includes {
+		p := inc.path()
+		if p == "" {
+			continue
+		}
+		if isURL(p) {
+			fmt.Fprintf(warn, "rite migrate: skipping remote include %q (%s) — rite does not support URL-based includes; migrate the file manually if you need it.\n", namespace, p)
+			continue
+		}
+		resolved := p
+		if !filepath.IsAbs(resolved) {
+			resolved = filepath.Join(srcDir, resolved)
+		}
+		resolved, derr := resolveIncludedTaskfile(resolved)
+		if derr != nil {
+			if !inc.Optional {
+				fmt.Fprintf(warn, "rite migrate: include %q (%s): %v — skipping recursive migration.\n", namespace, p, derr)
+			}
+			continue
+		}
+		if _, err := migrateOne(resolved, warn, o, visited, false); err != nil {
+			fmt.Fprintf(warn, "rite migrate: include %q (%s): %v — skipping.\n", namespace, resolved, err)
+		}
+	}
+
 	return dstPath, nil
 }
 
@@ -240,12 +320,82 @@ var (
 	}
 )
 
-// migrateDoc captures the minimal shape we need for warning detection.
-// Deliberately loose — unknown keys are ignored.
+// migrateDoc captures the minimal shape we need for warning detection and
+// include traversal. Deliberately loose — unknown keys are ignored.
 type migrateDoc struct {
-	Vars  map[string]yaml.Node   `yaml:"vars"`
-	Env   map[string]yaml.Node   `yaml:"env"`
-	Tasks map[string]migrateTask `yaml:"tasks"`
+	Vars     map[string]yaml.Node      `yaml:"vars"`
+	Env      map[string]yaml.Node      `yaml:"env"`
+	Tasks    map[string]migrateTask    `yaml:"tasks"`
+	Includes map[string]migrateInclude `yaml:"includes"`
+}
+
+// migrateInclude captures a single entry in the entrypoint's `includes:`
+// block in both of the shapes upstream supports:
+//
+//	foo: ./path/Taskfile.yml          # scalar shortcut
+//	bar: { taskfile: ./path/... }     # mapping
+//
+// Only fields used for migration-time traversal are decoded.
+type migrateInclude struct {
+	Taskfile string `yaml:"taskfile"`
+	Optional bool   `yaml:"optional"`
+}
+
+// UnmarshalYAML accepts either a scalar (treated as the `taskfile:` value) or
+// the full mapping form. Anything else is silently ignored — unknown include
+// shapes aren't the migrate tool's problem.
+func (i *migrateInclude) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.ScalarNode:
+		i.Taskfile = node.Value
+		return nil
+	case yaml.MappingNode:
+		type alias migrateInclude
+		var a alias
+		if err := node.Decode(&a); err != nil {
+			return err
+		}
+		*i = migrateInclude(a)
+		return nil
+	default:
+		return nil
+	}
+}
+
+// path returns the include's source path, trimmed. An empty return means the
+// include is shaped in a way migrate can't follow (e.g. dynamic vars).
+func (i migrateInclude) path() string { return strings.TrimSpace(i.Taskfile) }
+
+// isURL reports whether p looks like a remote include. We don't try to
+// migrate remote taskfiles — they're not supported by rite at runtime.
+func isURL(p string) bool {
+	return strings.HasPrefix(p, "http://") || strings.HasPrefix(p, "https://")
+}
+
+// resolveIncludedTaskfile maps an include reference (file or directory) to
+// the actual Taskfile on disk. Mirrors go-task's discovery order so anything
+// a user can write in `includes:` and have task find at runtime, migrate
+// also finds at conversion time.
+func resolveIncludedTaskfile(resolved string) (string, error) {
+	info, err := os.Stat(resolved)
+	if err != nil {
+		return "", err
+	}
+	if !info.IsDir() {
+		return resolved, nil
+	}
+	for _, name := range []string{
+		"Taskfile.yml", "Taskfile.yaml",
+		"taskfile.yml", "taskfile.yaml",
+		"Taskfile.dist.yml", "Taskfile.dist.yaml",
+		"taskfile.dist.yml", "taskfile.dist.yaml",
+	} {
+		cand := filepath.Join(resolved, name)
+		if _, err := os.Stat(cand); err == nil {
+			return cand, nil
+		}
+	}
+	return "", fmt.Errorf("no Taskfile found in directory %s", resolved)
 }
 
 type migrateTask struct {

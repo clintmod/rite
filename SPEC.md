@@ -142,7 +142,7 @@ Literal `$` in a command: `$$` escapes to `$`. Literal `{{`: `{{"{{"}}`.
 ## File Format
 
 - Filename: **`Ritefile`** (no extension) or `Ritefile.yml` / `Ritefile.yaml` (both accepted; Ritefile without extension is canonical, mirroring `Makefile`, `Justfile`, `Dockerfile`).
-- YAML syntax. Schema version declared at top: `version: "1"`.
+- YAML syntax. Schema version declared at top: `version: "3"`. rite rejects versions outside a closed range: anything below `3` ("no longer supported") and anything at or above `4` ("not supported — rite currently supports schema version 3"). A Ritefile authored against a future schema must be run by a rite that supports that schema; silent degradation to older semantics is not a mode rite offers.
 - No attempt to parse `Taskfile.yml`. A separate `rite migrate` subcommand converts go-task Taskfiles to Ritefiles, flagging constructs that don't translate cleanly (task-scope `vars:` that were relied on as overrides become explicit warnings).
 
 ---

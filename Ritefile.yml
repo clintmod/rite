@@ -28,6 +28,7 @@ tasks:
     sources:
       - './**/*.go'
       - go.mod
+      - internal/version/version.txt   # //go:embed'd into the binary; a bare version bump changes nothing else
     cmds:
       - go install -v ./cmd/rite
 
@@ -159,6 +160,7 @@ tasks:
     sources:
       - "**/*.go"
       - "internal/task/testdata/**/*"
+      - internal/version/version.txt   # //go:embed'd; version_test.go asserts on its value
     cmds:
       - gotestsum -f '{{.GOTESTSUM_FORMAT}}' ./...
 

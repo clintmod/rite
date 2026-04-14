@@ -96,7 +96,7 @@ Three straightforward options:
 
 - **Homebrew** — fine for macOS runners that already have brew:
   ```sh
-  brew tap clintmod/tap && brew install rite
+  brew install clintmod/tap/rite
   ```
 
 ## GitHub Actions: error annotations

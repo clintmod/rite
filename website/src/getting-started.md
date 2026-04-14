@@ -5,7 +5,7 @@
 ### Homebrew (macOS / Linux)
 
 ```sh
-brew tap clintmod/tap && brew install rite
+brew install clintmod/tap/rite
 ```
 
 ### mise

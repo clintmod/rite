@@ -153,7 +153,7 @@ rite owns its own filenames end-to-end. The paths below are **SPEC-level guarant
 - **Fingerprint / cache directory:** `.rite/` in the project root. Holds per-task checksums, timestamps, and other ephemeral state rite derives from `sources:` / `generates:`. Override with `RITE_TEMP_DIR`. The directory should be `.gitignore`d. rite **never** reads or writes `.task/` — that path is go-task's and is left untouched.
 - **Project config:** `.riterc.yml` or `.riterc.yaml` in the project root (or any ancestor up to `$HOME`). Controls rite-level defaults (experiments, output, color, etc.). rite **never** reads `.taskrc.yml`.
 - **User-global config:** `$XDG_CONFIG_HOME/rite/riterc.yml` (falling back to `$HOME/.riterc.yml`). Merged under project config — project wins on conflict.
-- **Schema / code completions:** embedded in the `rite` binary; schema also published at `clintmod.github.io/rite/schema.json`.
+- **Schema / code completions:** embedded in the `rite` binary; schema also published at `clintmod.github.io/rite/schema.json` (always-latest) and `clintmod.github.io/rite/schema/v<N>.json` (pinned per schema version — pin this form in editor configs so a future v4 release doesn't invalidate v3 Ritefiles).
 
 ---
 

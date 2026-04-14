@@ -2,6 +2,7 @@ package taskfile_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,18 +38,33 @@ func readFrom(t *testing.T, root string) error {
 	return err
 }
 
+// absolutePathForTest returns a platform-correct absolute path to reference
+// in include declarations. `/etc/hosts` is absolute on Unix but relative on
+// Windows (Windows absolute paths need a drive letter). filepath.Abs gives
+// us `/etc/hosts` on Unix and `C:\etc\hosts` on Windows.
+func absolutePathForTest(t *testing.T) string {
+	t.Helper()
+	abs, err := filepath.Abs(filepath.FromSlash("/etc/hosts"))
+	if err != nil {
+		t.Fatalf("filepath.Abs: %v", err)
+	}
+	return abs
+}
+
 //nolint:paralleltest // chdir; see readFrom
 func TestIncludeRejectsAbsolutePath(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, filepath.Join(root, "Ritefile.yml"), `version: '3'
+	abs := absolutePathForTest(t)
+	// Single-quoted YAML scalar — backslashes (Windows) pass through untouched.
+	writeFile(t, filepath.Join(root, "Ritefile.yml"), fmt.Sprintf(`version: '3'
 includes:
   evil:
-    taskfile: /etc/hosts
+    taskfile: '%s'
 tasks:
   default:
     cmds:
       - echo hi
-`)
+`, abs))
 
 	err := readFrom(t, root)
 	if err == nil {
@@ -63,16 +79,17 @@ tasks:
 //nolint:paralleltest // chdir; see readFrom
 func TestIncludeRejectsAbsolutePathEvenOptional(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, filepath.Join(root, "Ritefile.yml"), `version: '3'
+	abs := absolutePathForTest(t)
+	writeFile(t, filepath.Join(root, "Ritefile.yml"), fmt.Sprintf(`version: '3'
 includes:
   evil:
-    taskfile: /etc/hosts
+    taskfile: '%s'
     optional: true
 tasks:
   default:
     cmds:
       - echo hi
-`)
+`, abs))
 
 	err := readFrom(t, root)
 	if err == nil {

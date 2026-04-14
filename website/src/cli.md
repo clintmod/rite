@@ -18,6 +18,7 @@ Runs the named task(s), passing any `KEY=value` pairs as CLI-tier vars (tier 2).
 | `-v`, `--verbose` | Log var resolution, execution steps, etc. |
 | `-s`, `--silent` | Suppress command echo |
 | `-f`, `--force` | Force the task to run even if sources are unchanged |
+| `-y`, `--yes` | Auto-confirm any `prompt:` in the invoked task |
 | `-d`, `--dir DIR` | Set the Ritefile's working directory |
 | `-t`, `--taskfile FILE` | Point at an explicit Ritefile |
 | `--set KEY=value` | Explicit form of the positional `KEY=value` |
@@ -29,6 +30,8 @@ Runs the named task(s), passing any `KEY=value` pairs as CLI-tier vars (tier 2).
 | `--version` | Print version |
 
 Full list: `rite --help`.
+
+Each of `--verbose`, `--silent`, `--force`, and `--yes` is also surfaced to task templates as a `CLI_*` bool — see [Special `CLI_*` variables](/special-vars) if a task needs to branch on which flags were passed.
 
 ## Listing and inspecting tasks
 
@@ -100,7 +103,7 @@ tasks:
       - myprogram {{.CLI_ARGS}}
 ```
 
-`CLI_ARGS` (and the other `CLI_*` specials) are marked non-export, so they're visible inside Ritefile templating but don't leak into the process environ of cmd shells.
+`CLI_ARGS` (and the other `CLI_*` specials) are marked non-export, so they're visible inside Ritefile templating but don't leak into the process environ of cmd shells. For the full list — `CLI_ARGS`, `CLI_ARGS_LIST`, `CLI_FORCE`, `CLI_SILENT`, `CLI_VERBOSE`, `CLI_ASSUME_YES` — see [Special `CLI_*` variables](/special-vars).
 
 ## Exit codes
 

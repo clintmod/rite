@@ -1,8 +1,12 @@
 # Changelog
 
 All notable changes to **rite** are documented here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project
-adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+Starting with **v2026.4.14**, rite uses **CalVer** (`v<YYYY>.<M>.<D>`,
+no leading zeros). v1.0.0 stands as the last SemVer tag and represents
+the closed contract for the initial stable release; see
+[RELEASING.md](./RELEASING.md) for the cut procedure.
 
 `rite` is a hard fork of [`go-task/task`](https://github.com/go-task/task) —
 the variable-precedence model is intentionally inverted (see
@@ -13,7 +17,10 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
-## [1.0.1] - Unreleased
+## [2026.4.14] - 2026-04-14
+
+First CalVer release. Bundles every fix merged after v1.0.0 and marks
+the switch of the versioning scheme.
 
 ### Changed
 
@@ -25,6 +32,51 @@ for archaeological reference only; they do not describe rite behavior.
   is a common task name in existing Taskfiles; carving it out was the
   wrong trade. Flag form doesn't collide with the task namespace.
   Precedent: `go-task` is flag-only for the same reason.
+
+### Added
+
+- Versioned schema endpoint `clintmod.github.io/rite/schema/v3.json`
+  published alongside the unversioned `schema.json`. Pins against a
+  specific schema version survive future schema bumps. (#73)
+- Documented the six `CLI_*` template-var mirrors (`CLI_ARGS`,
+  `CLI_FORCE`, `CLI_SILENT`, `CLI_VERBOSE`, `CLI_OFFLINE`,
+  `CLI_TIMEOUT`) that were previously undocumented. (#71)
+
+### Fixed
+
+- `go install` now reports the module version from Go build info
+  instead of the `internal/version` fallback when the user installs a
+  tagged version (`@v<tag>`). The `internal/version.txt` fallback
+  still applies to `@latest` and untagged builds. (#81, #91, #92)
+- `internal/version/version.txt` now tracks the last shipped tag
+  (bumped each release as a pre-tag audit step), so `@latest` and
+  local-checkout `go install` builds report the correct version
+  instead of the stale `v0.1.0` pin. Release archives continue to get
+  their version from goreleaser's ldflags injection; this changes only
+  the fallback path.
+- `rite --migrate` rewrites the `# yaml-language-server: $schema=…`
+  directive to rite's hosted schema URL so migrated Ritefiles validate
+  against the right schema in editors. (#72)
+- `rite --migrate` rewrites `{{ .VAR }}` Go-template interpolations to
+  `${VAR}` in `cmds:` and string values where safe. Conditionals,
+  pipelines, and non-identifier expressions are left alone and
+  surfaced as migrate warnings. (#74)
+- `rite --migrate` walking `includes:` no longer clobbers sibling
+  output files when two includes resolve to the same directory; the
+  walker now deduplicates by absolute output path. (#76)
+- Race-free parallel-test stdout/stderr: replaced the shared
+  `bytes.Buffer` in the task-runner test harness with a
+  `SyncBuffer`, unblocking `-race` on `internal/task` and
+  `internal/output`. (#56)
+
+### Docs
+
+- Post-1.0 cleanup pass: removed stale references to the (now-reverted)
+  migrate subcommand, updated schema URLs, and corrected the SPEC's
+  §Out of Scope section. (#77)
+- Install examples in README, website, and the release checklist
+  bumped to v1.0.0. (#70) Today's release re-bumps them to v2026.4.14
+  as part of the CalVer pivot.
 
 ## [1.0.0] - 2026-04-14
 

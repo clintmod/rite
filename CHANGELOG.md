@@ -13,6 +13,19 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.1] - Unreleased
+
+### Changed
+
+- Reverted the `rite migrate` subcommand added in v1.0.0 (#83). The
+  `--migrate` flag form remains the supported invocation — unchanged
+  behavior, unchanged positional path argument. Rationale: `rite`'s
+  primary verb slot is `rite <task-name>`, and every subcommand we add
+  permanently reserves a name users can't give to a real task. `migrate`
+  is a common task name in existing Taskfiles; carving it out was the
+  wrong trade. Flag form doesn't collide with the task namespace.
+  Precedent: `go-task` is flag-only for the same reason.
+
 ## [1.0.0] - 2026-04-14
 
 First stable release of rite. Consolidates everything shipped since v0.1.0
@@ -225,9 +238,9 @@ discovery, variable precedence).
    - Shell env always wins over Ritefile `env:`. No opt-out, no
      experiment flag.
    - File format is `Ritefile`, not `Taskfile`. No compatibility shim;
-     migration is one-way via `rite migrate`.
+     migration is one-way via `rite --migrate`.
 
-   `rite migrate` emits site-specific warnings
+   `rite --migrate` emits site-specific warnings
    (`OVERRIDE-VAR`, `OVERRIDE-ENV`, `DOTENV-ENTRY`, `SECRET-VAR`,
    `SCHEMA-URL`) so you can review before the semantics silently change
    on you.
@@ -308,7 +321,7 @@ rebrand, first-in-wins precedence, `${VAR}` preprocessor, unified
 See the **Breaking** section under [1.0.0] above; those items originated
 in v0.1.0 and remain in force.
 
-Use `rite migrate <path>` to get site-specific warnings on your own
+Use `rite --migrate <path>` to get site-specific warnings on your own
 Taskfiles.
 
 ---

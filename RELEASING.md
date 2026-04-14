@@ -32,7 +32,7 @@ over.
       Precedence table, §File Format constraints, and §Non-goals section
       and diff against what the code actually does.
 - [ ] `website/src/migration.md` and `website/src/cli.md` examples use
-      current CLI surface (`rite migrate <path>`, not `rite --migrate`).
+      current CLI surface (`rite --migrate <path>`).
 - [ ] **Install examples reference the new tag.** Grep the repo for the
       previous version and bump each hit to the version you're about to
       cut. Typical places: `README.md` (install.sh pin, `ubi:` mise

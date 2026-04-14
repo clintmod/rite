@@ -122,3 +122,4 @@ When there is a conflict between an ADR/decision and current code behavior, the 
 - **No partial rebrands.** Any rename/restructure should land in a single atomic commit across the codebase so the tree is always buildable.
 - **SPEC before code.** Behavioral changes that touch variable semantics require a SPEC update first or in the same commit.
 - **Don't silently pull from upstream.** Every cherry-pick needs an explicit `git cherry-pick -x` (records the source) and a note in the commit message about why we want it.
+- **No subcommands.** See [`SPEC.md`](./SPEC.md) §Out of Scope. `rite <positional>` is always a task name; non-task invocations are flags. This principle cost us a same-day revert in 1.0 (#83); do not re-propose a subcommand without proposing a SPEC change first.

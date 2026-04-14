@@ -87,18 +87,11 @@ func run() error {
 		return log.PrintExperiments()
 	}
 
-	// Subcommand form: `rite migrate [path]`. Shadows any task named
-	// "migrate"; callers who need the token as a task name can still use
-	// the `--migrate` flag form, which stays as an alias.
-	positional, _, err := args.Get()
-	if err != nil {
-		return err
-	}
-	if path, ok := migrateSubcommand(positional); ok {
-		return runMigrate(log, path)
-	}
-
 	if flags.Migrate {
+		positional, _, err := args.Get()
+		if err != nil {
+			return err
+		}
 		src := ""
 		if len(positional) > 0 {
 			src = positional[0]
@@ -221,21 +214,6 @@ func run() error {
 	}
 
 	return e.Run(ctx, calls...)
-}
-
-// migrateSubcommand reports whether the first positional arg is the literal
-// "migrate" token, meaning the user invoked `rite migrate [path]`. The
-// returned path is the second positional arg or "" if the user relied on
-// autodetection. Extra args past the path are ignored (the existing
-// --migrate flag form has the same behavior).
-func migrateSubcommand(positional []string) (string, bool) {
-	if len(positional) == 0 || positional[0] != "migrate" {
-		return "", false
-	}
-	if len(positional) > 1 {
-		return positional[1], true
-	}
-	return "", true
 }
 
 func runMigrate(log *logger.Logger, src string) error {

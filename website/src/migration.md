@@ -35,8 +35,7 @@ Install rite:
 
 ```sh
 # Homebrew
-brew tap clintmod/tap
-brew install rite
+brew tap clintmod/tap && brew install rite
 
 # mise (≥ 2026.4; older mise strips v prefixes on ubi)
 mise use -g go:github.com/clintmod/rite/cmd/rite@latest

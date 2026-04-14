@@ -17,8 +17,7 @@
 
 **Homebrew** (macOS / Linux):
 ```
-brew tap clintmod/tap
-brew install rite
+brew tap clintmod/tap && brew install rite
 ```
 
 **Install script** (macOS / Linux / FreeBSD / WSL):

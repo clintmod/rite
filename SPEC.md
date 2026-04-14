@@ -12,7 +12,7 @@ status: draft
 
 ## Thesis
 
-`go-task`'s variable model is structurally broken: **task-level `vars:` override everything, including CLI arguments and shell environment.** This is the inverse of every Unix convention, and the upstream project's planned redesign (go-task/task#2035) preserves this inversion. A decade of bugs and a megathread (go-task/task#2034) all trace back to the same choice.
+`go-task`'s variable model inverts Unix precedence: **task-level `vars:` override everything, including CLI arguments and shell environment.** The upstream project's planned redesign (go-task/task#2035) preserves this inversion. A decade of bugs and a megathread (go-task/task#2034) all trace back to the same choice.
 
 `rite` starts from the opposite premise: **first-in-wins.** The closer a variable is declared to the user, the more authority it has. Task-level `vars:` are *defaults*, not *overrides*. Nothing a Ritefile declares internally can override what the user passed on the command line or set in their shell.
 

@@ -170,40 +170,54 @@ func hasTaskfileDevSchemaPointer(s string) bool {
 }
 
 // rewriteSpecialVarRefs rewrites references to go-task's special vars
-// .TASK and .TASK_DIR into rite's SPEC-preferred aliases .RITE_NAME and
-// .RITE_TASK_DIR. Both old and new names resolve at runtime (see
-// compiler.getSpecialVars) so this is a readability nudge, not a
-// correctness fix.
+// into rite's SPEC-preferred aliases:
+//
+//	.TASK          -> .RITE_NAME
+//	.TASK_DIR      -> .RITE_TASK_DIR
+//	.TASKFILE      -> .RITEFILE
+//	.TASKFILE_DIR  -> .RITEFILE_DIR
+//	.ROOT_TASKFILE -> .ROOT_RITEFILE
+//	.TASK_VERSION  -> .RITE_VERSION
+//
+// Both old and new names resolve at runtime (see compiler.getSpecialVars)
+// so this is primarily a readability nudge. Historically only .TASK /
+// .TASK_DIR had runtime aliases; issue #36 surfaced that the other four
+// had neither a rewrite here nor a runtime alias, so migrated Ritefiles
+// silently rendered them as the empty string. Both sides were fixed in
+// the same change.
 //
 // Scope: only inside Go-template expressions (`{{ … }}`) to avoid
-// mangling prose or user-defined vars that happen to be named `TASK`.
-// Order matters: rewrite `.TASK_DIR` first so the `.TASK` pass doesn't
-// half-rename it to `.RITE_NAME_DIR`.
+// mangling prose or user-defined vars that happen to contain `TASK`.
+// Order matters: rewrite the long names first so the short-name passes
+// don't half-rename them (`.TASK_DIR` and `.TASK_VERSION` before
+// `.TASK`; `.TASKFILE_DIR` before `.TASKFILE`; `.ROOT_TASKFILE` before
+// `.TASKFILE`). The bracket-class boundaries also guard against it, so
+// this is belt-and-braces.
 func rewriteSpecialVarRefs(s string) string {
 	return rxTemplateExpr.ReplaceAllStringFunc(s, func(expr string) string {
-		// Run each rewrite to a fixed point. The bracket-class boundary
+		// Each rewrite runs to a fixed point. The bracket-class boundary
 		// approach *consumes* the separator on both sides of a match, so
 		// when two refs share a separator (e.g. `{{.TASK .TASK}}` or
 		// `{{printf "%s/%s" .TASK_DIR .TASK_DIR}}`) only the first is
 		// rewritten on a single pass — the shared separator is eaten by
 		// match #1 and unavailable as the lead boundary for match #2.
 		// Go's RE2 has no lookahead, so re-scan the output until stable.
-		for {
-			next := rxTaskDirRef.ReplaceAllString(expr, "${1}.RITE_TASK_DIR${2}")
-			if next == expr {
-				break
+		for _, r := range specialVarRewrites {
+			for {
+				next := r.rx.ReplaceAllString(expr, r.repl)
+				if next == expr {
+					break
+				}
+				expr = next
 			}
-			expr = next
-		}
-		for {
-			next := rxTaskNameRef.ReplaceAllString(expr, "${1}.RITE_NAME${2}")
-			if next == expr {
-				break
-			}
-			expr = next
 		}
 		return expr
 	})
+}
+
+type specialVarRewrite struct {
+	rx   *regexp.Regexp
+	repl string
 }
 
 var (
@@ -211,10 +225,19 @@ var (
 	// so adjacent expressions on one line are matched separately.
 	rxTemplateExpr = regexp.MustCompile(`\{\{[\s\S]*?\}\}`)
 	// `(?:^|[^.\w])` / `(?:[^.\w]|$)` bracket the match to avoid partial
-	// hits like `.MY_TASK_DIR` or `.TASK_NAME`. Capture groups preserve
-	// the bracketing characters. Run `.TASK_DIR` before `.TASK`.
-	rxTaskDirRef  = regexp.MustCompile(`(^|[^.\w])\.TASK_DIR([^\w]|$)`)
-	rxTaskNameRef = regexp.MustCompile(`(^|[^.\w])\.TASK([^_\w]|$)`)
+	// hits like `.MY_TASK_DIR` or `.TASK_NAMESPACE`. Capture groups preserve
+	// the bracketing characters. Trailing `[^_\w]` (vs `[^\w]`) excludes
+	// underscore so short names don't match the head of longer ones (e.g.
+	// `.TASK` wouldn't match the leading part of `.TASK_DIR`; `.TASKFILE`
+	// wouldn't match the leading part of `.TASKFILE_DIR`).
+	specialVarRewrites = []specialVarRewrite{
+		{regexp.MustCompile(`(^|[^.\w])\.TASKFILE_DIR([^\w]|$)`), "${1}.RITEFILE_DIR${2}"},
+		{regexp.MustCompile(`(^|[^.\w])\.ROOT_TASKFILE([^\w]|$)`), "${1}.ROOT_RITEFILE${2}"},
+		{regexp.MustCompile(`(^|[^.\w])\.TASKFILE([^_\w]|$)`), "${1}.RITEFILE${2}"},
+		{regexp.MustCompile(`(^|[^.\w])\.TASK_VERSION([^\w]|$)`), "${1}.RITE_VERSION${2}"},
+		{regexp.MustCompile(`(^|[^.\w])\.TASK_DIR([^\w]|$)`), "${1}.RITE_TASK_DIR${2}"},
+		{regexp.MustCompile(`(^|[^.\w])\.TASK([^_\w]|$)`), "${1}.RITE_NAME${2}"},
+	}
 )
 
 // migrateDoc captures the minimal shape we need for warning detection.

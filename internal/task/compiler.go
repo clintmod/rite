@@ -255,15 +255,26 @@ func (c *Compiler) getSpecialVars(t *ast.Task, call *Call) (map[string]string, e
 	// Use filepath.ToSlash for all paths to ensure consistent forward slashes
 	// across platforms. This prevents issues with backslashes being interpreted
 	// as escape sequences when paths are used in shell commands on Windows.
+	rootRitefile := filepath.ToSlash(filepathext.SmartJoin(c.Dir, c.Entrypoint))
+	riteVersion := version.GetVersion()
 	allVars := map[string]string{
 		"RITE_EXE":         filepath.ToSlash(os.Args[0]),
-		"ROOT_RITEFILE":    filepath.ToSlash(filepathext.SmartJoin(c.Dir, c.Entrypoint)),
+		"ROOT_RITEFILE":    rootRitefile,
 		"ROOT_DIR":         filepath.ToSlash(c.Dir),
 		"USER_WORKING_DIR": filepath.ToSlash(c.UserWorkingDir),
-		"RITE_VERSION":     version.GetVersion(),
+		"RITE_VERSION":     riteVersion,
+		// go-task compat aliases so migrated Ritefiles that still
+		// reference the old names keep rendering correct values instead
+		// of the empty string. `rite migrate` rewrites these to the
+		// rite-prefixed names; the aliases are the safety net for files
+		// that pre-date the rewriter or were authored by hand.
+		"ROOT_TASKFILE": rootRitefile,
+		"TASK_VERSION":  riteVersion,
 	}
 	if t != nil {
 		taskDir := filepath.ToSlash(filepathext.SmartJoin(c.Dir, t.Dir))
+		ritefile := filepath.ToSlash(t.Location.Taskfile)
+		ritefileDir := filepath.ToSlash(filepath.Dir(t.Location.Taskfile))
 		allVars["TASK"] = t.Task
 		allVars["TASK_DIR"] = taskDir
 		// rite-named aliases for .TASK and .TASK_DIR. The original names
@@ -273,8 +284,11 @@ func (c *Compiler) getSpecialVars(t *ast.Task, call *Call) (map[string]string, e
 		// rewrites references to them.
 		allVars["RITE_NAME"] = t.Task
 		allVars["RITE_TASK_DIR"] = taskDir
-		allVars["RITEFILE"] = filepath.ToSlash(t.Location.Taskfile)
-		allVars["RITEFILE_DIR"] = filepath.ToSlash(filepath.Dir(t.Location.Taskfile))
+		allVars["RITEFILE"] = ritefile
+		allVars["RITEFILE_DIR"] = ritefileDir
+		// go-task compat aliases (see ROOT_TASKFILE / TASK_VERSION above).
+		allVars["TASKFILE"] = ritefile
+		allVars["TASKFILE_DIR"] = ritefileDir
 	} else {
 		allVars["TASK"] = ""
 		allVars["TASK_DIR"] = ""
@@ -282,6 +296,8 @@ func (c *Compiler) getSpecialVars(t *ast.Task, call *Call) (map[string]string, e
 		allVars["RITE_TASK_DIR"] = ""
 		allVars["RITEFILE"] = ""
 		allVars["RITEFILE_DIR"] = ""
+		allVars["TASKFILE"] = ""
+		allVars["TASKFILE_DIR"] = ""
 	}
 	if call != nil {
 		allVars["ALIAS"] = call.Task

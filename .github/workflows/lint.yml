@@ -43,7 +43,7 @@ jobs:
       - name: install check-jsonschema
         run: python -m pip install 'check-jsonschema==0.27.3'
 
-      - name: verify schema is up-to-date with AST
+      - name: verify unversioned schema is up-to-date with AST
         run: |
           go run ./cmd/gen-schema > /tmp/rite-schema.json
           diff -u website/src/public/schema.json /tmp/rite-schema.json || {
@@ -51,14 +51,27 @@ jobs:
             exit 1
           }
 
-      - name: check-jsonschema (metaschema)
+      - name: verify versioned schema is up-to-date with AST
+        run: |
+          go run ./cmd/gen-schema -id https://clintmod.github.io/rite/schema/v3.json > /tmp/rite-schema-v3.json
+          diff -u website/src/public/schema/v3.json /tmp/rite-schema-v3.json || {
+            echo "::error::schema/v3.json is stale. Run 'rite gen:schema' and commit the result."
+            exit 1
+          }
+
+      - name: check-jsonschema (metaschema — unversioned)
         run: check-jsonschema --check-metaschema website/src/public/schema.json
 
-      - name: check-jsonschema (validate test fixtures against schema)
+      - name: check-jsonschema (metaschema — versioned)
+        run: check-jsonschema --check-metaschema website/src/public/schema/v3.json
+
+      - name: check-jsonschema (validate test fixtures against v3 schema)
         run: |
-          # Find every Ritefile in testdata and validate it against our schema.
-          # empty_taskfile/ is a 0-byte file that tests rite's empty-file error
-          # path — it correctly fails schema validation too, so exclude it.
+          # Find every Ritefile in testdata and validate it against the
+          # versioned schema — we want the v3 fence to be what guards
+          # checked-in fixtures. empty_taskfile/ is a 0-byte file that
+          # tests rite's empty-file error path; it correctly fails schema
+          # validation too, so exclude it.
           find internal/task/testdata -type f \( -name 'Ritefile.yml' -o -name 'Ritefile.yaml' \) \
             ! -path '*empty_taskfile*' \
-            -print0 | xargs -0 -n1 check-jsonschema --schemafile website/src/public/schema.json
+            -print0 | xargs -0 -n1 check-jsonschema --schemafile website/src/public/schema/v3.json

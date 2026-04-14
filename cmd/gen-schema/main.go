@@ -3,8 +3,15 @@
 //
 //	go run ./cmd/gen-schema > website/src/public/schema.json
 //
-// or via the `gen:schema` task in Ritefile.yml. The schema is committed
-// to the docs site so it can be served at clintmod.github.io/rite/schema.json.
+// or via the `gen:schema` task in Ritefile.yml. Two copies are published
+// on the docs site:
+//
+//   - clintmod.github.io/rite/schema.json         — always latest
+//   - clintmod.github.io/rite/schema/v3.json      — frozen at the v3 contract
+//
+// The -id flag sets the schema's $id so both copies self-identify as the
+// URL they live at (language servers deref $id and need it to match).
+// See #73 for why versioning is independent of the rite binary version.
 //
 // The reflector does most of the work by walking tagged struct fields.
 // For types that reflection can't handle — orderedmap wrappers (Vars,
@@ -19,6 +26,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"reflect"
@@ -30,9 +38,12 @@ import (
 	"github.com/clintmod/rite/taskfile/ast"
 )
 
-const schemaID = "https://clintmod.github.io/rite/schema.json"
+const defaultSchemaID = "https://clintmod.github.io/rite/schema.json"
 
 func main() {
+	schemaID := flag.String("id", defaultSchemaID, "value for the schema's $id field (set to the versioned URL when emitting /schema/v3.json)")
+	flag.Parse()
+
 	// Main reflector: used to reflect the Ritefile root and all leaf types.
 	// Its Mapper intercepts every type that needs special handling, including
 	// the polymorphic Cmd/Dep/Task/Var (emitted as oneOf unions).
@@ -57,7 +68,7 @@ func main() {
 	}
 
 	schema := r.Reflect(&ast.Ritefile{})
-	schema.ID = schemaID
+	schema.ID = jsonschema.ID(*schemaID)
 	schema.Title = "Ritefile"
 	schema.Description = "JSON Schema for rite Ritefiles. rite is a task runner with first-in-wins variable precedence (shell env > CLI > Ritefile defaults), a hard fork of go-task/task. See https://clintmod.github.io/rite/ for documentation."
 

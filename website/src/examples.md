@@ -26,7 +26,15 @@ Each recipe below lives in [`examples/recipes/`](https://github.com/clintmod/rit
 
 ## `migrated/` — reference corpus
 
-Planned sibling subtree: real-world Taskfiles from [`go-task/examples`](https://github.com/go-task/examples) run through `rite --migrate` and committed as Ritefiles. Purpose is twofold — browse real-shaped Ritefiles in every size, and give CI a regression fence against future `rite --migrate` bugs. Not yet populated; tracked as a follow-up to [#101](https://github.com/clintmod/rite/issues/101).
+Real-world Taskfiles from [`go-task/examples`](https://github.com/go-task/examples) mechanically converted with `rite --migrate` and committed as Ritefiles under [`examples/migrated/`](https://github.com/clintmod/rite/tree/main/examples/migrated). Distinct from `recipes/` in two ways: the files are machine-produced (not hand-written for clarity), and each subdirectory pins the exact upstream SHA it was derived from plus the migrate-tool warnings that fired.
+
+| Project | Upstream | Warnings |
+|---|---|---|
+| [`go-web-app/`](https://github.com/clintmod/rite/tree/main/examples/migrated/go-web-app) | [`go-task/examples@c57278bc/go-web-app`](https://github.com/go-task/examples/tree/c57278bcf08acd347a0292dc18dd5672dfc1485f/go-web-app) | 1 × `TEMPLATE-KEPT` (for `{{exeExt}}`) |
+
+Purpose is twofold — browse real-shaped Ritefiles in full-project form, and give CI a regression fence. `rite examples:verify` parses every `Ritefile.yml` in both subtrees on every run, so a future change to the migrator or parser that breaks a real-world file trips here first.
+
+Upstream attribution lives in [`examples/NOTICE`](https://github.com/clintmod/rite/blob/main/examples/NOTICE).
 
 ## Why runnable examples
 

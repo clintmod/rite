@@ -35,7 +35,7 @@ brew tap clintmod/tap && brew install rite      # Homebrew
 ```toml
 # mise.toml
 [tools]
-"ubi:clintmod/rite" = "v1.0.0"                  # mise + ubi
+"ubi:clintmod/rite" = "v2026.4.14"              # mise + ubi
 ```
 ```sh
 go install github.com/clintmod/rite/cmd/rite@latest   # from source

@@ -85,13 +85,13 @@ Three straightforward options:
 
 - **`go install`** — fastest if your runner already has Go:
   ```sh
-  go install github.com/clintmod/rite/cmd/rite@v1.0.0
+  go install github.com/clintmod/rite/cmd/rite@v2026.4.14
   ```
   The version reported by `rite --version` will be wrong (a known [`go install` quirk](https://github.com/clintmod/rite/blob/main/CLAUDE.md)) but everything works.
 
 - **Release archive** — for a controlled binary version, download from [releases](https://github.com/clintmod/rite/releases) using the install script:
   ```sh
-  curl -sSL https://raw.githubusercontent.com/clintmod/rite/main/install.sh | sh -s -- -b /usr/local/bin v1.0.0
+  curl -sSL https://raw.githubusercontent.com/clintmod/rite/main/install.sh | sh -s -- -b /usr/local/bin v2026.4.14
   ```
 
 - **Homebrew** — fine for macOS runners that already have brew:

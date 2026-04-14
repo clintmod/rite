@@ -28,6 +28,32 @@ func TestMigrateKitchenSink(t *testing.T) {
 	runMigrateCorpusCase(t, "migrate_kitchen_sink")
 }
 
+// TestMigrateRealWorldCorpus feeds stripped-down real-world Taskfiles from
+// third-party projects through migrate (#44) and golden-compares both the
+// generated Ritefile and the stderr warning stream. Scope: prove migrate
+// doesn't barf on realistic shapes — layout, plugin patterns, idioms that
+// synthetic fixtures can't anticipate. Branch coverage belongs to the
+// kitchen-sink above; this corpus is representative-shape smoke.
+//
+// Each subdir under testdata/migrate_corpus/ is a separate case with its
+// own Taskfile.yml, attribution header (upstream repo + pinned SHA +
+// license), and testdata/ subdir of goldens.
+func TestMigrateRealWorldCorpus(t *testing.T) {
+	t.Parallel()
+	entries, err := os.ReadDir(filepath.Join("testdata", "migrate_corpus"))
+	require.NoError(t, err)
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			runMigrateCorpusCase(t, filepath.Join("migrate_corpus", name))
+		})
+	}
+}
+
 // runMigrateCorpusCase copies fixture (a directory under testdata/) into a
 // tempdir, runs task.Migrate on the entrypoint, and golden-compares every
 // emitted Ritefile plus the normalized warnings stream.

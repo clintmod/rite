@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://clintmod.github.io/rite/schema/v3.json
+# Source: https://github.com/Azure/mpf
+# Pinned: bb4e5eb636ccbcd91c385fb697e691e7e176f017 (Taskfile.yml)
+# License: MIT — Copyright (c) Microsoft Corporation
+#
+# Stripped for migrate-corpus: preserved the real-world shape —
+# yaml-language-server schema directive (migrate rewrites in place),
+# set/shopt, dotenv fan-in with templated paths, OS/ARCH/exeExt special
+# funcs, and the silent default. Dropped the `includes:` block (and all
+# .taskfiles/*.Taskfile.yml children) to keep the fixture self-contained.
+
+version: "3"
+
+set: [pipefail]
+shopt: [globstar]
+
+dotenv: [.env, dev.env, ".${ENV}/.env", "${ENV}/.env"]
+
+vars:
+  PROJECT_NAME: azmpf
+  BUILD_DEV_OUTPUT_DIR: bin/{{OS}}-{{ARCH}}
+  BUILD_DEV_ARTIFACT: "${BUILD_DEV_OUTPUT_DIR}/${PROJECT_NAME}{{exeExt}}"
+
+tasks:
+  default:
+    desc: List available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  sysinfo:
+    desc: Display system information
+    silent: true
+    cmds:
+      - 'echo "OS: {{OS}}"'
+      - 'echo "Architecture: {{ARCH}}"'
+      - 'echo "CPU cores: {{numCPU}}"'
+
+  build:
+    desc: Build the dev binary
+    cmds:
+      - go build -o ${BUILD_DEV_ARTIFACT} ./cmd
+    generates:
+      - "${BUILD_DEV_ARTIFACT}"

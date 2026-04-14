@@ -105,17 +105,6 @@ The Ritefile's `generate:fixtures` target already sets both.
 
 ---
 
-## Context locations outside this repo
-
-- **Design contract (editable master):** `~/Dropbox/brain/10-projects/rite/SPEC.md` (Obsidian vault)
-- **Decision records (ADRs):** `~/Dropbox/brain/10-projects/rite/decisions/`
-- **Work logs and session notes:** `~/Dropbox/brain/10-projects/rite/` (daily notes link in from `~/Dropbox/brain/daily/`)
-- **Auto-memory:** `~/.claude/projects/-Users-clint-code-github-clintmod-rite/memory/` (feedback and refs specific to this repo)
-
-When there is a conflict between an ADR/decision and current code behavior, the code is the truth — update the ADR to note the divergence and why.
-
----
-
 ## Conventions
 
 - **Commits:** Prefix with the phase when relevant (`rebrand:`, `precedence:`, `migrate:`). No emoji. Explain the *why*, not just the *what*.

@@ -178,6 +178,7 @@ If you want to share task definitions across repos, vendor them in: git submodul
 ## Out of Scope
 
 - **Subcommands.** rite has no subcommands. The first positional argument is always a task name — `rite <task>` runs the task named `<task>`. Invocations that don't map to a user task (migrate, init, version, help) are flags (`--migrate`, `--init`, `--version`, `--help`). This keeps the task namespace uncarved: any verb a user wants to name a task is free. Precedent: `go-task` is flag-only for the same reason.
+- **Bare `rite` with no `default:`.** When invoked with no positional task name and no dispatching flag, rite runs the `default:` task if one exists; otherwise it lists available tasks silently (`rite --list --silent` semantics) and exits 0. A Ritefile with zero declared tasks gets a short "no tasks defined" hint instead. Ritefile authors should not have to write a boilerplate `default: rite -l` task.
 - Cross-Ritefile task graph visualization.
 - Plugin system.
 

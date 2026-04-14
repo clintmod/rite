@@ -1,0 +1,14 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the binary
+    cmds:
+      - echo build
+  test:
+    desc: Run tests
+    cmds:
+      - echo test
+  internal:
+    cmds:
+      - echo internal

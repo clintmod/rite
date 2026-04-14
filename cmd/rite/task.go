@@ -174,8 +174,18 @@ func run() error {
 	}
 	calls, globals := args.Parse(cliArgsPreDash...)
 
-	// If there are no calls, run the default task instead
+	// If there are no calls, run the default task — unless the Ritefile
+	// doesn't define one, in which case list tasks silently (#102) so the
+	// boilerplate `default: rite -l` task every project used to define
+	// becomes unnecessary.
 	if len(calls) == 0 {
+		handled, err := bareInvocationFallback(e, log, flags.ListAll)
+		if err != nil {
+			return err
+		}
+		if handled {
+			return nil
+		}
 		calls = append(calls, &task.Call{Task: "default"})
 	}
 
@@ -214,6 +224,24 @@ func run() error {
 	}
 
 	return e.Run(ctx, calls...)
+}
+
+// bareInvocationFallback handles `rite` invoked with no positional task name.
+// If the Ritefile defines a task called "default", returns (false, nil) so
+// the caller proceeds with the normal default-task call. Otherwise prints
+// the task list in silent mode (or a "no tasks defined" hint when the
+// Ritefile is empty) and returns (true, nil) to short-circuit dispatch.
+// Closes #102 — removes the need for every Ritefile to define a boilerplate
+// `default: rite -l` task.
+func bareInvocationFallback(e *task.Executor, log *logger.Logger, allTasks bool) (handled bool, err error) {
+	if _, ok := e.Ritefile.Tasks.Get("default"); ok {
+		return false, nil
+	}
+	if e.Ritefile.Tasks.Len() == 0 {
+		log.Outf(logger.Yellow, "rite: no tasks defined; run `rite --init` to get started\n")
+		return true, nil
+	}
+	return true, e.ListTaskNames(allTasks)
 }
 
 func runMigrate(log *logger.Logger, src string) error {

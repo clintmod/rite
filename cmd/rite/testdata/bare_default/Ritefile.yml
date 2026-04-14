@@ -1,0 +1,11 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Default task
+    cmds:
+      - echo default
+  other:
+    desc: Other task
+    cmds:
+      - echo other

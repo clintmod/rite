@@ -72,6 +72,7 @@ export default defineConfig({
           { text: 'Variable precedence', link: '/precedence' },
           { text: 'Syntax', link: '/syntax' },
           { text: 'CLI', link: '/cli' },
+          { text: 'Validate', link: '/validate' },
           { text: 'Forwarding CLI args', link: '/cli-args' },
           { text: 'Special variables', link: '/special-vars' },
           { text: 'File discovery', link: '/file-discovery' },

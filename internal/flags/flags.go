@@ -49,6 +49,7 @@ var (
 	Init             bool
 	Migrate          bool
 	MigrateKeepGoTpl bool
+	Validate         bool
 	Completion       string
 	List             bool
 	ListAll          bool
@@ -115,6 +116,7 @@ func init() {
 	pflag.BoolVarP(&Init, "init", "i", false, "Creates a new Ritefile.yml in the current folder.")
 	pflag.BoolVar(&Migrate, "migrate", false, "Converts a go-task Taskfile to a Ritefile. Takes a file path as a positional arg, or autodetects in the current directory.")
 	pflag.BoolVar(&MigrateKeepGoTpl, "keep-go-templates", false, "During migrate, leave Go-template `{{.VAR}}` expressions as-is instead of rewriting safe variable refs to the rite-native `${VAR}` form. Only affects `rite migrate` / `--migrate`.")
+	pflag.BoolVar(&Validate, "validate", false, "Parse + schema + version check the Ritefile without executing any tasks. Optional positional path; autodetects in the current directory. Pairs with --json for machine-readable output.")
 	pflag.StringVar(&Completion, "completion", "", "Generates shell completion script.")
 	pflag.BoolVarP(&List, "list", "l", false, "Lists tasks with description of current Ritefile.")
 	pflag.BoolVarP(&ListAll, "list-all", "a", false, "Lists tasks with or without a description.")
@@ -180,7 +182,7 @@ func isCI() bool {
 	return ci
 }
 
-func Validate() error {
+func ValidateFlags() error {
 	if Global && Dir != "" {
 		return errors.New("rite: You can't set both --global and --dir")
 	}
@@ -201,8 +203,8 @@ func Validate() error {
 		return errors.New("rite: cannot use --list and --list-all at the same time")
 	}
 
-	if ListJson && !List && !ListAll {
-		return errors.New("rite: --json only applies to --list or --list-all")
+	if ListJson && !List && !ListAll && !Validate {
+		return errors.New("rite: --json only applies to --list, --list-all, or --validate")
 	}
 
 	if NoStatus && !ListJson {

@@ -70,8 +70,10 @@ jobs:
           # Find every Ritefile in testdata and validate it against the
           # versioned schema — we want the v3 fence to be what guards
           # checked-in fixtures. empty_taskfile/ is a 0-byte file that
-          # tests rite's empty-file error path; it correctly fails schema
-          # validation too, so exclude it.
+          # tests rite's empty-file error path; validate/yaml_error/ is
+          # intentionally malformed YAML for the --validate parse-error
+          # path. Both correctly fail schema validation, so exclude them.
           find internal/task/testdata -type f \( -name 'Ritefile.yml' -o -name 'Ritefile.yaml' \) \
             ! -path '*empty_taskfile*' \
+            ! -path '*validate/yaml_error*' \
             -print0 | xargs -0 -n1 check-jsonschema --schemafile website/src/public/schema/v3.json

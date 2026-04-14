@@ -15,6 +15,7 @@ for archaeological reference only; they do not describe rite behavior.
 
 ### Added
 
+- `rite --validate [path]` — parse + schema + semantic check without executing `sh:` / `preconditions:` / `status:` / tasks. Usable in pre-commit hooks and CI without side effects. `--json` for machine-readable output. Exit codes match existing `errors/errors.go` codes. (#75)
 - `internal/task/testdata/migrate_kitchen_sink/` — synthetic fixture
   exercising every migrate code path in a single tree (sibling + nested
   + 3-deep includes, all five warning classes, all six legacy

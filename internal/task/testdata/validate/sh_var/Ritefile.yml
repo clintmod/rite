@@ -1,0 +1,10 @@
+version: '3'
+
+vars:
+  BAD:
+    sh: exit 99
+
+tasks:
+  default:
+    cmds:
+      - echo "${BAD}"

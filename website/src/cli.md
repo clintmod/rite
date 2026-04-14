@@ -43,6 +43,7 @@ Runs the named task(s), passing any `KEY=value` pairs as CLI-tier vars (tier 2).
 | `--nested` | Nest namespaces in `--list --json` output |
 | `--migrate [FILE]` | Convert a go-task Taskfile to a Ritefile. See [Migration](/migration) |
 | `--keep-go-templates` | With `--migrate`, leave Go-template var refs as-is rather than rewriting to `${VAR}` |
+| `--validate [FILE]` | Parse + schema-check the Ritefile without running any task. Pair with `--json` for machine-readable output. See [Validate](/validate) |
 | `--completion SHELL` | Print completion script (`bash`, `zsh`, `fish`, `powershell`) |
 | `--experiments` | List experiment flags and whether each is enabled |
 | `--version` | Print version |

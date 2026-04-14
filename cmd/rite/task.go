@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -65,7 +66,7 @@ func run() error {
 		Color:   flags.Color,
 	}
 
-	if err := flags.Validate(); err != nil {
+	if err := flags.ValidateFlags(); err != nil {
 		return err
 	}
 
@@ -97,6 +98,18 @@ func run() error {
 			src = positional[0]
 		}
 		return runMigrate(log, src)
+	}
+
+	if flags.Validate {
+		positional, _, err := args.Get()
+		if err != nil {
+			return err
+		}
+		src := ""
+		if len(positional) > 0 {
+			src = positional[0]
+		}
+		return runValidate(log, src)
 	}
 
 	if flags.Init {
@@ -242,6 +255,62 @@ func bareInvocationFallback(e *task.Executor, log *logger.Logger, allTasks bool)
 		return true, nil
 	}
 	return true, e.ListTaskNames(allTasks)
+}
+
+func runValidate(log *logger.Logger, src string) error {
+	opts := []task.ExecutorOption{task.WithVersionCheck(true)}
+	if src != "" {
+		if filepath.IsAbs(src) {
+			opts = append(opts, task.WithEntrypoint(src))
+		} else {
+			wd, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			opts = append(opts, task.WithEntrypoint(filepathext.SmartJoin(wd, src)))
+		}
+	}
+	e := task.NewExecutor(opts...)
+	err := e.Validate()
+	if flags.ListJson {
+		return emitValidateJSON(err)
+	}
+	if err != nil {
+		return err
+	}
+	if !flags.Silent {
+		log.Outf(logger.Green, "ok\n")
+	}
+	return nil
+}
+
+// emitValidateJSON writes a structured result to stdout. Always returns the
+// original err (if any) so the caller's exit-code dispatch still routes
+// through errors.TaskError — the JSON is the *human-visible* artifact, the
+// exit code is the CI-integration handle.
+func emitValidateJSON(err error) error {
+	out := map[string]any{"ok": err == nil}
+	if err != nil {
+		entry := map[string]any{
+			"severity": "error",
+			"message":  err.Error(),
+		}
+		if te, ok := err.(errors.TaskError); ok {
+			entry["code"] = te.Code()
+		}
+		if de, ok := err.(*errors.RitefileDecodeError); ok {
+			entry["file"] = de.Location
+			entry["line"] = de.Line
+			entry["col"] = de.Column
+		}
+		out["errors"] = []any{entry}
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	if encErr := enc.Encode(out); encErr != nil {
+		return encErr
+	}
+	return err
 }
 
 func runMigrate(log *logger.Logger, src string) error {

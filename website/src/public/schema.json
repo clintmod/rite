@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://clintmod.github.io/rite/schema.json",
-  "$ref": "#/$defs/Taskfile",
+  "$ref": "#/$defs/Ritefile",
   "$defs": {
     "Cmd": {
       "oneOf": [
@@ -353,6 +353,90 @@
       },
       "type": "object"
     },
+    "Ritefile": {
+      "properties": {
+        "version": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "examples": [
+            "3",
+            3
+          ]
+        },
+        "output": {
+          "$ref": "#/$defs/Output"
+        },
+        "method": {
+          "type": "string"
+        },
+        "includes": {
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "A path string (e.g. './lib')."
+              },
+              {
+                "$ref": "#/$defs/Include"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        "set": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "shopt": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "vars": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "env": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "tasks": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Task"
+          },
+          "type": "object"
+        },
+        "silent": {
+          "type": "boolean"
+        },
+        "dotenv": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "run": {
+          "type": "string"
+        },
+        "interval": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
     "Task": {
       "oneOf": [
         {
@@ -567,90 +651,6 @@
         },
         "failfast": {
           "type": "boolean"
-        }
-      },
-      "type": "object"
-    },
-    "Taskfile": {
-      "properties": {
-        "version": {
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "number"
-            }
-          ],
-          "examples": [
-            "3",
-            3
-          ]
-        },
-        "output": {
-          "$ref": "#/$defs/Output"
-        },
-        "method": {
-          "type": "string"
-        },
-        "includes": {
-          "additionalProperties": {
-            "oneOf": [
-              {
-                "type": "string",
-                "description": "A path string (e.g. './lib')."
-              },
-              {
-                "$ref": "#/$defs/Include"
-              }
-            ]
-          },
-          "type": "object"
-        },
-        "set": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "shopt": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "vars": {
-          "additionalProperties": {
-            "$ref": "#/$defs/Var"
-          },
-          "type": "object"
-        },
-        "env": {
-          "additionalProperties": {
-            "$ref": "#/$defs/Var"
-          },
-          "type": "object"
-        },
-        "tasks": {
-          "additionalProperties": {
-            "$ref": "#/$defs/Task"
-          },
-          "type": "object"
-        },
-        "silent": {
-          "type": "boolean"
-        },
-        "dotenv": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "run": {
-          "type": "string"
-        },
-        "interval": {
-          "type": "integer"
         }
       },
       "type": "object"

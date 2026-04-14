@@ -158,7 +158,7 @@ func (e *Executor) setupTempDir() error {
 		}
 	}
 
-	// RemoteCacheDir from taskrc/env can override the remote cache directory
+	// RemoteCacheDir from riterc/env can override the remote cache directory
 	if e.RemoteCacheDir != "" {
 		if filepath.IsAbs(e.RemoteCacheDir) || strings.HasPrefix(e.RemoteCacheDir, "~") {
 			remoteCacheDir, err := execext.ExpandLiteral(e.RemoteCacheDir)

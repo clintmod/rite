@@ -1,4 +1,4 @@
-package taskrc
+package riterc
 
 import (
 	"github.com/clintmod/rite/internal/fsext"

@@ -1,4 +1,4 @@
-package taskrc
+package riterc
 
 import (
 	"os"
@@ -8,15 +8,15 @@ import (
 
 	"github.com/clintmod/rite/errors"
 	"github.com/clintmod/rite/internal/fsext"
-	"github.com/clintmod/rite/taskrc/ast"
+	"github.com/clintmod/rite/riterc/ast"
 )
 
 var (
-	defaultXDGTaskRCs = []string{
+	defaultXDGRiteRCs = []string{
 		"riterc.yml",
 		"riterc.yaml",
 	}
-	defaultTaskRCs = []string{
+	defaultRiteRCs = []string{
 		".riterc.yml",
 		".riterc.yaml",
 	}
@@ -32,7 +32,7 @@ func GetConfig(dir string) (*ast.TaskRC, error) {
 
 	// Read the XDG config file
 	if xdgConfigHome := os.Getenv("XDG_CONFIG_HOME"); xdgConfigHome != "" {
-		xdgConfigNode, err := NewNode("", filepath.Join(xdgConfigHome, "rite"), defaultXDGTaskRCs)
+		xdgConfigNode, err := NewNode("", filepath.Join(xdgConfigHome, "rite"), defaultXDGRiteRCs)
 		if err == nil && xdgConfigNode != nil {
 			xdgConfig, err := reader.Read(xdgConfigNode)
 			if err != nil {
@@ -46,7 +46,7 @@ func GetConfig(dir string) (*ast.TaskRC, error) {
 	// If it does contain $HOME, then we will find this config later anyway
 	home, err := os.UserHomeDir()
 	if err == nil && !strings.Contains(home, dir) {
-		homeNode, err := NewNode("", home, defaultTaskRCs)
+		homeNode, err := NewNode("", home, defaultRiteRCs)
 		if err == nil && homeNode != nil {
 			homeConfig, err := reader.Read(homeNode)
 			if err != nil {
@@ -65,7 +65,7 @@ func GetConfig(dir string) (*ast.TaskRC, error) {
 	if err != nil {
 		return config, err
 	}
-	entrypoints, err := fsext.SearchAll("", absDir, defaultTaskRCs)
+	entrypoints, err := fsext.SearchAll("", absDir, defaultRiteRCs)
 	if errors.Is(err, os.ErrPermission) {
 		err = nil
 	}
@@ -78,7 +78,7 @@ func GetConfig(dir string) (*ast.TaskRC, error) {
 
 	// Loop over the nodes, and merge them into the main config
 	for _, entrypoint := range entrypoints {
-		node, err := NewNode("", entrypoint, defaultTaskRCs)
+		node, err := NewNode("", entrypoint, defaultRiteRCs)
 		if err != nil {
 			return nil, err
 		}

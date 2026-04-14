@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/clintmod/rite/taskrc/ast"
+	"github.com/clintmod/rite/riterc/ast"
 )
 
 type Experiment struct {

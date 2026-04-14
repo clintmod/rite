@@ -1,4 +1,4 @@
-package taskrc
+package riterc
 
 import (
 	"os"
@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/clintmod/rite/taskrc/ast"
+	"github.com/clintmod/rite/riterc/ast"
 )
 
 const (

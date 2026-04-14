@@ -1,0 +1,10 @@
+version: '3'
+
+vars:
+  COMPONENT: "ui"
+
+tasks:
+  build:
+    desc: Build the frontend
+    cmds:
+      - echo "frontend:build COMPONENT=${COMPONENT}  (from frontend's own vars)"

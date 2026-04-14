@@ -1,0 +1,38 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Build index.out from the sources; re-runs only when inputs change
+    sources:
+      - inputs/*.txt
+    generates:
+      - build/index.out
+    method: checksum   # default — fingerprint the sources + cmds
+    cmds:
+      - mkdir -p build
+      - cat inputs/*.txt > build/index.out
+      - echo "built build/index.out from sources/*.txt"
+
+  timestamp:
+    desc: Same shape, but compares mtimes instead of hashes
+    sources:
+      - inputs/*.txt
+    generates:
+      - build/index.out
+    method: timestamp
+    cmds:
+      - mkdir -p build
+      - cat inputs/*.txt > build/index.out
+
+  none:
+    desc: Always runs, ignoring sources/generates — good for commands that must re-exec
+    sources:
+      - inputs/*.txt
+    method: none
+    cmds:
+      - echo "always runs, regardless of fingerprint"
+
+  clean:
+    desc: Remove cached state so the next run rebuilds
+    cmds:
+      - rm -rf build .rite

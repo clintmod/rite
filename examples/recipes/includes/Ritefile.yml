@@ -1,0 +1,29 @@
+version: '3'
+
+vars:
+  SERVICE: "web"
+
+includes:
+  backend:
+    taskfile: ./backend/Ritefile.yml
+    dir: ./backend
+    vars:
+      COMPONENT: "api"
+
+  frontend:
+    taskfile: ./frontend/Ritefile.yml
+    dir: ./frontend
+
+tasks:
+  default:
+    desc: Root task — dispatches to everything
+    cmds:
+      - echo "Building service=${SERVICE}"
+      - task: backend:build
+      - task: frontend:build
+
+  scope:
+    desc: Show that included vars don't leak upward
+    cmds:
+      - echo "SERVICE at root=${SERVICE}"
+      - echo "COMPONENT at root is unset (only visible inside backend:*)"

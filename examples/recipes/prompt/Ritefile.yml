@@ -1,0 +1,20 @@
+version: '3'
+
+tasks:
+  reset-db:
+    desc: Destroys local DB state — prompts before doing it
+    prompt: "This will DROP every table in the local DB. Continue?"
+    cmds:
+      - echo "Would drop tables here. (Pretending to…)"
+      - echo "Done."
+
+  rm-cache:
+    desc: Another destructive action — this one auto-confirms when CLI_ASSUME_YES is set
+    prompt: "Remove the entire .cache/ directory?"
+    cmds:
+      - echo "Would remove .cache/ here."
+
+  safe:
+    desc: No prompt — just runs
+    cmds:
+      - echo "nothing destructive; no prompt needed."

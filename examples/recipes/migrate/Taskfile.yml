@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+vars:
+  ENV: "staging"
+  GITHUB_TOKEN: "ghp_example_tokenvalue"   # would auto-export under rite — needs export: false
+
+tasks:
+  build:
+    desc: Build — task-scope vars tries to override the entrypoint
+    vars:
+      ENV: "development"                     # OVERRIDE-VAR — loses to entrypoint under rite
+    cmds:
+      - echo "Building for {{.ENV}}"
+      - echo "in {{.TASK_DIR}} at {{.TASKFILE}}"
+
+  release:
+    desc: Push a release — uses the secret-ish var name
+    cmds:
+      - echo "Would curl with GITHUB_TOKEN={{.GITHUB_TOKEN}}"

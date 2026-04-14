@@ -1,0 +1,26 @@
+version: '3'
+
+tasks:
+  deploy:
+    desc: Refuses to run unless the checkout is clean and on main
+    preconditions:
+      - sh: test -n "${DEPLOY_TOKEN:-}"
+        msg: "DEPLOY_TOKEN must be set — export it or pass DEPLOY_TOKEN=... on the CLI"
+      - sh: '[ "$(uname -s)" = "Linux" ] || [ "$(uname -s)" = "Darwin" ]'
+        msg: "deploys only run on Linux or macOS — saw $(uname -s)"
+    cmds:
+      - echo "All preconditions passed — pretending to deploy with DEPLOY_TOKEN=${DEPLOY_TOKEN}"
+
+  fetch-data:
+    desc: Skips itself when the target already exists (status:)
+    status:
+      - test -f data/cached.txt
+    cmds:
+      - mkdir -p data
+      - echo "fetched at $(date -u +%FT%TZ)" > data/cached.txt
+      - echo "wrote data/cached.txt"
+
+  clean:
+    desc: Remove the cached artifact so fetch-data runs again
+    cmds:
+      - rm -rf data

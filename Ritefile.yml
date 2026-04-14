@@ -186,6 +186,25 @@ tasks:
       - docker build -t rite-coexistence -f scripts/coexistence/Dockerfile .
       - docker run --rm rite-coexistence
 
+  examples:verify:
+    desc: Parses every examples/{recipes,migrated}/*/Ritefile.yml via rite -l (no exec) to catch drift from the live binary
+    aliases: [examples]
+    deps: [install]
+    cmds:
+      - |
+        set -e
+        found=0
+        for subtree in examples/recipes examples/migrated; do
+          [ -d "$subtree" ] || continue
+          for dir in "$subtree"/*/; do
+            [ -f "$dir/Ritefile.yml" ] || continue
+            echo "==> $dir"
+            (cd "$dir" && rite -l >/dev/null)
+            found=$((found + 1))
+          done
+        done
+        echo "examples:verify — parsed $found Ritefile(s)"
+
   gotestsum:install:
     desc: Installs gotestsum
     status:

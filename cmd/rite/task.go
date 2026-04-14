@@ -209,11 +209,12 @@ func run() error {
 	specialVars.Set("CLI_VERBOSE", ast.Var{Value: flags.Verbose, Export: &noExport})
 	specialVars.Set("CLI_ASSUME_YES", ast.Var{Value: flags.AssumeYes, Export: &noExport})
 	e.Ritefile.Vars.ReverseMerge(specialVars, nil)
-	if !flags.Watch {
-		e.InterceptInterruptSignals()
-	}
-
 	ctx := context.Background()
+	if !flags.Watch {
+		var stop context.CancelFunc
+		ctx, stop = e.InterceptInterruptSignals(ctx)
+		defer stop()
+	}
 
 	if flags.Status {
 		return e.Status(ctx, calls...)

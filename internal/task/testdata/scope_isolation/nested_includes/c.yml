@@ -11,3 +11,8 @@ tasks:
       # Downward flow: C sees TOP from A (grandparent) and MID from B (parent).
       - 'echo "C-sees-TOP:{{.TOP}}"'
       - 'echo "C-sees-MID:{{.MID}}"'
+      # C's own globals must be visible to both the template and the shell env
+      # of C's own tasks. Regression fence for issue #24: 2-deep included
+      # globals were reachable via {{.VAR}} but not exported to ${VAR}.
+      - 'echo "C-tmpl-BOTTOM:{{.BOTTOM}}"'
+      - 'echo "C-env-BOTTOM:${BOTTOM:-absent}"'

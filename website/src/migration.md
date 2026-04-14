@@ -186,7 +186,7 @@ Migrate rewrites simple Go-template variable references to rite-native `${VAR}` 
 
 Everything else — `if`/`range` control flow, function calls like `printf` or `index`, sprig helpers, multi-step pipes beyond `default` — is **left untouched** and reported via `TEMPLATE-KEPT` so you can review and rewrite by hand.
 
-<pre v-pre><code>rite migrate: TEMPLATE-KEPT Taskfile.yml:42: kept Go-template syntax "{{if eq .MODE \"release\"}}--release{{end}}" — no equivalent ${VAR} form; review manually.
+<pre v-pre style="white-space: pre-wrap; word-break: break-word;"><code>rite migrate: TEMPLATE-KEPT Taskfile.yml:42: kept Go-template syntax "{{if eq .MODE \"release\"}}--release{{end}}" — no equivalent ${VAR} form; review manually.
 </code></pre>
 
 Unlike the semantic warnings above, this one doesn't signal a behavior change — it signals that the syntactic modernization pass couldn't convert the expression and you're left with the upstream form. Go templates still work in rite, so ignoring the warning is safe; the warning just flags sites where the idiomatic rewrite would save you a backtick-heavy Go-template expression in exchange for a shell-native one.

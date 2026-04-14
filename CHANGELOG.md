@@ -13,7 +13,7 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
-## [1.0.0] - TBD
+## [1.0.0] - 2026-04-14
 
 First stable release of rite. Consolidates everything shipped since v0.1.0
 and locks in the user-visible surface (CLI flags, exit codes, file
@@ -35,6 +35,27 @@ discovery, variable precedence).
 - Fixture-backed scope-isolation tests (issue #2).
 - Dockerized dual-install smoke test: verifies `rite` and `task` can be
   installed side-by-side without stomping each other's state directories.
+- `rite migrate <path>` subcommand form (flag form `--migrate` kept as
+  alias) so the CLI matches what the docs and warning prefixes have been
+  teaching. (#40)
+- Runtime compat aliases + migrate rewrites for all six legacy special
+  vars: `.TASK`, `.TASK_DIR`, `.TASKFILE`, `.TASKFILE_DIR`,
+  `.ROOT_TASKFILE`, `.TASK_VERSION`. Previously the last four rendered as
+  empty strings in migrated Ritefiles — silent wrong output. (#36)
+- `rite migrate` now walks `includes:` recursively, writing a Ritefile
+  alongside each included Taskfile (source files are left in place for
+  diff review). `--dry-run` lists what would be written without writing.
+  Cycle detection in the walker. (#41)
+- `DOTENV-ENTRY` migrate warning now catches entrypoint-`dotenv:` vs
+  task-`dotenv:` collisions, not just task-dotenv vs entrypoint-env.
+  Warnings label the authoritative source ("env", "dotenv",
+  "env+dotenv") for debuggability. (#45)
+- `Race` CI job on Linux runs `go test -race -timeout 10m` against
+  packages known to be race-clean
+  (`args`, `internal/fingerprint`, `internal/slicesext`, `internal/sort`,
+  `internal/summary`, `internal/templater`, `riterc`, `taskfile/...`).
+  Excluded packages (`internal/output` pre-#52, `internal/task` pre-#56)
+  tracked in the workflow comment. (#54)
 
 ### Changed
 
@@ -64,6 +85,48 @@ discovery, variable precedence).
   layout.
 - `.gitattributes` restores `eol=lf` on relocated `testdata/` so Windows
   checkouts don't corrupt golden-fixture checksums.
+- **Public API rename:** `ast.Taskfile` → `ast.Ritefile`,
+  `ast.Tasks.IncludedTaskfileVars` → `IncludedRitefileVars`,
+  `Include.Taskfile` field → `.Ritefile` (YAML tag stays `taskfile:` for
+  on-disk compat), `task.InitTaskfile`/`DefaultTaskfile`/`DefaultTaskfiles`
+  → `InitRitefile`/`DefaultRitefile`/`DefaultRitefiles`, and the error
+  types listed in the **Breaking** section below. `Task`/`Tasks`/`TaskError`
+  (referring to units of work) intentionally retained. See **Breaking**. (#22)
+- Schema version check now rejects `version:` above the supported max
+  (`ast.V4` boundary) with a clear message, mirroring the existing
+  below-v3 reject. Previously `version: "4"` silently ran under v3
+  semantics. (#46)
+- Schema-version upper-bound check is no longer coupled to the app
+  version — `version: "3"` Ritefiles load cleanly when the rite binary
+  is pre-1.0. Prior `Schema version (3) > app version (0.1.0)` regression
+  from the PR #19 version embed is gone. (#31, hotfix before 1.0)
+- `knownAbsDirs` filepath fast-path allow-list now includes
+  `.RITEFILE_DIR` alongside the legacy `.TASKFILE_DIR`. Stale post-rename
+  latent-bug cleanup. (#42)
+- `Vars.Merge` now takes a write-lock on its destination, matching
+  `ReverseMerge`. Was racing with concurrent `Get`/`Set` under `-race`.
+  Latent pre-fix because `graph.Merge`'s parallelism is broken (#49,
+  deferred) — but now correct the moment that parallelism lands. (#48)
+- SIGINT / SIGTERM / SIGHUP now cancel the execution context instead of
+  just firing a log message. Programmatic `kill -TERM <rite-pid>` (no
+  process group) no longer leaks running subprocesses to init. Third
+  signal still escalates to `os.Exit(1)` as a safety net. (#50)
+- `templater.Cache` lazy-init + mutations + reads now funnel through a
+  mutex; template execution runs on a goroutine-private clone of the
+  cache map (`snapshot()`) so there's no perf regression. Fixes the race
+  that `go test -race ./internal/output/ -count=10` surfaced reliably. (#52)
+
+### Security
+
+- `includes:` paths are now sandboxed to the Ritefile tree (union of cwd
+  and root-Ritefile-dir). Absolute paths, `../` traversal, and symlinks
+  that escape the tree are rejected with a clear
+  `IncludeEscapesTreeError`. Parse-error context snippets are redacted
+  when the errored file isn't a Ritefile — prior behavior echoed ~5 lines
+  of the target file into the error message, turning `includes: /etc/hosts`
+  into a file-read exfiltration channel anywhere rite errors land (CI
+  logs, PR bot comments, shared dev containers). Top-level
+  `-t/--taskfile` is intentionally unsandboxed. (#43)
 
 ### Removed
 
@@ -83,6 +146,12 @@ discovery, variable precedence).
   — unused in this fork's release pipeline.
 - Committed `.vscode/` directory and dead prettier config.
 - `.planning/` tree — GSD workflow was overfit for a project of this size.
+- `./bin/` repo-root directory (was a dropzone for optional test binaries;
+  only tracked content was `.keep`). Signals-tag tests that referenced it
+  fall back to `exec.LookPath("task")` when absent.
+- Go 1.25 from the CI matrix — 1.26-only now. Avoids 1.25-specific
+  Windows flakes (cygwin `sleep.exe`, `mvdan/sh` parser panics) that had
+  no user benefit to track.
 
 ### Breaking
 
@@ -109,23 +178,43 @@ discovery, variable precedence).
    shift down to fill the gap — one-time break for anyone scripting
    against specific exit codes. Exit codes 100–102 (Ritefile not
    found / already exists / decode), the 200-range `CodeTask*` codes,
-   and the 50-range `CodeTaskRC*` codes are unchanged. The error struct
-   names still read `Taskfile*` in `errors/errors.go` — upstream holdover
-   we haven't renamed yet; they're listed in backticks below for grep.
+   and the 50-range `CodeRiterc*` codes are unchanged.
 
    | Error                          | Old code | New code    |
    |--------------------------------|---------:|:-----------:|
-   | `TaskfileFetchFailedError`     | 103      | *removed*   |
-   | `TaskfileNotTrustedError`      | 104      | *removed*   |
-   | `TaskfileNotSecureError`       | 105      | *removed*   |
-   | `TaskfileCacheNotFoundError`   | 106      | *removed*   |
-   | `TaskfileNetworkTimeoutError`  | 107      | *removed*   |
-   | `TaskfileVersionCheckError`    | 108      | **103**     |
-   | `TaskfileInvalid`              | 109      | **104**     |
-   | `TaskfileCycle`                | 110      | **105**     |
-   | `TaskfileDoesNotMatchChecksum` | 111      | **106**     |
+   | `RitefileFetchFailedError`     | 103      | *removed*   |
+   | `RitefileNotTrustedError`      | 104      | *removed*   |
+   | `RitefileNotSecureError`       | 105      | *removed*   |
+   | `RitefileCacheNotFoundError`   | 106      | *removed*   |
+   | `RitefileNetworkTimeoutError`  | 107      | *removed*   |
+   | `RitefileVersionCheckError`    | 108      | **103**     |
+   | `RitefileInvalid`              | 109      | **104**     |
+   | `RitefileCycle`                | 110      | **105**     |
+   | `RitefileDoesNotMatchChecksum` | 111      | **106**     |
 
-4. The five `go-task` → `rite` semantic breaks carried forward from
+4. **Public API rename (PR #22, merged in PR #39).** All `Taskfile*`
+   error types, `ast.Taskfile`/`TaskfileGraph`/`TaskfileVertex` AST
+   types, `ast.TaskRC`, `Include.Taskfile` field, and the
+   `task.DefaultTaskfile` / `InitTaskfile` / `DefaultTaskfiles` helpers
+   renamed to their `Ritefile*` / `Riterc` counterparts. YAML on-disk
+   keys are unchanged (decoder tags pin the old spelling for
+   compatibility). External importers won't be affected — rite is a CLI
+   and all the renamed types are in packages not intended for embedding
+   — but anyone who had built against them in the intervening window
+   should update identifiers.
+
+5. **Schema versions `4` and above now rejected** with a clear error
+   ("not supported — rite currently supports schema version 3"),
+   mirroring the existing below-v3 reject. Previously `version: "4"`
+   loaded silently under v3 semantics. If you were authoring a
+   future-schema Ritefile and relying on that silent fallback, pin to
+   `version: "3"` explicitly.
+
+6. **`rite --migrate` is now `rite migrate <path>`.** Flag form still
+   works as an alias so existing scripts don't break, but help text,
+   warning prefixes, and docs all promote the subcommand form.
+
+7. The five `go-task` → `rite` semantic breaks carried forward from
    v0.1.0 — repeated here because they define what 1.0 is:
    - Task-scope `vars:` / `env:` are **defaults**, not overrides. An
      entrypoint-level declaration with the same key wins (SPEC tier 5

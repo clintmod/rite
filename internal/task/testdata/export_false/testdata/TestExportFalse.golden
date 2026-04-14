@@ -1,0 +1,4 @@
+secret-tmpl=super-secret
+shown-tmpl=visible
+secret-env=[]
+shown-env=[visible]

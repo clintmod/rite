@@ -1,0 +1,20 @@
+version: '3'
+
+silent: true
+
+tasks:
+  default:
+    vars:
+      SECRET:
+        value: super-secret
+        export: false
+      SHOWN: visible
+    cmds:
+      # Templating sees all vars regardless of export flag.
+      - 'echo "secret-tmpl={{.SECRET}}"'
+      - 'echo "shown-tmpl={{.SHOWN}}"'
+      # $$ escapes the rite preprocessor so the dollar reaches the shell;
+      # the shell then looks the name up in the process environ, which is
+      # what `export: false` is supposed to gate.
+      - 'echo "secret-env=[$$SECRET]"'
+      - 'echo "shown-env=[$$SHOWN]"'

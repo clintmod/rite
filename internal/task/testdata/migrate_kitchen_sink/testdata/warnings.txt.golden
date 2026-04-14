@@ -1,0 +1,19 @@
+rite migrate: DOTENV-ENTRY Taskfile.yml task "deploy": dotenv key LOG_LEVEL is also declared at entrypoint env+dotenv — entrypoint wins in rite.
+rite migrate: OVERRIDE-ENV Taskfile.yml task "build": env.NODE_ENV is also declared at the entrypoint — entrypoint wins in rite.
+rite migrate: OVERRIDE-VAR Taskfile.yml task "build": vars.GLOBAL is also declared at the entrypoint — under SPEC tier 7 the task value is now a default only.
+rite migrate: OVERRIDE-VAR ci/shared/secrets.yml task "rotate": vars.GITHUB_TOKEN is also declared at the entrypoint — under SPEC tier 7 the task value is now a default only.
+rite migrate: SECRET-VAR Taskfile.yml vars.API_TOKEN: name matches a secret pattern and will auto-export to cmd shells in rite. Add `export: false` to keep it Ritefile-internal.
+rite migrate: SECRET-VAR ci/shared/secrets.yml vars.AWS_SECRET_ACCESS_KEY: name matches a secret pattern and will auto-export to cmd shells in rite. Add `export: false` to keep it Ritefile-internal.
+rite migrate: SECRET-VAR ci/shared/secrets.yml vars.GITHUB_TOKEN: name matches a secret pattern and will auto-export to cmd shells in rite. Add `export: false` to keep it Ritefile-internal.
+rite migrate: TEMPLATE-KEPT Taskfile.yml:45: kept Go-template syntax "{{else}}" — no equivalent ${VAR} form; review manually.
+rite migrate: TEMPLATE-KEPT Taskfile.yml:45: kept Go-template syntax "{{end}}" — no equivalent ${VAR} form; review manually.
+rite migrate: TEMPLATE-KEPT Taskfile.yml:45: kept Go-template syntax "{{if .CI}}" — no equivalent ${VAR} form; review manually.
+rite migrate: TEMPLATE-KEPT Taskfile.yml:46: kept Go-template syntax "{{.}}" — no equivalent ${VAR} form; review manually.
+rite migrate: TEMPLATE-KEPT Taskfile.yml:46: kept Go-template syntax "{{end}}" — no equivalent ${VAR} form; review manually.
+rite migrate: TEMPLATE-KEPT Taskfile.yml:46: kept Go-template syntax "{{range .ITEMS}}" — no equivalent ${VAR} form; review manually.
+rite migrate: TEMPLATE-KEPT Taskfile.yml:47: kept Go-template syntax "{{printf \"%d items\" .COUNT}}" — no equivalent ${VAR} form; review manually.
+rite migrate: skipping remote include "remote" (https://example.com/Taskfile.yml) — rite does not support URL-based includes; migrate the file manually if you need it.
+rite migrate: wrote ci/android.Ritefile.yml
+rite migrate: wrote ci/ios.Ritefile.yml
+rite migrate: wrote ci/shared/deep/core.Ritefile.yml
+rite migrate: wrote ci/shared/secrets.Ritefile.yml

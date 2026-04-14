@@ -61,7 +61,7 @@ See [`SPEC.md`](https://github.com/clintmod/rite/blob/main/SPEC.md) for the full
 
 ## Why the name?
 
-A **rite** is a ritual — a prescribed set of actions performed the same way every time. That's what a task runner is: a script of steps you repeat on every build, every deploy, every release. The word also reads as a near-homophone of *right*, which fits the project's thesis — variables should behave the way Unix has always done it, i.e. the *right* way. Short, typable, and one letter off from `task`'s spiritual ancestor `rake` without colliding with anything on `PATH`.
+A **rite** is a ritual — a prescribed set of actions performed the same way every time. That's what a task runner is: a script of steps you repeat on every build, every deploy, every release. The word also reads as a near-homophone of *right*, which fits the project's thesis — variables should behave the way Unix has always done it, i.e. the *right* way. Short, typable, a nod to `task`'s spiritual ancestor `rake`, and doesn't collide with anything on `PATH`.
 
 ## The 60-second mental model
 

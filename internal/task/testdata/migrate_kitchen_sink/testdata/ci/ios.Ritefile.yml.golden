@@ -1,0 +1,10 @@
+version: '3'
+
+vars:
+  PLATFORM: ios
+
+tasks:
+  build:
+    desc: Build iOS app.
+    cmds:
+      - echo "${PLATFORM} build in ${RITEFILE_DIR}"

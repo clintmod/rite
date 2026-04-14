@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# Kitchen-sink synthetic Taskfile for migrate regression coverage (#79).
+# Exercises every migrate path, every warning class, and every template
+# rewrite shape. Do not use as a style guide — it's intentionally dense.
+
+version: '3'
+
+vars:
+  GLOBAL: from-entrypoint
+  API_TOKEN: abc123
+  MY_TASKFILE: not-a-special-var
+  GREETING: hello
+
+env:
+  NODE_ENV: production
+  LOG_LEVEL: info
+
+dotenv:
+  - .env
+
+includes:
+  android:
+    taskfile: ./ci/android.yml
+  ios: ./ci/ios.yml
+  secrets:
+    taskfile: ./ci/shared/secrets.yml
+    dir: ./ci/shared
+  missing:
+    taskfile: ./ci/does-not-exist.yml
+    optional: true
+  remote:
+    taskfile: https://example.com/Taskfile.yml
+
+tasks:
+  default:
+    desc: Exercise template shapes and special-var aliases.
+    cmds:
+      - echo "task is {{.TASK}} in {{.TASK_DIR}}"
+      - echo "root file {{.ROOT_TASKFILE}} version {{.TASK_VERSION}}"
+      - echo "this file {{.TASKFILE}} dir {{.TASKFILE_DIR}}"
+      - echo "greeting is {{.GREETING}}"
+      - 'echo "with default {{.MISSING | default "fallback"}}"'
+      - 'echo "default other form {{default "x" .MISSING}}"'
+      - echo "nested default {{.MISSING | default .GREETING}}"
+      - 'echo "keeper {{if .CI}}ci mode{{else}}local{{end}}"'
+      - 'echo "kept range {{range .ITEMS}}{{.}}{{end}}"'
+      - 'echo "kept printf {{printf "%d items" .COUNT}}"'
+      - echo "user var MY_TASKFILE is {{.MY_TASKFILE}}"
+
+  build:
+    desc: Task-level shadowing — OVERRIDE-VAR and OVERRIDE-ENV.
+    vars:
+      GLOBAL: from-task
+    env:
+      NODE_ENV: development
+    cmds:
+      - echo "{{.GLOBAL}} {{.NODE_ENV}}"
+
+  deploy:
+    desc: Task-level dotenv overlapping entrypoint — DOTENV-ENTRY.
+    dotenv:
+      - secrets.env
+    cmds:
+      - echo deploying
+
+  exhaustive:
+    desc: Every task field we support.
+    deps: [build]
+    sources:
+      - src/**/*.go
+    generates:
+      - bin/app
+    status:
+      - test -f bin/app
+    preconditions:
+      - sh: command -v go
+        msg: go must be installed
+    requires:
+      vars: [GREETING]
+    prompt: confirm?
+    platforms: [linux, darwin]
+    silent: true
+    interactive: false
+    internal: false
+    ignore_error: false
+    run: once
+    set: [-e]
+    shopt: [globstar]
+    label: build-app
+    aliases: [exh]
+    method: checksum
+    prefix: "[exh]"
+    watch: true
+    cmds:
+      - echo exhaustive
+      - defer: echo cleanup
+
+  looped:
+    desc: for loop + defer.
+    cmds:
+      - for: [a, b]
+        cmd: echo {{.ITEM}}
+      - defer: echo done

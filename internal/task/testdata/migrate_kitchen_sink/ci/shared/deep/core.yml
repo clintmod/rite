@@ -1,0 +1,10 @@
+version: '3'
+
+vars:
+  CORE_MSG: from-3-deep
+
+tasks:
+  ping:
+    desc: Three-deep include — walker reaches here.
+    cmds:
+      - echo "{{.CORE_MSG}} task {{.TASK}}"

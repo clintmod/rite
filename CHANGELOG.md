@@ -13,6 +13,22 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+### Added
+
+- `internal/task/testdata/migrate_kitchen_sink/` — synthetic fixture
+  exercising every migrate code path in a single tree (sibling + nested
+  + 3-deep includes, all five warning classes, all six legacy
+  special-var aliases, all nine template-rewrite shapes, negative
+  cases). Goldens regenerated via the standard `GOLDIE_UPDATE=true
+  GOLDIE_TEMPLATE=true go test` recipe. Branch-coverage regression
+  fence for #76-class bugs. (#79)
+- `internal/task/testdata/migrate_corpus/` — two stripped
+  hand-reviewed Taskfiles from real-world projects (bagashiz/go-pos,
+  Azure/mpf). Representative-shape smoke: proves migrate doesn't
+  barf on idioms synthetic fixtures can't anticipate. Branch
+  coverage belongs to the kitchen-sink next door. Upstream
+  attribution + pinned SHA per file. (#44)
+
 ## [1.0.1] - 2026-04-14
 
 Patch release bundling every fix merged after v1.0.0.

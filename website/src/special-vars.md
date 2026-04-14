@@ -29,7 +29,7 @@ Source of truth: `internal/task/compiler.go` (`getSpecialVars`) and `cmd/rite/ta
 | `CLI_ASSUME_YES` | bool | `-y` / `--yes` |
 | **Runtime context** | | |
 | `RITE_EXE` | string | path to the running `rite` binary (`os.Args[0]`, slash-normalized) |
-| `RITE_VERSION` | string | rite's version (e.g. `v1.0.1`, or the local-fallback from `internal/version/version.txt`) |
+| `RITE_VERSION` | string | rite's version (e.g. `v1.0.2`, or the local-fallback from `internal/version/version.txt`) |
 | `RITE_NAME` | string | current task name (empty outside a task context) |
 | `RITE_TASK_DIR` | string | absolute path to the task's working dir (`dir:` resolved against the entrypoint) |
 | `RITEFILE` | string | absolute path to the Ritefile that declared the current task |
@@ -133,7 +133,7 @@ tasks:
 
 ### `RITE_VERSION`
 
-rite's version string. During a release build this is injected by goreleaser (`v1.0.1`); for local `go install` builds it falls back to `internal/version/version.txt` (which tracks the last shipped tag). Handy for gating behavior on rite version or stamping it into build output:
+rite's version string. During a release build this is injected by goreleaser (`v1.0.2`); for local `go install` builds it falls back to `internal/version/version.txt` (which tracks the last shipped tag). Handy for gating behavior on rite version or stamping it into build output:
 
 ```yaml
 tasks:

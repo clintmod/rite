@@ -2,7 +2,7 @@
 
 > An idempotent task runner with Unix-native variable precedence.
 
-**Status: v1.0.1 shipped.** See [`CHANGELOG.md`](./CHANGELOG.md) for per-release notes and [`RELEASING.md`](./RELEASING.md) for the cut procedure.
+**Status: v1.0.2 shipped.** See [`CHANGELOG.md`](./CHANGELOG.md) for per-release notes and [`RELEASING.md`](./RELEASING.md) for the cut procedure.
 
 - Binary builds, test suite green on Linux / macOS / Windows × Go 1.26.
 - SPEC's 7-tier variable precedence and `${VAR}` shell-native preprocessor are live.
@@ -24,13 +24,13 @@ brew install clintmod/tap/rite
 ```
 curl -sSL https://raw.githubusercontent.com/clintmod/rite/main/install.sh | sh -s -- -b ~/bin
 ```
-Downloads the latest release archive, verifies its SHA-256 against `rite_checksums.txt`, and drops `rite` into `~/bin`. Pass a tag as the last argument to pin a version (`… | sh -s -- -b ~/bin v1.0.1`). Default bindir is `./bin` if `-b` is omitted.
+Downloads the latest release archive, verifies its SHA-256 against `rite_checksums.txt`, and drops `rite` into `~/bin`. Pass a tag as the last argument to pin a version (`… | sh -s -- -b ~/bin v1.0.2`). Default bindir is `./bin` if `-b` is omitted.
 
 **mise**:
 ```toml
 # mise.toml
 [tools]
-"ubi:clintmod/rite" = "v1.0.1"
+"ubi:clintmod/rite" = "v1.0.2"
 ```
 (Older mise? See [getting-started](https://clintmod.github.io/rite/getting-started#mise) for the `go:` fallback.)
 
@@ -113,7 +113,7 @@ MIT. See [`LICENSE`](./LICENSE). Original copyright © 2016 Andrey Nering; fork 
 - [x] **Phase 5:** `rite migrate` tool, docs site, v0.1.0 release with Homebrew tap + mise support.
 - [x] **1.0 prep:** CHANGELOG, Migrating-from-go-task guide, remote-Ritefile removal, N-deep include env-export fix, full special-var rewrite/alias coverage, Go 1.25 dropped from CI.
 - [x] **v1.0.0:** public API rename (`Task*` → `Ritefile*`/`Rite*`), `rite --migrate` flag, schema-version upper bound, includes sandboxing (rejects `://`, `../`, symlink escape; redacts parse-error snippets from non-Ritefile targets), and concurrency hardening (`Vars.Merge` lock, signal-handler ctx cancel, `templater.Cache` race). The closed SemVer contract; see [`CHANGELOG.md`](./CHANGELOG.md).
-- [x] **v1.0.1:** migrate clobber fix (#76), template modernization (#74), docs audit cleanup, security hardening — see [`CHANGELOG.md`](./CHANGELOG.md) for the full list.
+- [x] **v1.0.2:** migrate clobber fix (#76), template modernization (#74), docs audit cleanup, security hardening — see [`CHANGELOG.md`](./CHANGELOG.md) for the full list.
 
 ## Migrating from go-task
 

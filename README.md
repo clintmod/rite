@@ -26,7 +26,7 @@ Downloads the latest release archive, verifies its SHA-256 against `rite_checksu
 ```
 (Older mise? See [getting-started](https://clintmod.github.io/rite/getting-started#mise) for the `go:` fallback.)
 
-**From source** (Go 1.25+):
+**From source** (Go 1.26+):
 ```
 go install github.com/clintmod/rite/cmd/rite@latest
 ```

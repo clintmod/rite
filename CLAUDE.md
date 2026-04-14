@@ -84,7 +84,7 @@ The Ritefile's `generate:fixtures` target already sets both.
 - **Releases:** `v0.1.0` published, archives for darwin/linux/windows/freebsd × amd64/arm64/arm/386/riscv64 + deb/rpm/apk. `goreleaser` runs on every `v*` tag. Config at `.goreleaser.yml` uses free goreleaser; `release.draft: false` so tags auto-publish.
 - **Homebrew tap:** `clintmod/homebrew-tap/Formula/rite.rb`. Pushed by goreleaser using the `HOMEBREW_TAP_TOKEN` secret (fine-grained PAT scoped to the tap only). Main repo release uses the default `GITHUB_TOKEN`. Users install: `brew tap clintmod/tap && brew install rite`.
 - **Docs site:** `website/` is a pure VitePress project; `.github/workflows/pages.yml` builds on every push that touches `website/**` and publishes to `clintmod.github.io/rite/` via GitHub Pages (Source: GitHub Actions — enabled via `gh api POST /repos/clintmod/rite/pages`). Custom domain can be added later by dropping `DOCS_BASE=/rite/` from `pages.yml`.
-- **CI:** Test (Go 1.25+1.26 × ubuntu+macos+windows), Lint (golangci-lint v2.11.4, config at `.golangci.yml`), Docs, goreleaser. All green on main at session end.
+- **CI:** Test (Go 1.26 × ubuntu+macos+windows), Lint (golangci-lint v2.11.4, config at `.golangci.yml`), Docs, goreleaser. All green on main at session end.
 - **Secrets on `clintmod/rite`:** `GH_PAT` (fine-grained, scoped to `clintmod/homebrew-tap`, exposed to workflow as `HOMEBREW_TAP_TOKEN`).
 
 ---

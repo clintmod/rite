@@ -64,6 +64,39 @@ cmds:
 
 `$$` escapes to a literal `$`.
 
+See [why the braced form is preferred](#why-braced) and [defensive `${VAR:-default}` conventions](#defensive-defaults) below.
+
+#### Why the braced form is preferred {#why-braced}
+
+rite's preprocessor and the cmd shell both understand `$VAR` — and that's the problem. When both layers claim the same syntax, any name rite doesn't recognize has to be decided at substitution time rather than left to the shell. `${VAR}` avoids the collision:
+
+- **Unambiguous boundaries.** `${VERSION}-rc1` always expands `VERSION`; `$VERSION-rc1` has to guess where the name ends. Shells resolve this one way, rite's preprocessor resolves it the same way, but the reader does the work twice.
+- **Preprocessor-only space.** `${NAME}` reads as *"rite resolves this before the shell ever sees it."* `$NAME` in the same document could mean either layer — and usually you *want* the shell layer for things like `$PATH`, `$1`, `$?`, or env-only vars that rite doesn't know about. The braced form carves out rite's slice of the namespace without squatting on the shell's.
+- **Grep-ability.** `grep '\${[A-Z_]\+}'` reliably finds every rite-resolved reference. `grep '\$[A-Z_]\+'` also hits `$PATH`, `$HOME`, and every shell-resolved reference, which is rarely what you want.
+
+Both forms work. The bare form exists because some expressions read more cleanly without braces (`echo $HOME`). Reach for `${VAR}` first; drop the braces only when the reference is obviously shell-level.
+
+#### Defensive `${VAR:-default}` conventions {#defensive-defaults}
+
+When `VAR` is set, `${VAR}` and `${VAR:-default}` produce identical output. The `:-default` form pays for itself in three situations:
+
+- **`set -u` resilience.** Tasks that run under `set -u` (strict mode) or `bash -u` abort on any unset reference. `${VAR:-}` (empty default) converts "unset" into "empty string" without touching the happy path where `VAR` is defined.
+- **Shellcheck + review signal.** `${VAR:-}` tells the reader *"I thought about what happens when this is missing."* Bare `${VAR}` is ambiguous — either the author guaranteed it's set, or forgot to check. The `:-` form removes the ambiguity.
+- **Two-pass resolution.** rite's preprocessor substitutes known names and leaves unknowns for the shell. If `VAR` isn't declared in the Ritefile but *is* in the shell environ, `${VAR}` passes through and the shell handles it. If neither layer knows the name, `${VAR}` expands to empty under most shells but aborts under `set -u`. `${VAR:-default}` survives both.
+
+Rule of thumb: **use `${VAR:-}` for anything optional and `${VAR}` only when the name is required and the task would be broken without it.** Pair required refs with a `requires: vars: [NAME]` task-level declaration so the failure mode is an early clear error instead of an empty string deep inside a cmd.
+
+```yaml
+tasks:
+  deploy:
+    requires:
+      vars: [VERSION]        # required — fail fast if missing
+    cmds:
+      - docker build -t myapp:${VERSION} .                          # required, no default
+      - docker push myapp:${VERSION}${TAG_SUFFIX:-}                 # optional suffix, empty default
+      - echo "region=${AWS_REGION:-us-west-2}"                      # optional, sensible default
+```
+
 ### Go template <span v-pre>`{{.VAR}}`</span>
 
 ```yaml

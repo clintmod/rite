@@ -1591,6 +1591,20 @@ func TestDisplaysErrorOnVersion2Schema(t *testing.T) {
 	assert.Regexp(t, regexp.MustCompile(`rite: Invalid schema version in Ritefile \".*testdata\/version\/v2\/Ritefile\.yml\":\nSchema version \(2\.0\.0\) no longer supported\. Please use v3 or above`), err.Error())
 }
 
+func TestDisplaysErrorOnVersion4Schema(t *testing.T) {
+	t.Parallel()
+
+	e := task.NewExecutor(
+		task.WithDir("testdata/version/v4"),
+		task.WithStdout(io.Discard),
+		task.WithStderr(io.Discard),
+		task.WithVersionCheck(true),
+	)
+	err := e.Setup()
+	require.Error(t, err)
+	assert.Regexp(t, regexp.MustCompile(`rite: Invalid schema version in Ritefile \".*testdata\/version\/v4\/Ritefile\.yml\":\nSchema version \(4\.0\.0\) is not supported\. rite currently supports schema version 3`), err.Error())
+}
+
 func TestShortTaskNotation(t *testing.T) {
 	t.Parallel()
 

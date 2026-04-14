@@ -83,10 +83,14 @@ func RemoteExists(ctx context.Context, u url.URL, client *http.Client) (*url.URL
 		if err != nil {
 			return nil, errors.TaskfileFetchFailedError{URI: u.Redacted()}
 		}
-		defer resp.Body.Close()
+		// Close this iteration's body immediately. `defer` inside a loop
+		// stacks closes until the enclosing function returns, leaking FDs
+		// proportional to the number of retries.
+		statusCode := resp.StatusCode
+		resp.Body.Close()
 
 		// If the request was successful, return the URL
-		if resp.StatusCode == http.StatusOK {
+		if statusCode == http.StatusOK {
 			return alt, nil
 		}
 	}

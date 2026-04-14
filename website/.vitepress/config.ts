@@ -32,6 +32,7 @@ export default defineConfig({
         items: [
           { text: 'What is rite?', link: '/' },
           { text: 'Getting started', link: '/getting-started' },
+          { text: 'Examples', link: '/examples' },
         ],
       },
       {

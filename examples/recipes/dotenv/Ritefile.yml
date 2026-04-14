@@ -1,0 +1,24 @@
+version: '3'
+
+# Entrypoint-level dotenv (tier 3) beats entrypoint vars/env (tier 5)
+# but loses to CLI (tier 2) and shell env (tier 1).
+dotenv: ['.env']
+
+env:
+  # This is only used when DATABASE_URL is unset — dotenv has already set it.
+  DATABASE_URL: "postgres://fallback:5432/fallback"
+
+tasks:
+  default:
+    desc: Shows how dotenv-supplied values reach the task
+    cmds:
+      - echo "DATABASE_URL=${DATABASE_URL}"
+      - echo "LOG_LEVEL=${LOG_LEVEL}"
+
+  prod:
+    desc: Task-level dotenv — note it LOSES to entrypoint env in rite
+    dotenv: ['.env.prod']
+    cmds:
+      - echo "Task-level dotenv tries to set DATABASE_URL from .env.prod…"
+      - echo "DATABASE_URL=${DATABASE_URL}  (unchanged — entrypoint env is tier 5, task dotenv is tier 7)"
+      - echo "To actually switch to prod values, move the dotenv declaration to the ENTRYPOINT."

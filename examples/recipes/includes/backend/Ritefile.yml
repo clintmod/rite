@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the backend
+    cmds:
+      - echo "backend:build  COMPONENT=${COMPONENT}  (supplied by the include site)"
+
+  test:
+    desc: Test the backend
+    cmds:
+      - echo "backend:test   COMPONENT=${COMPONENT}"

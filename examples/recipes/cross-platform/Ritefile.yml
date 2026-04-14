@@ -1,0 +1,42 @@
+version: '3'
+
+tasks:
+  open-browser:
+    desc: Open a URL in the default browser — OS-specific cmd
+    vars:
+      URL: "https://clintmod.github.io/rite/"
+    cmds:
+      - cmd: open "${URL}"
+        platforms: [darwin]
+      - cmd: xdg-open "${URL}"
+        platforms: [linux]
+      - cmd: cmd /C start "" "${URL}"
+        platforms: [windows]
+
+  cpus:
+    desc: Print the number of logical CPUs — different tools per OS
+    cmds:
+      - cmd: sysctl -n hw.ncpu
+        platforms: [darwin]
+      - cmd: nproc
+        platforms: [linux]
+      - cmd: cmd /C echo %NUMBER_OF_PROCESSORS%
+        platforms: [windows]
+
+  linux-only:
+    desc: Task-level platforms — the whole task is skipped on non-Linux hosts
+    platforms: [linux]
+    cmds:
+      - echo "This runs only on Linux."
+
+  arch-specific:
+    desc: Platforms can pin OS + arch — darwin/arm64 matches Apple Silicon
+    cmds:
+      - cmd: echo "on Apple Silicon"
+        platforms: [darwin/arm64]
+      - cmd: echo "on Intel Mac"
+        platforms: [darwin/amd64]
+      - cmd: echo "on linux/arm64"
+        platforms: [linux/arm64]
+      - cmd: echo "on linux/amd64"
+        platforms: [linux/amd64]

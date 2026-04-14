@@ -1,0 +1,35 @@
+version: '3'
+
+# Entrypoint vars: tier 5. Task-scope vars: tier 7 (defaults only).
+# Shell env: tier 1. CLI positional: tier 2.
+vars:
+  GREETING: "Hello"
+  TARGET: "world"
+
+tasks:
+  default:
+    desc: Shows which tier wins for each variable
+    cmds:
+      - echo "GREETING=${GREETING}  (entrypoint vars — tier 5)"
+      - echo "TARGET=${TARGET}      (entrypoint vars — tier 5)"
+
+  override-attempt:
+    desc: Task-scope vars try (and fail) to override entrypoint vars
+    vars:
+      GREETING: "Goodbye"       # tier 7 — loses to the entrypoint's tier 5
+      NEW_VAR: "task-scope"     # tier 7 — wins when no higher tier set it
+    cmds:
+      - echo "GREETING=${GREETING}   # still Hello — entrypoint (tier 5) beats task-scope (tier 7)"
+      - echo "NEW_VAR=${NEW_VAR}    # task-scope (tier 7) — no higher tier set it, so it wins"
+
+  cli:
+    desc: Demonstrate CLI-tier vars
+    cmds:
+      - echo "Pass GREETING=Hi on the CLI to see tier 2 win:"
+      - echo "GREETING=${GREETING}"
+
+  env:
+    desc: Shell env is tier 1 — nothing in the Ritefile can override it
+    cmds:
+      - 'echo "Run with:  GREETING=shell-wins rite env"'
+      - echo "GREETING=${GREETING}"

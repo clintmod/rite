@@ -1,0 +1,14 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Says hello — the "does rite work?" smoke test
+    cmds:
+      - echo "Hello from rite."
+
+  greet:
+    desc: Says hello to someone specific (pass NAME=...)
+    vars:
+      NAME: world
+    cmds:
+      - echo "Hello, ${NAME}!"

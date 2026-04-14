@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://clintmod.github.io/rite/schema/v3.json
+version: '3'
+
+vars:
+  ENV: "staging"
+  GITHUB_TOKEN:
+    value: "ghp_example_tokenvalue"
+    export: false   # keep secret Ritefile-internal; rite auto-exports vars: by default
+
+tasks:
+  build:
+    desc: Build — task-scope vars tries to override the entrypoint
+    vars:
+      ENV: "development"   # ← under rite this is a DEFAULT, not an override. ENV stays "staging".
+    cmds:
+      - echo "Building for ${ENV}"
+      - echo "in ${RITE_TASK_DIR} at ${RITEFILE}"
+
+  release:
+    desc: Push a release — uses the secret-ish var name
+    cmds:
+      - echo "Would curl with GITHUB_TOKEN=${GITHUB_TOKEN}"

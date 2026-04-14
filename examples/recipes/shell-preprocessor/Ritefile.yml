@@ -1,0 +1,29 @@
+version: '3'
+
+vars:
+  ENV: "dev"
+  PORT: "8080"
+
+tasks:
+  default:
+    desc: Basic ${VAR} — interchangeable with {{.VAR}}
+    cmds:
+      - echo "Running in ${ENV} on port ${PORT}"
+
+  defaults:
+    desc: ${VAR:-fallback} gives a default when the var is unset or empty
+    cmds:
+      - echo "LOG_LEVEL=${LOG_LEVEL:-info}"
+      - echo "REGION=${REGION:-us-west-2}"
+
+  required:
+    desc: ${VAR:?error-if-unset} fails loudly when the var is missing
+    cmds:
+      - echo "Using API_KEY=${API_KEY:?API_KEY must be set before running deploy}"
+
+  mixed:
+    desc: Interop with Go-template form — same variable set, same precedence
+    cmds:
+      - 'echo "shell-form: ${ENV}"'
+      - 'echo "go-form:    {{.ENV}}"'
+      - echo "both resolve against the same tier-5 ENV=dev"

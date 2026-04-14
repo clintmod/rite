@@ -1,0 +1,8 @@
+C-sees-TOP:alpha
+C-sees-MID:beta
+B-sees-TOP:alpha
+B-sees-MID:beta
+B-sees-BOTTOM:absent
+A-sees-TOP:alpha
+A-sees-MID:absent
+A-sees-BOTTOM:absent

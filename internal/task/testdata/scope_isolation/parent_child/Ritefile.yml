@@ -1,0 +1,16 @@
+version: '3'
+
+silent: true
+
+tasks:
+  default:
+    vars:
+      V: parent
+    cmds:
+      - task: child
+      - 'echo "parent-after:{{.V}}"'
+  child:
+    vars:
+      V: child
+    cmds:
+      - 'echo "child:{{.V}}"'

@@ -1,0 +1,13 @@
+version: '3'
+
+# BOTTOM lives at C (grandchild) level so we can verify it does NOT leak
+# up to B (parent) or A (grandparent).
+vars:
+  BOTTOM: gamma
+
+tasks:
+  go:
+    cmds:
+      # Downward flow: C sees TOP from A (grandparent) and MID from B (parent).
+      - 'echo "C-sees-TOP:{{.TOP}}"'
+      - 'echo "C-sees-MID:{{.MID}}"'

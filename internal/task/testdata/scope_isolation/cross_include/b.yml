@@ -1,0 +1,10 @@
+version: '3'
+
+vars:
+  FROM_B: beta
+
+tasks:
+  go:
+    cmds:
+      - 'echo "B-sees-A:${FROM_A:-absent}"'
+      - 'echo "B-sees-B:${FROM_B:-absent}"'

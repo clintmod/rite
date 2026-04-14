@@ -177,7 +177,25 @@ func (t1 *Tasks) Merge(t2 *Tasks, include *Include, includedTaskfileVars *Vars) 
 		// parent's — the upstream flatten-into-parent model (Taskfile.Merge
 		// line 70) used to make this automatic via tier 4 but also pre-empted
 		// include-site vars at tier 5, which SPEC forbids.
-		task.IncludedTaskfileVars = includedTaskfileVars.DeepCopy()
+		//
+		// N-deep merges: when A includes B includes C, the graph merge walks
+		// in reverse topological order (C→B, then B→A). The C task enters this
+		// loop with IncludedTaskfileVars already populated from C's own file
+		// (set during B.Merge(C)). On the outer A.Merge(B) pass, a naive
+		// overwrite would replace those with B's vars and drop C's entirely,
+		// so `${BOTTOM}` / `{{.BOTTOM}}` go absent at depth ≥ 2. We instead
+		// merge: the outer file's vars lay down first, then the previously
+		// set deeper-file vars overlay on top, so deeper-wins precedence
+		// holds across any depth. Regression fence: issue #24 /
+		// TestScopeIsolation-nested_includes.
+		merged := includedTaskfileVars.DeepCopy()
+		if merged == nil {
+			merged = NewVars()
+		}
+		if task.IncludedTaskfileVars != nil {
+			merged.Merge(task.IncludedTaskfileVars, nil)
+		}
+		task.IncludedTaskfileVars = merged
 
 		if include.AdvancedImport {
 			task.Dir = filepathext.SmartJoin(include.Dir, task.Dir)

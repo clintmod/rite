@@ -106,6 +106,29 @@ func (err RitefileCycleError) Code() int {
 	return CodeRitefileCycle
 }
 
+// IncludeEscapesTreeError is returned when an `includes:` path is rejected
+// because it would load a file from outside the sandbox: the union of the
+// process working directory and the directory containing the root Ritefile.
+// Includes are scoped this way so that malicious or accidental references
+// (`/etc/passwd`, `../../../etc/hosts`, symlinks pointing outside the repo)
+// can't cause arbitrary file reads or leak contents into error messages.
+type IncludeEscapesTreeError struct {
+	IncludePath string
+	Reason      string
+}
+
+func (err IncludeEscapesTreeError) Error() string {
+	return fmt.Sprintf(
+		"rite: include path %q rejected: %s — includes must resolve inside the project tree",
+		err.IncludePath,
+		err.Reason,
+	)
+}
+
+func (err IncludeEscapesTreeError) Code() int {
+	return CodeRitefileInvalid
+}
+
 // RitefileDoesNotMatchChecksum is returned when a Ritefile's checksum does not
 // match the one pinned in the parent Ritefile.
 type RitefileDoesNotMatchChecksum struct {

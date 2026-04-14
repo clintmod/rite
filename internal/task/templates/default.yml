@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://clintmod.github.io/rite/schema.json
+# yaml-language-server: $schema=https://clintmod.github.io/rite/schema/v3.json
 
 version: '3'
 

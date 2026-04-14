@@ -26,7 +26,7 @@ Downloads the latest release archive, verifies its SHA-256 against `rite_checksu
 ```
 (Older mise? See [getting-started](https://clintmod.github.io/rite/getting-started#mise) for the `go:` fallback.)
 
-**From source** (Go 1.25+):
+**From source** (Go 1.26+):
 ```
 go install github.com/clintmod/rite/cmd/rite@latest
 ```
@@ -85,6 +85,10 @@ See [`SPEC.md`](./SPEC.md) for the full design contract, including:
 - One-way migration tool only
 
 The original project is excellent software with a design choice its creators do not want to revisit. `rite` exists for users who want the different choice.
+
+## Non-goals
+
+**Remote Ritefiles.** Ritefiles must be checked into the project they build. Fetching them over HTTP or git at runtime breaks idempotency — a build that depends on a remote URL is not self-contained, can silently change behavior between runs, and introduces a network dependency into what should be a deterministic local workflow. If you want to share task definitions across repos, vendor them (submodule, subtree, copy, or a generator script). `includes:` accepts local paths only, and any entrypoint containing `://` is rejected.
 
 ## License
 

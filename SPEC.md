@@ -151,8 +151,8 @@ Literal `$` in a command: `$$` escapes to `$`. Literal `{{`: `{{"{{"}}`.
 
 rite owns its own filenames end-to-end. The paths below are **SPEC-level guarantees** — they are the contract between rite and the filesystem, and coexistence with go-task in the same repo or home directory is a design goal. A project may check in a `Ritefile` alongside a `Taskfile.yml` and both tools will operate without ever reading or writing each other's files.
 
-- **Fingerprint / cache directory:** `.rite/` in the project root. Holds per-task checksums, timestamps, remote-ritefile cache, and other ephemeral state rite derives from `sources:` / `generates:`. Override with `RITE_TEMP_DIR`. The directory should be `.gitignore`d. rite **never** reads or writes `.task/` — that path is go-task's and is left untouched.
-- **Project config:** `.riterc.yml` or `.riterc.yaml` in the project root (or any ancestor up to `$HOME`). Controls rite-level defaults (experiments, output, color, remote-ritefile trust list, etc.). rite **never** reads `.taskrc.yml`.
+- **Fingerprint / cache directory:** `.rite/` in the project root. Holds per-task checksums, timestamps, and other ephemeral state rite derives from `sources:` / `generates:`. Override with `RITE_TEMP_DIR`. The directory should be `.gitignore`d. rite **never** reads or writes `.task/` — that path is go-task's and is left untouched.
+- **Project config:** `.riterc.yml` or `.riterc.yaml` in the project root (or any ancestor up to `$HOME`). Controls rite-level defaults (experiments, output, color, etc.). rite **never** reads `.taskrc.yml`.
 - **User-global config:** `$XDG_CONFIG_HOME/rite/riterc.yml` (falling back to `$HOME/.riterc.yml`). Merged under project config — project wins on conflict.
 - **Schema / code completions:** embedded in the `rite` binary; schema also published at `clintmod.github.io/rite/schema.json`.
 
@@ -168,9 +168,16 @@ A `rite migrate` tool exists to ease the one-way transition.
 
 ---
 
+## Non-goals
+
+### Remote Ritefiles
+
+Ritefiles must be checked into the project they build. Fetching a Ritefile over HTTP or git at run time breaks idempotency and reproducibility — a build that depends on a remote URL is not self-contained, can silently change behavior between runs, and introduces a network dependency into what should be a deterministic local workflow. It also expands the trust surface (TLS chains, proxy intercepts, supply-chain tampering) for no semantic gain that vendoring can't match.
+
+If you want to share task definitions across repos, vendor them in: git submodule, subtree, a committed copy, or a generator script. `includes:` accepts local paths only, and any entrypoint containing `://` is rejected with a clear error.
+
 ## Out of Scope (at least for v1)
 
-- Remote Ritefiles (go-task's #1317 experiment). Can come later.
 - Watch mode (will come, not a v1 blocker).
 - Cross-Ritefile task graph visualization.
 - Plugin system.

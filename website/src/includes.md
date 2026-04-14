@@ -175,14 +175,6 @@ All three forms are equivalent at the call site. Useful when the include's full 
 
 Aliases compose with task aliases inside the included file: if `mobile/Ritefile.yml` defines `build` with `aliases: [b]`, then `mobile:b`, `m:b`, and `mob:b` all work.
 
-## Remote includes (experiment)
+## No remote includes
 
-Gated behind the `RITE_X_REMOTE_TASKFILES=1` experiment. Given that gate, you can include from a URL:
-
-```yaml
-includes:
-  shared:
-    taskfile: https://example.com/shared.yml
-```
-
-Treat this as alpha — the remote fetch path has upstream quirks we haven't audited for rite. Prefer local includes via a vendored submodule or pinned path for now.
+`includes:` is local-only. rite does not fetch Ritefiles over HTTP or git. If you need to share task definitions across repositories, vendor the file in (submodule, subtree, or a build step that pulls it) so the Ritefile on disk is always the one that runs.

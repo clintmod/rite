@@ -48,7 +48,6 @@ body:
         - Gentle Force
         - Map Variables (1)
         - Map Variables (2)
-        - Remote Taskfiles
     validations:
       required: false
 

@@ -12,7 +12,7 @@
 # Both steps are wired into the `verify:coexistence` task in Ritefile.yml.
 
 # ---- build stage: compile rite from the local source tree ----
-FROM golang:1.25-bookworm AS rite-build
+FROM golang:1.26-bookworm AS rite-build
 WORKDIR /src
 # Cache modules first for faster incremental builds.
 COPY go.mod go.sum ./

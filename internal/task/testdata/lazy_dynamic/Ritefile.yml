@@ -1,0 +1,15 @@
+version: '3'
+
+silent: true
+
+tasks:
+  default:
+    cmds:
+      - 'echo "default-ran"'
+
+  expensive:
+    vars:
+      EXPENSIVE:
+        sh: 'touch "$LAZY_SENTINEL_PATH" && echo triggered'
+    cmds:
+      - 'echo "{{.EXPENSIVE}}"'

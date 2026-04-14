@@ -1,0 +1,14 @@
+version: '3'
+
+silent: true
+
+vars:
+  VAR: entrypoint-default
+
+tasks:
+  default:
+    vars:
+      VAR: task-default
+    cmds:
+      - 'echo "tmpl={{.VAR}}"'
+      - 'echo "env=$VAR"'

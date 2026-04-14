@@ -119,8 +119,7 @@ Pass `-x` / `--exit-code` to have `rite` exit with the failing cmd's exact code 
 |---|---|
 | `RITE_COLOR_RESET` | Disable ANSI color output |
 | `RITE_TEMP_DIR` | Override the `.rite` cache directory |
-| `RITE_REMOTE_DIR` | Override the remote-ritefile cache directory |
-| `RITE_X_*` | Enable experiment flags (e.g. `RITE_X_REMOTE_TASKFILES=1`) |
+| `RITE_X_*` | Enable experiment flags (e.g. `RITE_X_GENTLE_FORCE=1`) |
 | `NO_COLOR` | Same as `RITE_COLOR_RESET` |
 
 Task-declared variables reach cmd shells through the process environ by default (see [syntax §Non-exported](/syntax#non-exported-variables)).

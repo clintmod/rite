@@ -13,17 +13,12 @@ const (
 	CodeTaskRCNotFoundError int = iota + 50
 )
 
-// Taskfile related exit codes
+// Ritefile related exit codes
 const (
 	CodeTaskfileNotFound int = iota + 100
 	CodeTaskfileAlreadyExists
 	CodeTaskfileDecode
-	CodeTaskfileFetchFailed
-	CodeTaskfileNotTrusted
-	CodeTaskfileNotSecure
-	CodeTaskfileCacheNotFound
 	CodeTaskfileVersionCheckError
-	CodeTaskfileNetworkTimeout
 	CodeTaskfileInvalid
 	CodeTaskfileCycle
 	CodeTaskfileDoesNotMatchChecksum

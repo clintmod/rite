@@ -26,35 +26,25 @@ type (
 	// within them.
 	Executor struct {
 		// Flags
-		Dir                 string
-		Entrypoint          string
-		TempDir             TempDir
-		Force               bool
-		ForceAll            bool
-		Insecure            bool
-		Download            bool
-		Offline             bool
-		TrustedHosts        []string
-		Timeout             time.Duration
-		CacheExpiryDuration time.Duration
-		RemoteCacheDir      string
-		CACert              string
-		Cert                string
-		CertKey             string
-		Watch               bool
-		Verbose             bool
-		Silent              bool
-		DisableFuzzy        bool
-		AssumeYes           bool
-		AssumeTerm          bool // Used for testing
-		Interactive         bool
-		Dry                 bool
-		Summary             bool
-		Parallel            bool
-		Color               bool
-		Concurrency         int
-		Interval            time.Duration
-		Failfast            bool
+		Dir          string
+		Entrypoint   string
+		TempDir      TempDir
+		Force        bool
+		ForceAll     bool
+		Watch        bool
+		Verbose      bool
+		Silent       bool
+		DisableFuzzy bool
+		AssumeYes    bool
+		AssumeTerm   bool // Used for testing
+		Interactive  bool
+		Dry          bool
+		Summary      bool
+		Parallel     bool
+		Color        bool
+		Concurrency  int
+		Interval     time.Duration
+		Failfast     bool
 
 		// I/O
 		Stdin  io.Reader
@@ -83,7 +73,6 @@ type (
 		watchedDirs          *xsync.Map[string, bool]
 	}
 	TempDir struct {
-		Remote      string
 		Fingerprint string
 	}
 )
@@ -92,7 +81,6 @@ type (
 // to it.
 func NewExecutor(opts ...ExecutorOption) *Executor {
 	e := &Executor{
-		Timeout:              time.Second * 10,
 		Stdin:                os.Stdin,
 		Stdout:               os.Stdout,
 		Stderr:               os.Stderr,
@@ -191,142 +179,6 @@ type forceAllOption struct {
 
 func (o *forceAllOption) ApplyToExecutor(e *Executor) {
 	e.ForceAll = o.forceAll
-}
-
-// WithInsecure allows the [Executor] to make insecure connections when reading
-// remote taskfiles. By default, insecure connections are rejected.
-func WithInsecure(insecure bool) ExecutorOption {
-	return &insecureOption{insecure}
-}
-
-type insecureOption struct {
-	insecure bool
-}
-
-func (o *insecureOption) ApplyToExecutor(e *Executor) {
-	e.Insecure = o.insecure
-}
-
-// WithDownload forces the [Executor] to download a fresh copy of the taskfile
-// from the remote source.
-func WithDownload(download bool) ExecutorOption {
-	return &downloadOption{download}
-}
-
-type downloadOption struct {
-	download bool
-}
-
-func (o *downloadOption) ApplyToExecutor(e *Executor) {
-	e.Download = o.download
-}
-
-// WithOffline stops the [Executor] from being able to make network connections.
-// It will still be able to read local files and cached copies of remote files.
-func WithOffline(offline bool) ExecutorOption {
-	return &offlineOption{offline}
-}
-
-type offlineOption struct {
-	offline bool
-}
-
-func (o *offlineOption) ApplyToExecutor(e *Executor) {
-	e.Offline = o.offline
-}
-
-// WithTrustedHosts configures the [Executor] with a list of trusted hosts for remote
-// Taskfiles. Hosts in this list will not prompt for user confirmation.
-func WithTrustedHosts(trustedHosts []string) ExecutorOption {
-	return &trustedHostsOption{trustedHosts}
-}
-
-type trustedHostsOption struct {
-	trustedHosts []string
-}
-
-func (o *trustedHostsOption) ApplyToExecutor(e *Executor) {
-	e.TrustedHosts = o.trustedHosts
-}
-
-// WithTimeout sets the [Executor]'s timeout for fetching remote taskfiles. By
-// default, the timeout is set to 10 seconds.
-func WithTimeout(timeout time.Duration) ExecutorOption {
-	return &timeoutOption{timeout}
-}
-
-type timeoutOption struct {
-	timeout time.Duration
-}
-
-func (o *timeoutOption) ApplyToExecutor(e *Executor) {
-	e.Timeout = o.timeout
-}
-
-// WithCacheExpiryDuration sets the duration after which the cache is considered
-// expired. By default, the cache is 0 (disabled).
-func WithCacheExpiryDuration(duration time.Duration) ExecutorOption {
-	return &cacheExpiryDurationOption{duration: duration}
-}
-
-type cacheExpiryDurationOption struct {
-	duration time.Duration
-}
-
-func (o *cacheExpiryDurationOption) ApplyToExecutor(r *Executor) {
-	r.CacheExpiryDuration = o.duration
-}
-
-// WithRemoteCacheDir sets the directory where remote taskfiles are cached.
-func WithRemoteCacheDir(dir string) ExecutorOption {
-	return &remoteCacheDirOption{dir: dir}
-}
-
-type remoteCacheDirOption struct {
-	dir string
-}
-
-func (o *remoteCacheDirOption) ApplyToExecutor(e *Executor) {
-	e.RemoteCacheDir = o.dir
-}
-
-// WithCACert sets the path to a custom CA certificate for TLS connections.
-func WithCACert(caCert string) ExecutorOption {
-	return &caCertOption{caCert: caCert}
-}
-
-type caCertOption struct {
-	caCert string
-}
-
-func (o *caCertOption) ApplyToExecutor(e *Executor) {
-	e.CACert = o.caCert
-}
-
-// WithCert sets the path to a client certificate for TLS connections.
-func WithCert(cert string) ExecutorOption {
-	return &certOption{cert: cert}
-}
-
-type certOption struct {
-	cert string
-}
-
-func (o *certOption) ApplyToExecutor(e *Executor) {
-	e.Cert = o.cert
-}
-
-// WithCertKey sets the path to a client certificate key for TLS connections.
-func WithCertKey(certKey string) ExecutorOption {
-	return &certKeyOption{certKey: certKey}
-}
-
-type certKeyOption struct {
-	certKey string
-}
-
-func (o *certKeyOption) ApplyToExecutor(e *Executor) {
-	e.CertKey = o.certKey
 }
 
 // WithWatch tells the [Executor] to keep running in the background and watch

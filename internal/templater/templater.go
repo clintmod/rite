@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+	"sync"
 
 	"github.com/go-task/template"
 
@@ -16,14 +17,33 @@ import (
 // times, without having to check for error each time. The first error that
 // happen will be assigned to r.err, and consecutive calls to funcs will just
 // return the zero value.
+//
+// Safe for concurrent use: internal state is guarded by mu. Concurrent
+// Replace calls from different goroutines (e.g. the output.Group wrappers
+// used by parallel deps) used to race on the cacheMap lazy init — see #52.
 type Cache struct {
 	Vars *ast.Vars
 
+	mu       sync.Mutex
 	cacheMap map[string]any
 	err      error
 }
 
+// ensureCacheMapLocked initializes cacheMap on first use. Caller must hold mu.
+func (r *Cache) ensureCacheMapLocked() {
+	if r.cacheMap != nil {
+		return
+	}
+	if r.Vars != nil {
+		r.cacheMap = r.Vars.ToCacheMap()
+	} else {
+		r.cacheMap = make(map[string]any)
+	}
+}
+
 func (r *Cache) ResetCache() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.cacheMap = r.Vars.ToCacheMap()
 }
 
@@ -32,13 +52,9 @@ func (r *Cache) ResetCache() {
 // visible to template resolution while keeping them out of the canonical
 // variable set until lowest-priority merge time.
 func (r *Cache) Seed(m map[string]any) {
-	if r.cacheMap == nil {
-		if r.Vars != nil {
-			r.cacheMap = r.Vars.ToCacheMap()
-		} else {
-			r.cacheMap = make(map[string]any)
-		}
-	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ensureCacheMapLocked()
 	for k, v := range m {
 		if _, exists := r.cacheMap[k]; !exists {
 			r.cacheMap[k] = v
@@ -49,42 +65,63 @@ func (r *Cache) Seed(m map[string]any) {
 // Update records a key/value pair that was just added to the underlying Vars
 // so the templater's view stays consistent without rebuilding from scratch.
 func (r *Cache) Update(k string, v any) {
-	if r.cacheMap == nil {
-		if r.Vars != nil {
-			r.cacheMap = r.Vars.ToCacheMap()
-		} else {
-			r.cacheMap = make(map[string]any)
-		}
-	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ensureCacheMapLocked()
 	r.cacheMap[k] = v
 }
 
 func (r *Cache) Err() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	return r.err
 }
 
-func ResolveRef(ref string, cache *Cache) any {
-	// If there is already an error, do nothing
-	if cache.err != nil {
-		return nil
+// snapshot returns an independent copy of cacheMap and the sticky error, both
+// read under the lock so concurrent callers never observe a half-initialized
+// or mid-mutation map. Callers operate on the returned clone without holding
+// the lock — template execution can be slow and there's no reason to
+// serialize it across goroutines sharing a Cache.
+func (r *Cache) snapshot() (map[string]any, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.err != nil {
+		return nil, r.err
 	}
+	r.ensureCacheMapLocked()
+	return maps.Clone(r.cacheMap), nil
+}
 
-	// Initialize the cache map if it's not already initialized
-	if cache.cacheMap == nil {
-		cache.cacheMap = cache.Vars.ToCacheMap()
+// setErr records the first error seen by any replace*/Resolve* call. No-op
+// if err is nil or a prior error is already latched.
+func (r *Cache) setErr(err error) {
+	if err == nil {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.err == nil {
+		r.err = err
+	}
+}
+
+func ResolveRef(ref string, cache *Cache) any {
+	data, err := cache.snapshot()
+	if err != nil {
+		return nil
 	}
 
 	if ref == "." {
-		return cache.cacheMap
+		return data
 	}
 	t, err := template.New("resolver").Funcs(templateFuncs).Parse(fmt.Sprintf("{{%s}}", ref))
 	if err != nil {
-		cache.err = err
+		cache.setErr(err)
 		return nil
 	}
-	val, err := t.Resolve(cache.cacheMap)
+	val, err := t.Resolve(data)
 	if err != nil {
-		cache.err = err
+		cache.setErr(err)
 		return nil
 	}
 	return val
@@ -116,19 +153,14 @@ func ReplaceWithExtra[T any](v T, cache *Cache, extra map[string]any) T {
 }
 
 func replaceImpl[T any](v T, cache *Cache, extra map[string]any, expandShell bool) T {
-	// If there is already an error, do nothing
-	if cache.err != nil {
+	// snapshot returns a locked clone of cacheMap; the returned map is the
+	// goroutine's private copy, so the subsequent merge + template execution
+	// don't have to hold the Cache lock. The sticky-error short-circuit lives
+	// inside snapshot so a prior latched err causes an early bail here too.
+	data, err := cache.snapshot()
+	if err != nil {
 		return v
 	}
-
-	// Initialize the cache map if it's not already initialized
-	if cache.cacheMap == nil {
-		cache.cacheMap = cache.Vars.ToCacheMap()
-	}
-
-	// Create a copy of the cache map to avoid editing the original
-	// If there is extra data, merge it with the cache map
-	data := maps.Clone(cache.cacheMap)
 	if extra != nil {
 		maps.Copy(data, extra)
 	}
@@ -153,7 +185,7 @@ func replaceImpl[T any](v T, cache *Cache, extra map[string]any, expandShell boo
 		return out, nil
 	})
 	if err != nil {
-		cache.err = err
+		cache.setErr(err)
 		return v
 	}
 

@@ -164,7 +164,13 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 		dir = filepathext.SmartJoin(c.Dir, dir)
 		taskRangeFunc = setIfAbsent(dir)
 
-		// Tier 5: include-site vars.
+		// Tier 5: include-site vars. Deliberately uses rangeFunc (entrypoint
+		// dir) rather than taskRangeFunc (task dir): these vars are authored
+		// in the parent Ritefile, so their `sh:` cwd matches the authoring
+		// file. Flipping this would make one literal expression produce
+		// different results per includee — the cross-task pollution SPEC
+		// §Dynamic Variables prohibits. Regression-fenced by
+		// TestTier5ShCwdIssue8 / testdata/tier5_sh_cwd_issue8. See issue #8.
 		for k, v := range t.IncludeVars.All() {
 			if err := rangeFunc(k, v); err != nil {
 				return nil, err

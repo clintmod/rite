@@ -2282,6 +2282,40 @@ func TestIncludeWithVarsInInclude(t *testing.T) {
 	require.NoError(t, e.Setup())
 }
 
+// TestTier5ShCwdIssue8 pins the working directory in which each variable
+// tier's `sh:` expression runs. Tier-5 (include-site) vars are authored in
+// the parent Ritefile, so their `sh:` resolves in the entrypoint dir.
+// Tier-6 (included file top-level) and tier-7 (task-scope) vars are
+// authored closer to the task and resolve in the task dir. Flipping either
+// half would make one literal `sh:` expression produce different results
+// depending on where the authoring file ends up being included — the
+// cross-task pollution SPEC §Dynamic Variables prohibits. Investigated in
+// issue #8; see the comment at compiler.go getVariables tier-5 loop.
+func TestTier5ShCwdIssue8(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/tier5_sh_cwd_issue8"
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+	)
+	require.NoError(t, e.Setup())
+
+	expected := strings.TrimSpace(`
+rite: [sub:show] echo "TIER5=t5=tier5_sh_cwd_issue8"
+TIER5=t5=tier5_sh_cwd_issue8
+rite: [sub:show] echo "TIER6=t6=taskdir"
+TIER6=t6=taskdir
+rite: [sub:show] echo "TIER7=t7=taskdir"
+TIER7=t7=taskdir
+`)
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "sub:show"}))
+	t.Log(buff.String())
+	assert.Equal(t, expected, strings.TrimSpace(buff.String()))
+}
+
 func TestIncludedVarsMultiLevel(t *testing.T) {
 	t.Parallel()
 

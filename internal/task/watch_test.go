@@ -36,7 +36,7 @@ Task running!
 rite: task "default" finished running
 	`)
 
-	var buff bytes.Buffer
+	var buff SyncBuffer
 	e := task.NewExecutor(
 		task.WithDir(dir),
 		task.WithStdout(&buff),

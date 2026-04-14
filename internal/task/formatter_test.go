@@ -1,7 +1,6 @@
 package task_test
 
 import (
-	"bytes"
 	"path/filepath"
 	"testing"
 
@@ -113,7 +112,7 @@ func (tt *FormatterTest) run(t *testing.T) {
 	t.Helper()
 	f := func(t *testing.T) {
 		t.Helper()
-		var buf bytes.Buffer
+		var buf SyncBuffer
 
 		opts := append(
 			tt.executorOpts,
@@ -134,7 +133,7 @@ func (tt *FormatterTest) run(t *testing.T) {
 		if err := e.Setup(); tt.wantSetupError {
 			require.Error(t, err)
 			tt.writeFixtureErrSetup(t, g, err)
-			tt.writeFixtureBuffer(t, g, buf)
+			tt.writeFixtureBuffer(t, g, &buf)
 			return
 		} else {
 			require.NoError(t, err)
@@ -150,13 +149,13 @@ func (tt *FormatterTest) run(t *testing.T) {
 		if _, err := e.ListTasks(tt.listOptions); tt.wantListError {
 			require.Error(t, err)
 			tt.writeFixtureErrList(t, g, err)
-			tt.writeFixtureBuffer(t, g, buf)
+			tt.writeFixtureBuffer(t, g, &buf)
 			return
 		} else {
 			require.NoError(t, err)
 		}
 
-		tt.writeFixtureBuffer(t, g, buf)
+		tt.writeFixtureBuffer(t, g, &buf)
 	}
 
 	// Run the test (with a name if it has one)

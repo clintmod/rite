@@ -172,7 +172,7 @@ func (tt *ExecutorTest) run(t *testing.T) {
 		if err := e.Setup(); tt.wantSetupError {
 			require.Error(t, err)
 			tt.writeFixtureErrSetup(t, g, err)
-			tt.writeFixtureBuffer(t, g, buffer.buf)
+			tt.writeFixtureBuffer(t, g, &buffer)
 			return
 		} else {
 			require.NoError(t, err)
@@ -193,7 +193,7 @@ func (tt *ExecutorTest) run(t *testing.T) {
 		if err := e.Run(ctx, call); tt.wantRunError {
 			require.Error(t, err)
 			tt.writeFixtureErrRun(t, g, err)
-			tt.writeFixtureBuffer(t, g, buffer.buf)
+			tt.writeFixtureBuffer(t, g, &buffer)
 			return
 		} else {
 			require.NoError(t, err)
@@ -206,7 +206,7 @@ func (tt *ExecutorTest) run(t *testing.T) {
 			}
 		}
 
-		tt.writeFixtureBuffer(t, g, buffer.buf)
+		tt.writeFixtureBuffer(t, g, &buffer)
 	}
 
 	// Run the test (with a name if it has one)

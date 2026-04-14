@@ -524,3 +524,116 @@ func TestMigrateRitefilePath(t *testing.T) {
 		}
 	}
 }
+
+// TestMigrateDotenvEntryCollisions locks in the #45 fix: the DOTENV-ENTRY
+// warning has to flag task-level `dotenv:` keys that collide with any
+// entrypoint-level env source, not just the explicit `env:` map. Upstream
+// go-task let a task-level dotenv shadow an entrypoint-level dotenv; under
+// rite's first-in-wins precedence the entrypoint wins and the task-level
+// key is silently dropped. Each case asserts the warning fires with the
+// right source label so users can fix the authoritative declaration site.
+func TestMigrateDotenvEntryCollisions(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name        string
+		entryEnv    string // value for the entrypoint `env:` block (empty = omitted)
+		entryDotenv string // contents of an entrypoint-level .env file (empty = no dotenv ref)
+		taskDotenv  string // contents of the task-level .env file
+		wantSource  string // expected source label in the warning
+	}{
+		{
+			name:       "entrypoint_env_only",
+			entryEnv:   "CONFIG: from-env\n",
+			taskDotenv: "CONFIG=from-task-dotenv\n",
+			wantSource: "env",
+		},
+		{
+			name:        "entrypoint_dotenv_only",
+			entryDotenv: "CONFIG=from-entry-dotenv\n",
+			taskDotenv:  "CONFIG=from-task-dotenv\n",
+			wantSource:  "dotenv",
+		},
+		{
+			name:        "entrypoint_env_and_dotenv",
+			entryEnv:    "CONFIG: from-env\n",
+			entryDotenv: "CONFIG=from-entry-dotenv\n",
+			taskDotenv:  "CONFIG=from-task-dotenv\n",
+			wantSource:  "env+dotenv",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(dir, ".env.task"),
+				[]byte(c.taskDotenv), 0o644))
+
+			var envBlock, entryDotenvRef string
+			if c.entryEnv != "" {
+				envBlock = "env:\n  " + c.entryEnv
+			}
+			if c.entryDotenv != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, ".env.entry"),
+					[]byte(c.entryDotenv), 0o644))
+				entryDotenvRef = "dotenv: ['.env.entry']\n"
+			}
+
+			src := filepath.Join(dir, "Taskfile.yml")
+			body := "version: '3'\n" + envBlock + entryDotenvRef + `tasks:
+  t:
+    dotenv: ['.env.task']
+    cmds:
+      - echo hi
+`
+			require.NoError(t, os.WriteFile(src, []byte(body), 0o644))
+
+			var warn bytes.Buffer
+			_, err := task.Migrate(src, &warn)
+			require.NoError(t, err)
+
+			got := warn.String()
+			wantFrag := "DOTENV-ENTRY"
+			if !strings.Contains(got, wantFrag) {
+				t.Fatalf("warning missing %q\nGOT:\n%s", wantFrag, got)
+			}
+			wantSourceFrag := "entrypoint " + c.wantSource + " —"
+			if !strings.Contains(got, wantSourceFrag) {
+				t.Errorf("warning missing source label %q\nGOT:\n%s", wantSourceFrag, got)
+			}
+		})
+	}
+}
+
+// TestMigrateDotenvEntryNoFalsePositive: a task-level dotenv key that
+// doesn't collide with any entrypoint-level env source must not trigger
+// DOTENV-ENTRY, even when the entrypoint does declare env/dotenv for
+// unrelated keys.
+func TestMigrateDotenvEntryNoFalsePositive(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".env.entry"),
+		[]byte("ALPHA=a\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".env.task"),
+		[]byte("BETA=b\n"), 0o644))
+
+	src := filepath.Join(dir, "Taskfile.yml")
+	body := `version: '3'
+env:
+  GAMMA: g
+dotenv: ['.env.entry']
+tasks:
+  t:
+    dotenv: ['.env.task']
+    cmds:
+      - echo hi
+`
+	require.NoError(t, os.WriteFile(src, []byte(body), 0o644))
+
+	var warn bytes.Buffer
+	_, err := task.Migrate(src, &warn)
+	require.NoError(t, err)
+
+	if strings.Contains(warn.String(), "DOTENV-ENTRY") {
+		t.Errorf("unexpected DOTENV-ENTRY warning\nGOT:\n%s", warn.String())
+	}
+}

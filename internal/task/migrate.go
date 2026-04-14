@@ -40,8 +40,9 @@ import (
 //	OVERRIDE-VAR    task-scope vars: key shadowed by an entrypoint vars: key
 //	                — under SPEC tier 7 the task value is now a default only.
 //	OVERRIDE-ENV    same, for env: blocks.
-//	DOTENV-ENTRY    task-level dotenv file whose keys collide with
-//	                entrypoint env — entrypoint now wins.
+//	DOTENV-ENTRY    task-level dotenv file whose keys collide with any
+//	                entrypoint-level env source (explicit env:, dotenv:,
+//	                or both) — entrypoint now wins.
 //	SECRET-VAR      var name pattern-matches a secret (TOKEN/KEY/SECRET/
 //	                PASSWORD/…) and lacks `export: false` — rite auto-exports
 //	                `vars:` now, so this would leak to every cmd shell.
@@ -325,6 +326,7 @@ var (
 type migrateDoc struct {
 	Vars     map[string]yaml.Node      `yaml:"vars"`
 	Env      map[string]yaml.Node      `yaml:"env"`
+	Dotenv   []string                  `yaml:"dotenv"`
 	Tasks    map[string]migrateTask    `yaml:"tasks"`
 	Includes map[string]migrateInclude `yaml:"includes"`
 }
@@ -441,14 +443,22 @@ func (d *migrateDoc) emitWarnings(srcPath string, warn io.Writer) {
 			}
 		}
 
-		// 3: task-level dotenv whose keys collide with entrypoint env.
-		if len(t.Dotenv) > 0 && len(d.Env) > 0 {
-			dotenvKeys := collectDotenvKeys(t.Dotenv, filepath.Dir(srcPath))
-			for _, k := range dotenvKeys {
-				if _, dup := d.Env[k]; dup {
-					fmt.Fprintf(warn,
-						"rite migrate: DOTENV-ENTRY %s task %q: dotenv key %s is also declared at entrypoint env — entrypoint wins in rite.\n",
-						srcPath, taskName, k)
+		// 3: task-level dotenv whose keys collide with any entrypoint-level
+		// env source (explicit `env:` map, `dotenv:` files, or both).
+		// Upstream go-task let task-level dotenv override entrypoint dotenv;
+		// under rite's first-in-wins precedence the entrypoint wins, so the
+		// task-level key is silently dropped. We flag all three collision
+		// shapes with the source label so users can fix the right site.
+		if len(t.Dotenv) > 0 {
+			entryKeys := d.entrypointEnvKeys(srcPath)
+			if len(entryKeys) > 0 {
+				taskDotenvKeys := collectDotenvKeys(t.Dotenv, filepath.Dir(srcPath))
+				for _, k := range taskDotenvKeys {
+					if source, ok := entryKeys[k]; ok {
+						fmt.Fprintf(warn,
+							"rite migrate: DOTENV-ENTRY %s task %q: dotenv key %s is also declared at entrypoint %s — entrypoint wins in rite.\n",
+							srcPath, taskName, k, source)
+					}
 				}
 			}
 		}
@@ -463,6 +473,27 @@ func (d *migrateDoc) emitWarnings(srcPath string, warn io.Writer) {
 			"rite migrate: SECRET-VAR %s vars.%s: name matches a secret pattern and will auto-export to cmd shells in rite. Add `export: false` to keep it Ritefile-internal.\n",
 			srcPath, k)
 	}
+}
+
+// entrypointEnvKeys returns the union of keys declared at entrypoint level
+// across the explicit `env:` map and any `dotenv:` files it references.
+// Values label the source ("env", "dotenv", or "env+dotenv") so warning
+// messages can point the user at the authoritative declaration site.
+func (d *migrateDoc) entrypointEnvKeys(srcPath string) map[string]string {
+	keys := map[string]string{}
+	for k := range d.Env {
+		keys[k] = "env"
+	}
+	if len(d.Dotenv) > 0 {
+		for _, k := range collectDotenvKeys(d.Dotenv, filepath.Dir(srcPath)) {
+			if existing, ok := keys[k]; ok && existing == "env" {
+				keys[k] = "env+dotenv"
+			} else if !ok {
+				keys[k] = "dotenv"
+			}
+		}
+	}
+	return keys
 }
 
 // collectDotenvKeys reads each referenced dotenv file relative to srcDir and

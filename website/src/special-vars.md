@@ -12,7 +12,7 @@ rite populates a set of variables automatically on every invocation and exposes 
 
 Plus a set of **legacy go-task aliases** that keep hand-authored or un-migrated Ritefiles rendering correct values.
 
-All special vars are accessible in both Go-template (`{{.NAME}}`) and shell-preprocessor (`${NAME}`) form; they resolve against the same value. The `CLI_*` subset is additionally marked `export: false` so it never leaks into cmd-shell environments.
+All special vars are accessible in both Go-template (<span v-pre>`{{.NAME}}`</span>) and shell-preprocessor (`${NAME}`) form; they resolve against the same value. The `CLI_*` subset is additionally marked `export: false` so it never leaks into cmd-shell environments.
 
 ## The full set
 
@@ -69,7 +69,7 @@ tasks:
   deploy:
     cmds:
       - cmd: ./scripts/tag-release.sh
-        if: '{{not .CLI_FORCE}}'
+        if: '[ "${CLI_FORCE}" != "true" ]'
       - ./scripts/deploy.sh
 ```
 
@@ -84,7 +84,7 @@ tasks:
   build:
     cmds:
       - cmd: echo "building..."
-        if: '{{not .CLI_SILENT}}'
+        if: '[ "${CLI_SILENT}" != "true" ]'
       - go build ./...
 ```
 
@@ -97,7 +97,7 @@ tasks:
   release:
     cmds:
       - cmd: echo "resolved version: ${VERSION}, tag: ${TAG}"
-        if: '{{.CLI_VERBOSE}}'
+        if: '[ "${CLI_VERBOSE}" = "true" ]'
       - goreleaser release
 ```
 
@@ -110,7 +110,7 @@ tasks:
   wipe-cache:
     cmds:
       - cmd: read -p "Really? [y/N] " ans && [ "$ans" = "y" ]
-        if: '{{not .CLI_ASSUME_YES}}'
+        if: '[ "${CLI_ASSUME_YES}" != "true" ]'
       - rm -rf .cache
 ```
 

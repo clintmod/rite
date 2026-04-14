@@ -168,9 +168,16 @@ A `rite migrate` tool exists to ease the one-way transition.
 
 ---
 
+## Non-goals
+
+### Remote Ritefiles
+
+Ritefiles must be checked into the project they build. Fetching a Ritefile over HTTP or git at run time breaks idempotency and reproducibility — a build that depends on a remote URL is not self-contained, can silently change behavior between runs, and introduces a network dependency into what should be a deterministic local workflow. It also expands the trust surface (TLS chains, proxy intercepts, supply-chain tampering) for no semantic gain that vendoring can't match.
+
+If you want to share task definitions across repos, vendor them in: git submodule, subtree, a committed copy, or a generator script. `includes:` accepts local paths only, and any entrypoint containing `://` is rejected with a clear error.
+
 ## Out of Scope (at least for v1)
 
-- Remote Ritefiles. Not planned. Ritefiles should be checked in so task execution stays idempotent; if a team needs to share tasks across repos, vendor the file in rather than fetching at run time.
 - Watch mode (will come, not a v1 blocker).
 - Cross-Ritefile task graph visualization.
 - Plugin system.

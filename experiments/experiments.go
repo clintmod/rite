@@ -8,8 +8,8 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/clintmod/rite/taskrc"
-	"github.com/clintmod/rite/taskrc/ast"
+	"github.com/clintmod/rite/riterc"
+	"github.com/clintmod/rite/riterc/ast"
 )
 
 const envPrefix = "RITE_X_"
@@ -32,7 +32,7 @@ var (
 var xList []Experiment
 
 func Parse(dir string) {
-	config, _ := taskrc.GetConfig(dir)
+	config, _ := riterc.GetConfig(dir)
 	ParseWithConfig(dir, config)
 }
 

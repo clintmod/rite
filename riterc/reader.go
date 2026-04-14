@@ -1,11 +1,11 @@
-package taskrc
+package riterc
 
 import (
 	"os"
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/clintmod/rite/taskrc/ast"
+	"github.com/clintmod/rite/riterc/ast"
 )
 
 type (

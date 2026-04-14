@@ -16,9 +16,9 @@ import (
 	"github.com/clintmod/rite/internal/env"
 	"github.com/clintmod/rite/internal/sort"
 	task "github.com/clintmod/rite/internal/task"
+	"github.com/clintmod/rite/riterc"
+	ritercast "github.com/clintmod/rite/riterc/ast"
 	"github.com/clintmod/rite/taskfile/ast"
-	"github.com/clintmod/rite/taskrc"
-	taskrcast "github.com/clintmod/rite/taskrc/ast"
 )
 
 const usage = `Usage: task [flags...] [task...]
@@ -109,7 +109,7 @@ func init() {
 	// Parse the experiments
 	dir = cmp.Or(dir, filepath.Dir(entrypoint))
 
-	config, _ := taskrc.GetConfig(dir)
+	config, _ := riterc.GetConfig(dir)
 	experiments.ParseWithConfig(dir, config)
 
 	// Parse the rest of the flags
@@ -313,8 +313,8 @@ func (o *flagsOption) ApplyToExecutor(e *task.Executor) {
 	)
 }
 
-// getConfig extracts a config value with priority: env var > taskrc config > fallback
-func getConfig[T any](config *taskrcast.TaskRC, envKey string, fieldFunc func() *T, fallback T) T {
+// getConfig extracts a config value with priority: env var > riterc config > fallback
+func getConfig[T any](config *ritercast.TaskRC, envKey string, fieldFunc func() *T, fallback T) T {
 	if envKey != "" {
 		if val, ok := getEnvAs[T](envKey); ok {
 			return val

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/clintmod/rite/experiments"
-	"github.com/clintmod/rite/taskrc/ast"
+	"github.com/clintmod/rite/riterc/ast"
 )
 
 func TestNew(t *testing.T) {

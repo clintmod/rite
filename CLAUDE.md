@@ -75,7 +75,7 @@ The Ritefile's `generate:fixtures` target already sets both.
 - **Phase 2 (done `8d7ebd7f`, `ffb9838e`):** First-in-wins `getVariables()`, per-resolution dynamic cache.
 - **Phase 3 (done `6183bc96` through `01c62390`):** Fixture rebrand + rewrite, include-site var precedence fix (`Taskfile.Merge` no longer flattens).
 - **Phase 4 (done `da018dc6`, `419f2f96`, `75930421`):** `${VAR}` preprocessor, `export: false`, vars/env unified, shell env always wins.
-- **Phase 5 (done `f1d1d121` through `82dbd415`):** `rite migrate` subcommand, docs site at clintmod.github.io/rite, Homebrew tap at clintmod/homebrew-tap, v0.1.0 tagged and published.
+- **Phase 5 (done `f1d1d121` through `82dbd415`):** `rite --migrate` flag, docs site at clintmod.github.io/rite, Homebrew tap at clintmod/homebrew-tap, v0.1.0 tagged and published.
 
 ---
 

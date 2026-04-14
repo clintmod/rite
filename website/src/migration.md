@@ -86,7 +86,7 @@ The current warning taxonomy is:
 | `SECRET-VAR` | safety | var name matches a secret pattern and will auto-export to cmds |
 | `TEMPLATE-KEPT` | syntactic | Go-template syntax was left in place because no `${VAR}` equivalent exists |
 
-Each is documented below.
+Each is documented in [§The user-visible semantic breaks](#the-user-visible-semantic-breaks) further down this page.
 
 > **No more `SCHEMA-URL` warning.** Earlier versions of rite emitted `SCHEMA-URL` whenever a Taskfile carried a `# yaml-language-server: $schema=…` directive pointing at go-task's schema. Migrate now rewrites that directive to rite's hosted schema automatically, so the warning is obsolete. If you're reading older docs or migrate output that mention it, you can ignore — the behavior is fixed in place, not flagged.
 

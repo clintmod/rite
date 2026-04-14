@@ -1,0 +1,4 @@
+A-sees-A:alpha
+A-sees-B:absent
+B-sees-A:absent
+B-sees-B:beta

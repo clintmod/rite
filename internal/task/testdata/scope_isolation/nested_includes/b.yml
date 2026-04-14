@@ -1,0 +1,15 @@
+version: '3'
+
+vars:
+  MID: beta
+
+includes:
+  c: c.yml
+
+tasks:
+  go:
+    cmds:
+      - task: c:go
+      - 'echo "B-sees-TOP:${TOP:-absent}"'
+      - 'echo "B-sees-MID:${MID:-absent}"'
+      - 'echo "B-sees-BOTTOM:${BOTTOM:-absent}"'

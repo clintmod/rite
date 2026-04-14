@@ -1,0 +1,20 @@
+version: '3'
+
+silent: true
+
+tasks:
+  default:
+    cmds:
+      - task: a
+      - task: b
+  a:
+    vars:
+      SECRET_A: alpha
+    cmds:
+      - 'echo "A-sees-A:{{.SECRET_A}}"'
+  b:
+    vars:
+      SECRET_B: beta
+    cmds:
+      - 'echo "B-sees-A:${SECRET_A:-absent}"'
+      - 'echo "B-sees-B:{{.SECRET_B}}"'

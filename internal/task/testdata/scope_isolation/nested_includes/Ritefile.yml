@@ -1,0 +1,17 @@
+version: '3'
+
+silent: true
+
+vars:
+  TOP: alpha
+
+includes:
+  b: b.yml
+
+tasks:
+  default:
+    cmds:
+      - task: b:go
+      - 'echo "A-sees-TOP:${TOP:-absent}"'
+      - 'echo "A-sees-MID:${MID:-absent}"'
+      - 'echo "A-sees-BOTTOM:${BOTTOM:-absent}"'

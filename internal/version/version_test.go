@@ -81,6 +81,49 @@ func TestResolveVersion(t *testing.T) {
 			ok:          false,
 			wantVersion: "v0.1.0",
 		},
+		{
+			name:     "local go install from checkout reports pseudo-version — falls back",
+			embedded: embedded,
+			ok:       true,
+			info: &debug.BuildInfo{
+				Main: debug.Module{Version: "v1.4.5-0.20260414175916-2e9d6e67c209"},
+				Settings: []debug.BuildSetting{
+					{Key: "vcs.revision", Value: "2e9d6e67c209abc"},
+					{Key: "vcs.modified", Value: "false"},
+				},
+			},
+			wantVersion: embedded,
+			wantCommit:  "2e9d6e6",
+		},
+		{
+			name:     "pseudo-version from zero base (no ancestor tag) — falls back",
+			embedded: embedded,
+			ok:       true,
+			info: &debug.BuildInfo{
+				Main: debug.Module{Version: "v0.0.0-20260414175916-2e9d6e67c209"},
+				Settings: []debug.BuildSetting{
+					{Key: "vcs.revision", Value: "2e9d6e67c209abc"},
+					{Key: "vcs.modified", Value: "true"},
+				},
+			},
+			wantVersion: embedded,
+			wantCommit:  "2e9d6e6",
+			wantDirty:   true,
+		},
+		{
+			name:     "pseudo-version from prerelease base — falls back",
+			embedded: embedded,
+			ok:       true,
+			info: &debug.BuildInfo{
+				Main: debug.Module{Version: "v1.0.0-pre.0.20260414175916-2e9d6e67c209"},
+				Settings: []debug.BuildSetting{
+					{Key: "vcs.revision", Value: "2e9d6e67c209abc"},
+					{Key: "vcs.modified", Value: "false"},
+				},
+			},
+			wantVersion: embedded,
+			wantCommit:  "2e9d6e6",
+		},
 	}
 
 	for _, tc := range tests {

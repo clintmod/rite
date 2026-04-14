@@ -22,12 +22,8 @@ function _task()
 
   # Handle special arguments of options.
   case "$prev" in
-    -d|--dir|--remote-cache-dir)
+    -d|--dir)
       _filedir -d
-      return $?
-    ;;
-    --cacert|--cert|--cert-key)
-      _filedir
       return $?
     ;;
     -t|--taskfile)

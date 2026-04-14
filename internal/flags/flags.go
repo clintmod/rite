@@ -44,50 +44,39 @@ Options:
 `
 
 var (
-	Version             bool
-	Help                bool
-	Init                bool
-	Migrate             bool
-	Completion          string
-	List                bool
-	ListAll             bool
-	ListJson            bool
-	TaskSort            string
-	Status              bool
-	NoStatus            bool
-	Nested              bool
-	Insecure            bool
-	Force               bool
-	ForceAll            bool
-	Watch               bool
-	Verbose             bool
-	Silent              bool
-	DisableFuzzy        bool
-	AssumeYes           bool
-	Dry                 bool
-	Summary             bool
-	ExitCode            bool
-	Parallel            bool
-	Concurrency         int
-	Dir                 string
-	Entrypoint          string
-	Output              ast.Output
-	Color               bool
-	Interval            time.Duration
-	Failfast            bool
-	Global              bool
-	Experiments         bool
-	Download            bool
-	Offline             bool
-	TrustedHosts        []string
-	ClearCache          bool
-	Timeout             time.Duration
-	CacheExpiryDuration time.Duration
-	RemoteCacheDir      string
-	CACert              string
-	Cert                string
-	CertKey             string
-	Interactive         bool
+	Version      bool
+	Help         bool
+	Init         bool
+	Migrate      bool
+	Completion   string
+	List         bool
+	ListAll      bool
+	ListJson     bool
+	TaskSort     string
+	Status       bool
+	NoStatus     bool
+	Nested       bool
+	Force        bool
+	ForceAll     bool
+	Watch        bool
+	Verbose      bool
+	Silent       bool
+	DisableFuzzy bool
+	AssumeYes    bool
+	Dry          bool
+	Summary      bool
+	ExitCode     bool
+	Parallel     bool
+	Concurrency  int
+	Dir          string
+	Entrypoint   string
+	Output       ast.Output
+	Color        bool
+	Interval     time.Duration
+	Failfast     bool
+	Global       bool
+	Experiments  bool
+	Interactive  bool
 )
 
 func init() {
@@ -132,7 +121,6 @@ func init() {
 	pflag.BoolVar(&Status, "status", false, "Exits with non-zero exit code if any of the given tasks is not up-to-date.")
 	pflag.BoolVar(&NoStatus, "no-status", false, "Ignore status when listing tasks as JSON")
 	pflag.BoolVar(&Nested, "nested", false, "Nest namespaces when listing tasks as JSON")
-	pflag.BoolVar(&Insecure, "insecure", getConfig(config, "REMOTE_INSECURE", func() *bool { return config.Remote.Insecure }, false), "Forces Task to download Taskfiles over insecure connections.")
 	pflag.BoolVarP(&Watch, "watch", "w", false, "Enables watch of the given task.")
 	pflag.BoolVarP(&Verbose, "verbose", "v", getConfig(config, "VERBOSE", func() *bool { return config.Verbose }, false), "Enables verbose mode.")
 	pflag.BoolVarP(&Silent, "silent", "s", getConfig(config, "SILENT", func() *bool { return config.Silent }, false), "Disables echoing.")
@@ -164,19 +152,6 @@ func init() {
 		pflag.BoolVarP(&ForceAll, "force", "f", false, "Forces execution even when the task is up-to-date.")
 	}
 
-	// Remote Taskfiles experiment will adds the "download" and "offline" flags
-	if experiments.RemoteTaskfiles.Enabled() {
-		pflag.BoolVar(&Download, "download", false, "Downloads a cached version of a remote Taskfile.")
-		pflag.BoolVar(&Offline, "offline", getConfig(config, "REMOTE_OFFLINE", func() *bool { return config.Remote.Offline }, false), "Forces Task to only use local or cached Taskfiles.")
-		pflag.StringSliceVar(&TrustedHosts, "trusted-hosts", getConfig(config, "REMOTE_TRUSTED_HOSTS", func() *[]string { return &config.Remote.TrustedHosts }, nil), "List of trusted hosts for remote Taskfiles (comma-separated).")
-		pflag.DurationVar(&Timeout, "timeout", getConfig(config, "REMOTE_TIMEOUT", func() *time.Duration { return config.Remote.Timeout }, time.Second*10), "Timeout for downloading remote Taskfiles.")
-		pflag.BoolVar(&ClearCache, "clear-cache", false, "Clear the remote cache.")
-		pflag.DurationVar(&CacheExpiryDuration, "expiry", getConfig(config, "REMOTE_CACHE_EXPIRY", func() *time.Duration { return config.Remote.CacheExpiry }, 0), "Expiry duration for cached remote Taskfiles.")
-		pflag.StringVar(&RemoteCacheDir, "remote-cache-dir", getConfig(config, "REMOTE_CACHE_DIR", func() *string { return config.Remote.CacheDir }, env.GetRiteEnv("REMOTE_DIR")), "Directory to cache remote Taskfiles.")
-		pflag.StringVar(&CACert, "cacert", getConfig(config, "REMOTE_CACERT", func() *string { return config.Remote.CACert }, ""), "Path to a custom CA certificate for HTTPS connections.")
-		pflag.StringVar(&Cert, "cert", getConfig(config, "REMOTE_CERT", func() *string { return config.Remote.Cert }, ""), "Path to a client certificate for HTTPS connections.")
-		pflag.StringVar(&CertKey, "cert-key", getConfig(config, "REMOTE_CERT_KEY", func() *string { return config.Remote.CertKey }, ""), "Path to a client certificate key for HTTPS connections.")
-	}
 	pflag.Parse()
 
 	// Auto-detect color based on environment when not explicitly configured
@@ -204,14 +179,6 @@ func isCI() bool {
 }
 
 func Validate() error {
-	if Download && Offline {
-		return errors.New("rite: You can't set both --download and --offline flags")
-	}
-
-	if Download && ClearCache {
-		return errors.New("rite: You can't set both --download and --clear-cache flags")
-	}
-
 	if Global && Dir != "" {
 		return errors.New("rite: You can't set both --global and --dir")
 	}
@@ -242,11 +209,6 @@ func Validate() error {
 
 	if Nested && !ListJson {
 		return errors.New("rite: --nested only applies to --json with --list or --list-all")
-	}
-
-	// Validate certificate flags
-	if (Cert != "" && CertKey == "") || (Cert == "" && CertKey != "") {
-		return errors.New("rite: --cert and --cert-key must be provided together")
 	}
 
 	return nil
@@ -284,16 +246,6 @@ func (o *flagsOption) ApplyToExecutor(e *task.Executor) {
 		task.WithEntrypoint(Entrypoint),
 		task.WithForce(Force),
 		task.WithForceAll(ForceAll),
-		task.WithInsecure(Insecure),
-		task.WithDownload(Download),
-		task.WithOffline(Offline),
-		task.WithTrustedHosts(TrustedHosts),
-		task.WithTimeout(Timeout),
-		task.WithCacheExpiryDuration(CacheExpiryDuration),
-		task.WithRemoteCacheDir(RemoteCacheDir),
-		task.WithCACert(CACert),
-		task.WithCert(Cert),
-		task.WithCertKey(CertKey),
 		task.WithWatch(Watch),
 		task.WithVerbose(Verbose),
 		task.WithSilent(Silent),

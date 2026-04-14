@@ -103,7 +103,7 @@ The Ritefile's `generate:fixtures` target already sets both.
   - Workarounds in order of effectiveness: (1) prefer `${VAR}` shell-preprocessor form everywhere — SPEC-preferred and Vue-invisible. (2) For inline prose, `<span v-pre>``{{.VAR}}``</span>` works. (3) For fenced blocks containing unavoidable Go-template syntax, the `<div v-pre>` / `<span v-pre>` wrapper does **not** work — Markdown wraps the fence in `<pre><code>` first. The pragmatic move is to describe the syntax in prose with backticks (which Vue tolerates) and put a working example in `testdata/` referenced by URL.
 - **Older mise + `ubi:` backend strips `v` prefixes.** Users on mise < 2026.4 hitting `"ubi:clintmod/rite" = "v0.1.0"` get a 404. Docs steer them to the `go:` backend fallback. When bumping mise in CI, use 2026.4.x+.
 - **`lint-jsonschema` job is gone until we publish a schema.** The upstream workflow validated `website/src/public/schema.json` (Taskfile schema). We deleted the file with the site rebuild; re-add the job when we host our own at `clintmod.github.io/rite/schema.json`.
-- **Remote-taskfile experiment (`RITE_X_REMOTE_TASKFILES=1`)** inherits upstream code paths we haven't audited. Docs note this. Don't assume production-grade behavior.
+- **Remote Ritefile support has been removed.** `includes:` and the entrypoint are local-only (no HTTP, no git). Ritefiles are meant to be checked in so task execution stays idempotent. The old `RITE_X_REMOTE_TASKFILES` experiment and its flags (`--download`, `--offline`, `--trusted-hosts`, `--clear-cache`, `--cacert`, `--cert`, `--cert-key`, `--remote-cache-dir`, `--timeout`, `--insecure`) plus the `remote:` section of `.riterc.yml` no longer exist.
 
 ---
 

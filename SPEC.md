@@ -151,8 +151,8 @@ Literal `$` in a command: `$$` escapes to `$`. Literal `{{`: `{{"{{"}}`.
 
 rite owns its own filenames end-to-end. The paths below are **SPEC-level guarantees** — they are the contract between rite and the filesystem, and coexistence with go-task in the same repo or home directory is a design goal. A project may check in a `Ritefile` alongside a `Taskfile.yml` and both tools will operate without ever reading or writing each other's files.
 
-- **Fingerprint / cache directory:** `.rite/` in the project root. Holds per-task checksums, timestamps, remote-ritefile cache, and other ephemeral state rite derives from `sources:` / `generates:`. Override with `RITE_TEMP_DIR`. The directory should be `.gitignore`d. rite **never** reads or writes `.task/` — that path is go-task's and is left untouched.
-- **Project config:** `.riterc.yml` or `.riterc.yaml` in the project root (or any ancestor up to `$HOME`). Controls rite-level defaults (experiments, output, color, remote-ritefile trust list, etc.). rite **never** reads `.taskrc.yml`.
+- **Fingerprint / cache directory:** `.rite/` in the project root. Holds per-task checksums, timestamps, and other ephemeral state rite derives from `sources:` / `generates:`. Override with `RITE_TEMP_DIR`. The directory should be `.gitignore`d. rite **never** reads or writes `.task/` — that path is go-task's and is left untouched.
+- **Project config:** `.riterc.yml` or `.riterc.yaml` in the project root (or any ancestor up to `$HOME`). Controls rite-level defaults (experiments, output, color, etc.). rite **never** reads `.taskrc.yml`.
 - **User-global config:** `$XDG_CONFIG_HOME/rite/riterc.yml` (falling back to `$HOME/.riterc.yml`). Merged under project config — project wins on conflict.
 - **Schema / code completions:** embedded in the `rite` binary; schema also published at `clintmod.github.io/rite/schema.json`.
 
@@ -170,7 +170,7 @@ A `rite migrate` tool exists to ease the one-way transition.
 
 ## Out of Scope (at least for v1)
 
-- Remote Ritefiles (go-task's #1317 experiment). Can come later.
+- Remote Ritefiles. Not planned. Ritefiles should be checked in so task execution stays idempotent; if a team needs to share tasks across repos, vendor the file in rather than fetching at run time.
 - Watch mode (will come, not a v1 blocker).
 - Cross-Ritefile task graph visualization.
 - Plugin system.

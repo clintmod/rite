@@ -115,4 +115,5 @@ Note both `${VAR}` and <span v-pre>`{{.VAR}}`</span> reference variables. They'r
 
 - [Variable precedence](/precedence) — the eight-tier model, one table.
 - [Syntax reference](/syntax) — what goes where in a Ritefile.
+- [.riterc config](/riterc) — optional user-config file for CLI defaults and experiments.
 - [Migration from go-task](/migration) — what's different and why.

@@ -760,6 +760,238 @@ tasks:
       - go build -o app ./cmd
 ```
 
+#### `label`
+
+- **Type**: `string`
+- **Description**: Override the display name shown in logs, `--list`, and the
+  `RITE_NAME` special var. The canonical name (map key) is unchanged — only
+  what the user sees. Useful when a task key is terse but you want a
+  human-readable label. See [Label override](/label).
+
+```yaml
+tasks:
+  build-prod:
+    label: 'Production build (release profile)'
+    cmds:
+      - go build -ldflags='-s -w' ./...
+```
+
+#### `vars`
+
+- **Type**: `map[string]Variable`
+- **Description**: Task-scoped variables. Under rite's first-in-wins
+  precedence, these are defaults — shell env, CLI args, and include-site
+  vars can override them. See [precedence](/precedence) for the full
+  ordering.
+
+```yaml
+tasks:
+  deploy:
+    vars:
+      ENVIRONMENT: staging
+      REPLICAS: 3
+    cmds:
+      - ./deploy.sh ${ENVIRONMENT} ${REPLICAS}
+```
+
+#### `env`
+
+- **Type**: `map[string]Variable`
+- **Description**: Environment variables exported to the task's shell.
+  Same precedence rules as `vars`. Accepts dynamic (`sh:`) and reference
+  (`ref:`) forms just like globals.
+
+```yaml
+tasks:
+  integration-test:
+    env:
+      DATABASE_URL: postgres://localhost/test
+      LOG_LEVEL: debug
+    cmds:
+      - go test -tags=integration ./...
+```
+
+#### `dotenv`
+
+- **Type**: `[]string`
+- **Description**: Load environment variables from one or more `.env` files
+  before running the task. First file in the list wins on collision. Entries
+  declared directly on the entrypoint (root-level `env:` / `dotenv:`) take
+  precedence — rite emits a `DOTENV-ENTRY` warning during `migrate` when a
+  task-level dotenv key collides with an entrypoint declaration.
+
+```yaml
+tasks:
+  deploy:
+    dotenv:
+      - .env.deploy.local  # highest priority
+      - .env.deploy        # lower priority
+    cmds:
+      - ./deploy.sh
+```
+
+#### `silent`
+
+- **Type**: `bool`
+- **Default**: inherits from root `silent:`
+- **Description**: Suppress the task's command echo and header. The CLI
+  `--silent` / `-s` flag overrides this. See
+  [Silent / dry-run / ignore-error](/silent-dry-ignore).
+
+```yaml
+tasks:
+  ping:
+    silent: true
+    cmds:
+      - curl -fsS https://example.com/health
+```
+
+#### `interactive`
+
+- **Type**: `bool`
+- **Default**: `false`
+- **Description**: Mark the task as needing an attached TTY (stdin/stdout).
+  Forces serial execution with other interactive tasks so their prompts
+  don't clobber each other. Use for editors, REPLs, or commands that prompt
+  for input. See [Interactive cmds](/interactive).
+
+```yaml
+tasks:
+  shell:
+    interactive: true
+    cmds:
+      - docker exec -it app bash
+```
+
+#### `internal`
+
+- **Type**: `bool`
+- **Default**: `false`
+- **Description**: Hide the task from `--list` and block direct invocation
+  from the CLI. Internal tasks are callable only as deps or from `task:`
+  references. See [Internal tasks](/internal-tasks).
+
+```yaml
+tasks:
+  _setup-test-db:
+    internal: true
+    cmds:
+      - ./scripts/reset-testdb.sh
+
+  integration:
+    deps: [_setup-test-db]
+    cmds:
+      - go test ./...
+```
+
+#### `ignore_error`
+
+- **Type**: `bool`
+- **Default**: `false`
+- **Description**: Continue the task even if one of its `cmds` returns a
+  non-zero exit code. Applies to every command in the task unless a
+  command-level `ignore_error:` overrides it. See
+  [Silent / dry-run / ignore-error](/silent-dry-ignore).
+
+```yaml
+tasks:
+  cleanup:
+    ignore_error: true
+    cmds:
+      - rm -f /tmp/cache-*
+      - docker container prune -f
+```
+
+#### `run`
+
+- **Type**: `string`
+- **Default**: inherits from root `run:` (which defaults to `always`)
+- **Options**: `always`, `once`, `when_changed`
+- **Description**: How often the task's body runs within a single `rite`
+  invocation. `once` is common for expensive setup deps. See
+  [Run modes](/run-modes).
+
+```yaml
+tasks:
+  install-deps:
+    run: once
+    cmds:
+      - go mod download
+```
+
+#### `failfast`
+
+- **Type**: `bool`
+- **Default**: `false`
+- **Description**: When a parallel `for:` loop inside this task's `cmds`
+  has any iteration fail, cancel the rest immediately instead of waiting
+  for them to finish. Matches the `--failfast` / `-F` CLI flag's default
+  behavior for the whole run; task-level `failfast: true` scopes it to
+  this task.
+
+```yaml
+tasks:
+  test-all:
+    failfast: true
+    cmds:
+      - for: [unit, integration, e2e]
+        cmd: go test ./{{.ITEM}}/...
+```
+
+#### `prefix`
+
+- **Type**: `string`
+- **Default**: the task's own name (`TASK` special var)
+- **Description**: Line prefix used by the `prefixed` output mode (set via
+  root-level `output: prefixed` or the `--output` CLI flag). Ignored for
+  other output modes. Supports the same template vars as any other string
+  field.
+
+```yaml
+output: prefixed
+
+tasks:
+  api:
+    prefix: 'api'
+    cmds:
+      - ./start-api.sh
+
+  worker:
+    prefix: 'worker'
+    cmds:
+      - ./start-worker.sh
+```
+
+#### `set`
+
+- **Type**: `[]string`
+- **Description**: POSIX shell `set` options applied to every command in
+  this task. Overrides the root-level `set:`. See
+  [Shell options](#shell-options) below for the full list.
+
+```yaml
+tasks:
+  strict-build:
+    set: [errexit, nounset, pipefail]
+    cmds:
+      - ./scripts/build.sh
+```
+
+#### `shopt`
+
+- **Type**: `[]string`
+- **Description**: Bash `shopt` options applied to every command in this
+  task. Overrides the root-level `shopt:`. See
+  [Shell options](#shell-options) below.
+
+```yaml
+tasks:
+  find-tests:
+    shopt: [globstar, nullglob]
+    cmds:
+      - ls **/*_test.go
+```
+
 ## Command
 
 Individual command configuration within a task.

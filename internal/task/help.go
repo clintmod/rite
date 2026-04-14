@@ -106,7 +106,7 @@ func (e *Executor) ListTasks(o ListOptions) (bool, error) {
 	return true, nil
 }
 
-// ListTaskNames prints only the task names in a Taskfile.
+// ListTaskNames prints only the task names in a Ritefile.
 // Only tasks with a non-empty description are printed if allTasks is false.
 // Otherwise, all task names are printed.
 func (e *Executor) ListTaskNames(allTasks bool) error {
@@ -122,8 +122,8 @@ func (e *Executor) ListTaskNames(allTasks bool) error {
 	}
 
 	// Create a list of task names
-	taskNames := make([]string, 0, e.Taskfile.Tasks.Len())
-	for task := range e.Taskfile.Tasks.Values(e.TaskSorter) {
+	taskNames := make([]string, 0, e.Ritefile.Tasks.Len())
+	for task := range e.Ritefile.Tasks.Values(e.TaskSorter) {
 		if (allTasks || task.Desc != "") && !task.Internal {
 			taskNames = append(taskNames, strings.TrimRight(task.Task, ":"))
 			for _, alias := range task.Aliases {
@@ -152,7 +152,7 @@ func (e *Executor) ToEditorOutput(tasks []*ast.Task, noStatus bool, nested bool)
 			}
 
 			// Get the fingerprinting method to use
-			method := e.Taskfile.Method
+			method := e.Ritefile.Method
 			if tasks[i].Method != "" {
 				method = tasks[i].Method
 			}
@@ -182,7 +182,7 @@ func (e *Executor) ToEditorOutput(tasks []*ast.Task, noStatus bool, nested bool)
 	}
 	rootNamespace := &editors.Namespace{
 		Tasks:    make([]editors.Task, tasksLen),
-		Location: e.Taskfile.Location,
+		Location: e.Ritefile.Location,
 	}
 
 	// Recursively add namespaces to the root namespace or if nesting is

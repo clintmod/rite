@@ -157,8 +157,8 @@ rebrand, first-in-wins precedence, `${VAR}` preprocessor, unified
   special vars `RITEFILE` / `RITE_VERSION` / `ROOT_RITEFILE` / etc.
   `rite --init` writes a `Ritefile.yml`.
 - **Log prefix and error strings (Phase 1.5):** user-visible strings say
-  `rite:` / `Ritefile` throughout. Internal struct names
-  (`TaskfileNotFoundError` et al.) preserved for rename-scope reasons.
+  `rite:` / `Ritefile` throughout. Go-level error types renamed in the
+  1.0-prep sweep below.
 - **First-in-wins variable precedence (Phase 2):** SPEC §Variable
   Precedence is now the implementation. Shell env always beats CLI beats
   entrypoint `vars:` beats include-site vars beats included-file top vars
@@ -170,9 +170,9 @@ rebrand, first-in-wins precedence, `${VAR}` preprocessor, unified
   tasks with identical `sh: pwd` in different dirs each evaluate
   independently, fixing the upstream cross-task pollution bug that
   SPEC §Dynamic Variables calls out.
-- **Include-site vars honor first-in-wins (Phase 3):** `Taskfile.Merge`
+- **Include-site vars honor first-in-wins (Phase 3):** `Ritefile.Merge`
   no longer flattens included-file top vars into the parent's
-  `TaskfileVars` tier-4. Each file keeps its own vars; the pipeline
+  `RitefileVars` tier-4. Each file keeps its own vars; the pipeline
   resolves per-tier correctly including for nested X→Y→Z includes.
 - **`${VAR}` shell-native preprocessor (Phase 4 wave 1):** `${NAME}`,
   `$NAME`, and `$$` → `$` are recognized in every templated string.
@@ -197,6 +197,22 @@ rebrand, first-in-wins precedence, `${VAR}` preprocessor, unified
   darwin/linux/windows/freebsd × amd64/arm64/arm/386/riscv64,
   deb/rpm/apk, Homebrew tap at `clintmod/homebrew-tap`, and docs site
   at `clintmod.github.io/rite`.
+- **Public API rename for 1.0 (#22):** everything in the Ritefile lexicon
+  drops the `Taskfile`/`TaskRC` prefix. `ast.Taskfile` → `ast.Ritefile`,
+  `errors.TaskfileNotFoundError` → `RitefileNotFoundError` (plus every
+  sibling error type and its `CodeTaskfile*` exit-code constant),
+  `errors.TaskRCNotFoundError` → `RitercNotFoundError`, `ast.TaskRC` →
+  `Riterc`, `ast.TaskfileGraph`/`TaskfileVertex` → `RitefileGraph`/
+  `RitefileVertex`, `task.InitTaskfile` → `InitRitefile`,
+  `task.DefaultTaskfile` → `DefaultRitefile`, `taskfile.DefaultTaskfiles`
+  → `DefaultRitefiles`, `ast.Task.IncludedTaskfileVars` →
+  `IncludedRitefileVars`, and Compiler fields `TaskfileEnv`/`TaskfileVars`/
+  `GetTaskfileVariables()` follow suit. The `Task*` names that refer to
+  a task (a unit of work) — `Task`, `Tasks`, `TaskNotFoundError`,
+  `TaskRunError`, `CodeTask*`, and friends — are unchanged. Exit codes
+  are bit-for-bit the same: only the Go identifiers changed. No
+  `Ritefile.yml` on-disk formats changed; YAML keys (`taskfile:` under
+  `includes:`) are preserved.
 
 ### Breaking — vs upstream go-task
 

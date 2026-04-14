@@ -23,12 +23,12 @@ func (g *Glob) UnmarshalYAML(node *yaml.Node) error {
 			Exclude string
 		}
 		if err := node.Decode(&glob); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		g.Glob = glob.Exclude
 		g.Negate = true
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("glob")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("glob")
 }

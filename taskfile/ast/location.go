@@ -3,7 +3,7 @@ package ast
 type Location struct {
 	Line     int
 	Column   int
-	Taskfile string
+	Ritefile string
 }
 
 func (l *Location) DeepCopy() *Location {
@@ -13,6 +13,6 @@ func (l *Location) DeepCopy() *Location {
 	return &Location{
 		Line:     l.Line,
 		Column:   l.Column,
-		Taskfile: l.Taskfile,
+		Ritefile: l.Ritefile,
 	}
 }

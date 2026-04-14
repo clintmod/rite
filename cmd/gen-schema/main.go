@@ -33,7 +33,7 @@ import (
 const schemaID = "https://clintmod.github.io/rite/schema.json"
 
 func main() {
-	// Main reflector: used to reflect the Taskfile root and all leaf types.
+	// Main reflector: used to reflect the Ritefile root and all leaf types.
 	// Its Mapper intercepts every type that needs special handling, including
 	// the polymorphic Cmd/Dep/Task/Var (emitted as oneOf unions).
 	r := &jsonschema.Reflector{
@@ -56,7 +56,7 @@ func main() {
 		Mapper:                     baseTypeMapper,
 	}
 
-	schema := r.Reflect(&ast.Taskfile{})
+	schema := r.Reflect(&ast.Ritefile{})
 	schema.ID = schemaID
 	schema.Title = "Ritefile"
 	schema.Description = "JSON Schema for rite Ritefiles. rite is a task runner with first-in-wins variable precedence (shell env > CLI > Ritefile defaults), a hard fork of go-task/task. See https://clintmod.github.io/rite/ for documentation."
@@ -135,7 +135,7 @@ func main() {
 	// Reflect leaf types that aren't reachable from Task's tree because
 	// their parents (Cmd, Include) go through the mapper instead of plain
 	// reflection. Defer is referenced from CmdObject.defer (via fixup below);
-	// Include is referenced from Taskfile.includes AdditionalProperties.
+	// Include is referenced from Ritefile.includes AdditionalProperties.
 	for _, extra := range []any{&ast.Include{}, &ast.Defer{}} {
 		extraSch := rPlain.Reflect(extra)
 		for name, def := range extraSch.Definitions {

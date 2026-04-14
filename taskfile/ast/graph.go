@@ -10,23 +10,23 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type TaskfileGraph struct {
+type RitefileGraph struct {
 	sync.Mutex
-	graph.Graph[string, *TaskfileVertex]
+	graph.Graph[string, *RitefileVertex]
 }
 
-// A TaskfileVertex is a vertex on the Taskfile DAG.
-type TaskfileVertex struct {
+// A RitefileVertex is a vertex on the Ritefile DAG.
+type RitefileVertex struct {
 	URI      string
-	Taskfile *Taskfile
+	Ritefile *Ritefile
 }
 
-func taskfileHash(vertex *TaskfileVertex) string {
+func taskfileHash(vertex *RitefileVertex) string {
 	return vertex.URI
 }
 
-func NewTaskfileGraph() *TaskfileGraph {
-	return &TaskfileGraph{
+func NewRitefileGraph() *RitefileGraph {
+	return &RitefileGraph{
 		sync.Mutex{},
 		graph.New(taskfileHash,
 			graph.Directed(),
@@ -36,7 +36,7 @@ func NewTaskfileGraph() *TaskfileGraph {
 	}
 }
 
-func (tfg *TaskfileGraph) Visualize(filename string) error {
+func (tfg *RitefileGraph) Visualize(filename string) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func (tfg *TaskfileGraph) Visualize(filename string) error {
 	return draw.DOT(tfg.Graph, f)
 }
 
-func (tfg *TaskfileGraph) Merge() (*Taskfile, error) {
+func (tfg *RitefileGraph) Merge() (*Ritefile, error) {
 	hashes, err := graph.TopologicalSort(tfg.Graph)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (tfg *TaskfileGraph) Merge() (*Taskfile, error) {
 	}
 
 	// Loop over each vertex in reverse topological order except for the root vertex.
-	// This gives us a loop over every included Taskfile in an order which is safe to merge.
+	// This gives us a loop over every included Ritefile in an order which is safe to merge.
 	for i := len(hashes) - 1; i > 0; i-- {
 		hash := hashes[i]
 
@@ -73,7 +73,7 @@ func (tfg *TaskfileGraph) Merge() (*Taskfile, error) {
 		// Loop over edge that leads to a vertex that includes the current vertex
 		for _, edge := range predecessorMap[hash] {
 
-			// Start a goroutine to process each included Taskfile
+			// Start a goroutine to process each included Ritefile
 			g.Go(func() error {
 				// Get the base vertex
 				vertex, err := tfg.Vertex(edge.Source)
@@ -87,10 +87,10 @@ func (tfg *TaskfileGraph) Merge() (*Taskfile, error) {
 					return fmt.Errorf("rite: Failed to get merge options")
 				}
 
-				// Merge the included Taskfiles into the parent Taskfile
+				// Merge the included Taskfiles into the parent Ritefile
 				for _, include := range includes {
-					if err := vertex.Taskfile.Merge(
-						includedVertex.Taskfile,
+					if err := vertex.Ritefile.Merge(
+						includedVertex.Ritefile,
 						include,
 					); err != nil {
 						return err
@@ -116,5 +116,5 @@ func (tfg *TaskfileGraph) Merge() (*Taskfile, error) {
 		return nil, err
 	}
 
-	return rootVertex.Taskfile, nil
+	return rootVertex.Ritefile, nil
 }

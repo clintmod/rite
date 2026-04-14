@@ -7,16 +7,16 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-// TaskfileNotFoundError is returned when no appropriate Ritefile is found when
+// RitefileNotFoundError is returned when no appropriate Ritefile is found when
 // searching the filesystem.
-type TaskfileNotFoundError struct {
+type RitefileNotFoundError struct {
 	URI         string
 	Walk        bool
 	AskInit     bool
 	OwnerChange bool
 }
 
-func (err TaskfileNotFoundError) Error() string {
+func (err RitefileNotFoundError) Error() string {
 	var walkText string
 	if err.OwnerChange {
 		walkText = " (or any of the parent directories until ownership changed)."
@@ -29,47 +29,47 @@ func (err TaskfileNotFoundError) Error() string {
 	return fmt.Sprintf(`rite: No Ritefile found at %q%s`, filepath.ToSlash(err.URI), walkText)
 }
 
-func (err TaskfileNotFoundError) Code() int {
-	return CodeTaskfileNotFound
+func (err RitefileNotFoundError) Code() int {
+	return CodeRitefileNotFound
 }
 
-// TaskfileAlreadyExistsError is returned on creating a Ritefile if one already
+// RitefileAlreadyExistsError is returned on creating a Ritefile if one already
 // exists.
-type TaskfileAlreadyExistsError struct{}
+type RitefileAlreadyExistsError struct{}
 
-func (err TaskfileAlreadyExistsError) Error() string {
+func (err RitefileAlreadyExistsError) Error() string {
 	return "rite: A Ritefile already exists"
 }
 
-func (err TaskfileAlreadyExistsError) Code() int {
-	return CodeTaskfileAlreadyExists
+func (err RitefileAlreadyExistsError) Code() int {
+	return CodeRitefileAlreadyExists
 }
 
-// TaskfileInvalidError is returned when the Ritefile contains syntax errors or
+// RitefileInvalidError is returned when the Ritefile contains syntax errors or
 // cannot be parsed for some reason.
-type TaskfileInvalidError struct {
+type RitefileInvalidError struct {
 	URI string
 	Err error
 }
 
-func (err TaskfileInvalidError) Error() string {
+func (err RitefileInvalidError) Error() string {
 	return fmt.Sprintf("rite: Failed to parse %s:\n%v", filepath.ToSlash(err.URI), err.Err)
 }
 
-func (err TaskfileInvalidError) Code() int {
-	return CodeTaskfileInvalid
+func (err RitefileInvalidError) Code() int {
+	return CodeRitefileInvalid
 }
 
-// TaskfileVersionCheckError is returned when the user attempts to run a
+// RitefileVersionCheckError is returned when the user attempts to run a
 // Ritefile that does not contain a schema version key or if they try to use a
 // feature that is not supported by the schema version.
-type TaskfileVersionCheckError struct {
+type RitefileVersionCheckError struct {
 	URI           string
 	SchemaVersion *semver.Version
 	Message       string
 }
 
-func (err *TaskfileVersionCheckError) Error() string {
+func (err *RitefileVersionCheckError) Error() string {
 	if err.SchemaVersion == nil {
 		return fmt.Sprintf(
 			`rite: Missing schema version in Ritefile %q`,
@@ -84,37 +84,37 @@ func (err *TaskfileVersionCheckError) Error() string {
 	)
 }
 
-func (err *TaskfileVersionCheckError) Code() int {
-	return CodeTaskfileVersionCheckError
+func (err *RitefileVersionCheckError) Code() int {
+	return CodeRitefileVersionCheckError
 }
 
-// TaskfileCycleError is returned when we detect that a Ritefile includes a
+// RitefileCycleError is returned when we detect that a Ritefile includes a
 // set of Ritefiles that include each other in a cycle.
-type TaskfileCycleError struct {
+type RitefileCycleError struct {
 	Source      string
 	Destination string
 }
 
-func (err TaskfileCycleError) Error() string {
+func (err RitefileCycleError) Error() string {
 	return fmt.Sprintf("rite: include cycle detected between %s <--> %s",
 		filepath.ToSlash(err.Source),
 		filepath.ToSlash(err.Destination),
 	)
 }
 
-func (err TaskfileCycleError) Code() int {
-	return CodeTaskfileCycle
+func (err RitefileCycleError) Code() int {
+	return CodeRitefileCycle
 }
 
-// TaskfileDoesNotMatchChecksum is returned when a Ritefile's checksum does not
+// RitefileDoesNotMatchChecksum is returned when a Ritefile's checksum does not
 // match the one pinned in the parent Ritefile.
-type TaskfileDoesNotMatchChecksum struct {
+type RitefileDoesNotMatchChecksum struct {
 	URI              string
 	ExpectedChecksum string
 	ActualChecksum   string
 }
 
-func (err *TaskfileDoesNotMatchChecksum) Error() string {
+func (err *RitefileDoesNotMatchChecksum) Error() string {
 	return fmt.Sprintf(
 		"rite: The checksum of the Ritefile at %q does not match!\ngot: %q\nwant: %q",
 		filepath.ToSlash(err.URI),
@@ -123,6 +123,6 @@ func (err *TaskfileDoesNotMatchChecksum) Error() string {
 	)
 }
 
-func (err *TaskfileDoesNotMatchChecksum) Code() int {
-	return CodeTaskfileDoesNotMatchChecksum
+func (err *RitefileDoesNotMatchChecksum) Code() int {
+	return CodeRitefileDoesNotMatchChecksum
 }

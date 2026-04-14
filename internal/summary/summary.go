@@ -9,7 +9,7 @@ import (
 	"github.com/clintmod/rite/taskfile/ast"
 )
 
-func PrintTasks(l *logger.Logger, t *ast.Taskfile, c []string) {
+func PrintTasks(l *logger.Logger, t *ast.Ritefile, c []string) {
 	for i, call := range c {
 		PrintSpaceBetweenSummaries(l, i)
 		if task, ok := t.Tasks.Get(call); ok {
@@ -154,7 +154,7 @@ func printTaskVars(l *logger.Logger, t *ast.Task) {
 	l.Outf(logger.Default, "vars:\n")
 
 	for key, value := range t.Vars.All() {
-		// Only display variables that are not from OS environment or Taskfile env
+		// Only display variables that are not from OS environment or Ritefile env
 		if !isEnvVar(key, osEnvVars) && !taskfileEnvVars[key] {
 			formattedValue := formatVarValue(value)
 			l.Outf(logger.Yellow, "  %s: %s\n", key, formattedValue)

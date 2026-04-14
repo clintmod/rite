@@ -11,7 +11,7 @@ import (
 	"github.com/clintmod/rite/taskfile/ast"
 )
 
-func Dotenv(vars *ast.Vars, tf *ast.Taskfile, dir string) (*ast.Vars, error) {
+func Dotenv(vars *ast.Vars, tf *ast.Ritefile, dir string) (*ast.Vars, error) {
 	env := ast.NewVars()
 	cache := &templater.Cache{Vars: vars}
 

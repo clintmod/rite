@@ -19,7 +19,7 @@ func (d *Defer) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var cmd string
 		if err := node.Decode(&cmd); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		d.Cmd = cmd
 		return nil
@@ -32,7 +32,7 @@ func (d *Defer) UnmarshalYAML(node *yaml.Node) error {
 			Silent bool
 		}
 		if err := node.Decode(&deferStruct); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		d.Cmd = deferStruct.Defer
 		d.Task = deferStruct.Task
@@ -41,5 +41,5 @@ func (d *Defer) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("defer")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("defer")
 }

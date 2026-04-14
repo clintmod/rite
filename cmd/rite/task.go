@@ -100,8 +100,8 @@ func run() error {
 		if len(args) > 0 {
 			src = args[0]
 		} else {
-			// Autodetect: first existing Taskfile* in cwd.
-			for _, name := range []string{"Taskfile.yml", "Taskfile.yaml", "Taskfile.dist.yml", "Taskfile.dist.yaml"} {
+			// Autodetect: first existing Ritefile* in cwd.
+			for _, name := range []string{"Ritefile.yml", "Ritefile.yaml", "Ritefile.dist.yml", "Ritefile.dist.yaml"} {
 				p := filepathext.SmartJoin(wd, name)
 				if _, err := os.Stat(p); err == nil {
 					src = p
@@ -109,7 +109,7 @@ func run() error {
 				}
 			}
 			if src == "" {
-				return fmt.Errorf("rite: no Taskfile found in %s; pass a path as the first argument", wd)
+				return fmt.Errorf("rite: no Ritefile found in %s; pass a path as the first argument", wd)
 			}
 		}
 		if !filepath.IsAbs(src) {
@@ -140,13 +140,13 @@ func run() error {
 			}
 			path = filepathext.SmartJoin(wd, name)
 		}
-		finalPath, err := task.InitTaskfile(path)
+		finalPath, err := task.InitRitefile(path)
 		if err != nil {
 			return err
 		}
 		if !flags.Silent {
 			if flags.Verbose {
-				log.Outf(logger.Default, "%s\n", task.DefaultTaskfile)
+				log.Outf(logger.Default, "%s\n", task.DefaultRitefile)
 			}
 			log.Outf(logger.Green, "Ritefile created: %s\n", filepathext.TryAbsToRel(finalPath))
 		}
@@ -203,8 +203,8 @@ func run() error {
 		calls = append(calls, &task.Call{Task: "default"})
 	}
 
-	// Merge CLI variables first (e.g. FOO=bar) so they take priority over Taskfile defaults
-	e.Taskfile.Vars.Merge(globals, nil)
+	// Merge CLI variables first (e.g. FOO=bar) so they take priority over Ritefile defaults
+	e.Ritefile.Vars.Merge(globals, nil)
 
 	// Then ReverseMerge special variables so they're available for templating.
 	// CLI_* specials are rite-internal — marked export: false so they don't
@@ -225,7 +225,7 @@ func run() error {
 	specialVars.Set("CLI_SILENT", ast.Var{Value: flags.Silent, Export: &noExport})
 	specialVars.Set("CLI_VERBOSE", ast.Var{Value: flags.Verbose, Export: &noExport})
 	specialVars.Set("CLI_ASSUME_YES", ast.Var{Value: flags.AssumeYes, Export: &noExport})
-	e.Taskfile.Vars.ReverseMerge(specialVars, nil)
+	e.Ritefile.Vars.ReverseMerge(specialVars, nil)
 	if !flags.Watch {
 		e.InterceptInterruptSignals()
 	}

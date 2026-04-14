@@ -193,7 +193,7 @@ func (vs *Vars) UnmarshalYAML(node *yaml.Node) error {
 			// Decode the value node into a Task struct
 			var v Var
 			if err := valueNode.Decode(&v); err != nil {
-				return errors.NewTaskfileDecodeError(err, node)
+				return errors.NewRitefileDecodeError(err, node)
 			}
 
 			// Add the task to the ordered map
@@ -202,5 +202,5 @@ func (vs *Vars) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("vars")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("vars")
 }

@@ -19,7 +19,7 @@ func TestInitDir(t *testing.T) {
 		t.Errorf("Ritefile.yml should not exist")
 	}
 
-	if _, err := task.InitTaskfile(dir); err != nil {
+	if _, err := task.InitRitefile(dir); err != nil {
 		t.Error(err)
 	}
 
@@ -41,7 +41,7 @@ func TestInitFile(t *testing.T) {
 		t.Errorf("Tasks.yml should not exist")
 	}
 
-	if _, err := task.InitTaskfile(file); err != nil {
+	if _, err := task.InitRitefile(file); err != nil {
 		t.Error(err)
 	}
 

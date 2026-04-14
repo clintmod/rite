@@ -70,7 +70,7 @@ func TestGetConfig_OnlyXDG(t *testing.T) { //nolint:paralleltest // cannot run i
 
 	cfg, err := GetConfig(localDir)
 	assert.NoError(t, err)
-	assert.Equal(t, &ast.TaskRC{
+	assert.Equal(t, &ast.Riterc{
 		Version: nil,
 		Experiments: map[string]int{
 			"FOO": 1,
@@ -87,7 +87,7 @@ func TestGetConfig_OnlyHome(t *testing.T) { //nolint:paralleltest // cannot run 
 
 	cfg, err := GetConfig(localDir)
 	assert.NoError(t, err)
-	assert.Equal(t, &ast.TaskRC{
+	assert.Equal(t, &ast.Riterc{
 		Version: nil,
 		Experiments: map[string]int{
 			"FOO": 2,
@@ -103,7 +103,7 @@ func TestGetConfig_OnlyLocal(t *testing.T) { //nolint:paralleltest // cannot run
 
 	cfg, err := GetConfig(localDir)
 	assert.NoError(t, err)
-	assert.Equal(t, &ast.TaskRC{
+	assert.Equal(t, &ast.Riterc{
 		Version: nil,
 		Experiments: map[string]int{
 			"FOO": 3,
@@ -126,7 +126,7 @@ func TestGetConfig_All(t *testing.T) { //nolint:paralleltest // cannot run in pa
 	cfg, err := GetConfig(localDir)
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
-	assert.Equal(t, &ast.TaskRC{
+	assert.Equal(t, &ast.Riterc{
 		Version: nil,
 		Experiments: map[string]int{
 			"FOO": 3,
@@ -164,7 +164,7 @@ experiments:
 	cfg, err = GetConfig(localDir)
 	assert.NoError(t, err)
 	require.NotNil(t, cfg)
-	assert.Equal(t, &ast.TaskRC{
+	assert.Equal(t, &ast.Riterc{
 		Version: nil,
 		Experiments: map[string]int{
 			"FOO": 3,

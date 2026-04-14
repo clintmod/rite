@@ -13,17 +13,17 @@ func (p *Prompt) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var str string
 		if err := node.Decode(&str); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		*p = []string{str}
 		return nil
 	case yaml.SequenceNode:
 		var list []string
 		if err := node.Decode(&list); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		*p = list
 		return nil
 	}
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("prompt")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("prompt")
 }

@@ -40,14 +40,14 @@ func (p *Platform) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var platform string
 		if err := node.Decode(&platform); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		if err := p.parsePlatform(platform); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		return nil
 	}
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("platform")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("platform")
 }
 
 // parsePlatform takes a string representing an OS/Arch combination (or either on their own)

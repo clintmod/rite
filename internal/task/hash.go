@@ -9,7 +9,7 @@ import (
 )
 
 func (e *Executor) GetHash(t *ast.Task) (string, error) {
-	r := cmp.Or(t.Run, e.Taskfile.Run)
+	r := cmp.Or(t.Run, e.Ritefile.Run)
 	var h hash.HashFunc
 	switch r {
 	case "always":

@@ -15,7 +15,7 @@ type (
 	// Include represents information about included taskfiles
 	Include struct {
 		Namespace      string   `yaml:"-"`
-		Taskfile       string   `yaml:"taskfile"`
+		Ritefile       string   `yaml:"taskfile"`
 		Dir            string   `yaml:"dir"`
 		Optional       bool     `yaml:"optional"`
 		Internal       bool     `yaml:"internal"`
@@ -130,7 +130,7 @@ func (includes *Includes) UnmarshalYAML(node *yaml.Node) error {
 			// Decode the value node into an Include struct
 			var v Include
 			if err := valueNode.Decode(&v); err != nil {
-				return errors.NewTaskfileDecodeError(err, node)
+				return errors.NewRitefileDecodeError(err, node)
 			}
 
 			// Set the include namespace
@@ -142,7 +142,7 @@ func (includes *Includes) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("includes")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("includes")
 }
 
 func (include *Include) UnmarshalYAML(node *yaml.Node) error {
@@ -151,14 +151,14 @@ func (include *Include) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var str string
 		if err := node.Decode(&str); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
-		include.Taskfile = str
+		include.Ritefile = str
 		return nil
 
 	case yaml.MappingNode:
 		var includedTaskfile struct {
-			Taskfile string
+			Ritefile string `yaml:"taskfile"`
 			Dir      string
 			Optional bool
 			Internal bool
@@ -169,9 +169,9 @@ func (include *Include) UnmarshalYAML(node *yaml.Node) error {
 			Checksum string
 		}
 		if err := node.Decode(&includedTaskfile); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
-		include.Taskfile = includedTaskfile.Taskfile
+		include.Ritefile = includedTaskfile.Ritefile
 		include.Dir = includedTaskfile.Dir
 		include.Optional = includedTaskfile.Optional
 		include.Internal = includedTaskfile.Internal
@@ -184,7 +184,7 @@ func (include *Include) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("include")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("include")
 }
 
 // DeepCopy creates a new instance of IncludedTaskfile and copies
@@ -195,7 +195,7 @@ func (include *Include) DeepCopy() *Include {
 	}
 	return &Include{
 		Namespace:      include.Namespace,
-		Taskfile:       include.Taskfile,
+		Ritefile:       include.Ritefile,
 		Dir:            include.Dir,
 		Optional:       include.Optional,
 		Internal:       include.Internal,

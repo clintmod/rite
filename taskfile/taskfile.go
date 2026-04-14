@@ -1,7 +1,7 @@
 package taskfile
 
-// DefaultTaskfiles is the list of Ritefile file names supported by default.
-var DefaultTaskfiles = []string{
+// DefaultRitefiles is the list of Ritefile file names supported by default.
+var DefaultRitefiles = []string{
 	"Ritefile",
 	"Ritefile.yml",
 	"ritefile.yml",

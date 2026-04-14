@@ -53,7 +53,7 @@ func (e *Executor) Setup() error {
 
 func (e *Executor) getRootNode() (taskfile.Node, error) {
 	node, err := taskfile.NewRootNode(e.Entrypoint, e.Dir)
-	var taskNotFoundError errors.TaskfileNotFoundError
+	var taskNotFoundError errors.RitefileNotFoundError
 	if errors.As(err, &taskNotFoundError) {
 		taskNotFoundError.AskInit = true
 		return nil, taskNotFoundError
@@ -77,14 +77,14 @@ func (e *Executor) readTaskfile(node taskfile.Node) error {
 	if err != nil {
 		return err
 	}
-	if e.Taskfile, err = graph.Merge(); err != nil {
+	if e.Ritefile, err = graph.Merge(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (e *Executor) setupFuzzyModel() {
-	if e.Taskfile == nil {
+	if e.Ritefile == nil {
 		return
 	}
 
@@ -92,7 +92,7 @@ func (e *Executor) setupFuzzyModel() {
 	model.SetThreshold(1) // because we want to build grammar based on every task name
 
 	var words []string
-	for name, task := range e.Taskfile.Tasks.All(nil) {
+	for name, task := range e.Ritefile.Tasks.All(nil) {
 		if task.Internal {
 			continue
 		}
@@ -159,7 +159,7 @@ func (e *Executor) setupLogger() {
 
 func (e *Executor) setupOutput() error {
 	if !e.OutputStyle.IsSet() {
-		e.OutputStyle = e.Taskfile.Output
+		e.OutputStyle = e.Ritefile.Output
 	}
 
 	var err error
@@ -180,55 +180,55 @@ func (e *Executor) setupCompiler() error {
 		Dir:            e.Dir,
 		Entrypoint:     e.Entrypoint,
 		UserWorkingDir: e.UserWorkingDir,
-		TaskfileEnv:    e.Taskfile.Env,
-		TaskfileVars:   e.Taskfile.Vars,
+		RitefileEnv:    e.Ritefile.Env,
+		RitefileVars:   e.Ritefile.Vars,
 		Logger:         e.Logger,
 	}
 	return nil
 }
 
 func (e *Executor) readDotEnvFiles() error {
-	if e.Taskfile == nil || len(e.Taskfile.Dotenv) == 0 {
+	if e.Ritefile == nil || len(e.Ritefile.Dotenv) == 0 {
 		return nil
 	}
 
-	if e.Taskfile.Version.LessThan(ast.V3) {
+	if e.Ritefile.Version.LessThan(ast.V3) {
 		return nil
 	}
 
-	vars, err := e.Compiler.GetTaskfileVariables()
+	vars, err := e.Compiler.GetRitefileVariables()
 	if err != nil {
 		return err
 	}
 
-	env, err := taskfile.Dotenv(vars, e.Taskfile, e.Dir)
+	env, err := taskfile.Dotenv(vars, e.Ritefile, e.Dir)
 	if err != nil {
 		return err
 	}
 
 	for k, v := range env.All() {
-		if _, ok := e.Taskfile.Env.Get(k); !ok {
-			e.Taskfile.Env.Set(k, v)
+		if _, ok := e.Ritefile.Env.Get(k); !ok {
+			e.Ritefile.Env.Set(k, v)
 		}
 	}
 	return err
 }
 
 func (e *Executor) setupDefaults() {
-	if e.Taskfile.Method == "" {
-		e.Taskfile.Method = "checksum"
+	if e.Ritefile.Method == "" {
+		e.Ritefile.Method = "checksum"
 	}
-	if e.Taskfile.Run == "" {
-		e.Taskfile.Run = "always"
+	if e.Ritefile.Run == "" {
+		e.Ritefile.Run = "always"
 	}
 }
 
 func (e *Executor) setupConcurrencyState() {
 	e.executionHashes = make(map[string]context.Context)
 
-	e.taskCallCount = make(map[string]*int32, e.Taskfile.Tasks.Len())
-	e.mkdirMutexMap = make(map[string]*sync.Mutex, e.Taskfile.Tasks.Len())
-	for k := range e.Taskfile.Tasks.Keys(nil) {
+	e.taskCallCount = make(map[string]*int32, e.Ritefile.Tasks.Len())
+	e.mkdirMutexMap = make(map[string]*sync.Mutex, e.Ritefile.Tasks.Len())
+	for k := range e.Ritefile.Tasks.Keys(nil) {
 		e.taskCallCount[k] = new(int32)
 		e.mkdirMutexMap[k] = &sync.Mutex{}
 	}
@@ -244,12 +244,12 @@ func (e *Executor) doVersionChecks() error {
 	}
 	// Copy the version to avoid modifying the original
 	schemaVersion := &semver.Version{}
-	*schemaVersion = *e.Taskfile.Version
+	*schemaVersion = *e.Ritefile.Version
 
-	// Error if the Taskfile uses a schema version below v3
+	// Error if the Ritefile uses a schema version below v3
 	if schemaVersion.LessThan(ast.V3) {
-		return &errors.TaskfileVersionCheckError{
-			URI:           e.Taskfile.Location,
+		return &errors.RitefileVersionCheckError{
+			URI:           e.Ritefile.Location,
 			SchemaVersion: schemaVersion,
 			Message:       `no longer supported. Please use v3 or above`,
 		}

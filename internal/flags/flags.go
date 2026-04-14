@@ -26,7 +26,7 @@ const usage = `Usage: task [flags...] [task...]
 Runs the specified task(s). Falls back to the "default" task if no task name
 was specified, or lists all tasks if an unknown task name was specified.
 
-Example: 'task hello' with the following 'Taskfile.yml' file will generate an
+Example: 'task hello' with the following 'Ritefile.yml' file will generate an
 'output.txt' file with the content "hello".
 
 '''
@@ -112,9 +112,9 @@ func init() {
 	pflag.BoolVar(&Version, "version", false, "Show Task version.")
 	pflag.BoolVarP(&Help, "help", "h", false, "Shows Task usage.")
 	pflag.BoolVarP(&Init, "init", "i", false, "Creates a new Ritefile.yml in the current folder.")
-	pflag.BoolVar(&Migrate, "migrate", false, "Converts a go-task Taskfile to a Ritefile. Takes a file path as a positional arg, or autodetects in the current directory.")
+	pflag.BoolVar(&Migrate, "migrate", false, "Converts a go-task Ritefile to a Ritefile. Takes a file path as a positional arg, or autodetects in the current directory.")
 	pflag.StringVar(&Completion, "completion", "", "Generates shell completion script.")
-	pflag.BoolVarP(&List, "list", "l", false, "Lists tasks with description of current Taskfile.")
+	pflag.BoolVarP(&List, "list", "l", false, "Lists tasks with description of current Ritefile.")
 	pflag.BoolVarP(&ListAll, "list-all", "a", false, "Lists tasks with or without a description.")
 	pflag.BoolVarP(&ListJson, "json", "j", false, "Formats task list as JSON.")
 	pflag.StringVar(&TaskSort, "sort", "", "Changes the order of the tasks when listed. [default|alphanumeric|none].")
@@ -131,8 +131,8 @@ func init() {
 	pflag.BoolVarP(&Dry, "dry", "n", getConfig(config, "DRY", func() *bool { return nil }, false), "Compiles and prints tasks in the order that they would be run, without executing them.")
 	pflag.BoolVar(&Summary, "summary", false, "Show summary about a task.")
 	pflag.BoolVarP(&ExitCode, "exit-code", "x", false, "Pass-through the exit code of the task command.")
-	pflag.StringVarP(&Dir, "dir", "d", "", "Sets the directory in which Task will execute and look for a Taskfile.")
-	pflag.StringVarP(&Entrypoint, "taskfile", "t", "", `Choose which Taskfile to run. Defaults to "Taskfile.yml".`)
+	pflag.StringVarP(&Dir, "dir", "d", "", "Sets the directory in which Task will execute and look for a Ritefile.")
+	pflag.StringVarP(&Entrypoint, "taskfile", "t", "", `Choose which Ritefile to run. Defaults to "Ritefile.yml".`)
 	pflag.StringVarP(&Output.Name, "output", "o", "", "Sets output style: [interleaved|group|prefixed].")
 	pflag.StringVar(&Output.Group.Begin, "output-group-begin", "", "Message template to print before a task's grouped output.")
 	pflag.StringVar(&Output.Group.End, "output-group-end", "", "Message template to print after a task's grouped output.")
@@ -141,7 +141,7 @@ func init() {
 	pflag.IntVarP(&Concurrency, "concurrency", "C", getConfig(config, "CONCURRENCY", func() *int { return config.Concurrency }, 0), "Limit number of tasks to run concurrently.")
 	pflag.DurationVarP(&Interval, "interval", "I", 0, "Interval to watch for changes.")
 	pflag.BoolVarP(&Failfast, "failfast", "F", getConfig(config, "FAILFAST", func() *bool { return &config.Failfast }, false), "When running tasks in parallel, stop all tasks if one fails.")
-	pflag.BoolVarP(&Global, "global", "g", false, "Runs global Taskfile, from $HOME/{T,t}askfile.{yml,yaml}.")
+	pflag.BoolVarP(&Global, "global", "g", false, "Runs global Ritefile, from $HOME/{T,t}askfile.{yml,yaml}.")
 	pflag.BoolVar(&Experiments, "experiments", false, "Lists all the available experiments and whether or not they are enabled.")
 
 	// Gentle force experiment will override the force flag and add a new force-all flag
@@ -266,7 +266,7 @@ func (o *flagsOption) ApplyToExecutor(e *task.Executor) {
 }
 
 // getConfig extracts a config value with priority: env var > riterc config > fallback
-func getConfig[T any](config *ritercast.TaskRC, envKey string, fieldFunc func() *T, fallback T) T {
+func getConfig[T any](config *ritercast.Riterc, envKey string, fieldFunc func() *T, fallback T) T {
 	if envKey != "" {
 		if val, ok := getEnvAs[T](envKey); ok {
 			return val

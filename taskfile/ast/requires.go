@@ -46,7 +46,7 @@ func (e *Enum) UnmarshalYAML(node *yaml.Node) error {
 		// Static list of values: enum: ["a", "b"]
 		var values []string
 		if err := node.Decode(&values); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		e.Value = values
 		return nil
@@ -57,16 +57,16 @@ func (e *Enum) UnmarshalYAML(node *yaml.Node) error {
 			Ref string
 		}
 		if err := node.Decode(&refStruct); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		if refStruct.Ref == "" {
-			return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("enum")
+			return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("enum")
 		}
 		e.Ref = refStruct.Ref
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("enum")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("enum")
 }
 
 type VarsWithValidation struct {
@@ -91,7 +91,7 @@ func (v *VarsWithValidation) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.ScalarNode:
 		var cmd string
 		if err := node.Decode(&cmd); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		v.Name = cmd
 		v.Enum = nil
@@ -103,12 +103,12 @@ func (v *VarsWithValidation) UnmarshalYAML(node *yaml.Node) error {
 			Enum *Enum
 		}
 		if err := node.Decode(&vv); err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
+			return errors.NewRitefileDecodeError(err, node)
 		}
 		v.Name = vv.Name
 		v.Enum = vv.Enum
 		return nil
 	}
 
-	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("requires")
+	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("requires")
 }

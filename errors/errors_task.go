@@ -9,7 +9,7 @@ import (
 )
 
 // TaskNotFoundError is returned when the specified task is not found in the
-// Taskfile.
+// Ritefile.
 type TaskNotFoundError struct {
 	TaskName   string
 	DidYouMean string

@@ -178,7 +178,7 @@ func TestPrintAllWithSpaces(t *testing.T) {
 	tasks.Set("t3", t3)
 
 	summary.PrintTasks(&l,
-		&ast.Taskfile{Tasks: tasks},
+		&ast.Ritefile{Tasks: tasks},
 		[]string{"t1", "t2", "t3"},
 	)
 

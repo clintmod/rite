@@ -19,7 +19,7 @@ func (e *Executor) Status(ctx context.Context, calls ...*Call) error {
 		}
 
 		// Get the fingerprinting method to use
-		method := e.Taskfile.Method
+		method := e.Ritefile.Method
 		if t.Method != "" {
 			method = t.Method
 		}
@@ -44,7 +44,7 @@ func (e *Executor) Status(ctx context.Context, calls ...*Call) error {
 func (e *Executor) statusOnError(t *ast.Task) error {
 	method := t.Method
 	if method == "" {
-		method = e.Taskfile.Method
+		method = e.Ritefile.Method
 	}
 	checker, err := fingerprint.NewSourcesChecker(method, e.TempDir.Fingerprint, e.Dry)
 	if err != nil {

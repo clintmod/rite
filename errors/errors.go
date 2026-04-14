@@ -8,20 +8,20 @@ const (
 	CodeUnknown            // Used when no other exit code is appropriate
 )
 
-// TaskRC related exit codes
+// Riterc related exit codes
 const (
-	CodeTaskRCNotFoundError int = iota + 50
+	CodeRitercNotFoundError int = iota + 50
 )
 
 // Ritefile related exit codes
 const (
-	CodeTaskfileNotFound int = iota + 100
-	CodeTaskfileAlreadyExists
-	CodeTaskfileDecode
-	CodeTaskfileVersionCheckError
-	CodeTaskfileInvalid
-	CodeTaskfileCycle
-	CodeTaskfileDoesNotMatchChecksum
+	CodeRitefileNotFound int = iota + 100
+	CodeRitefileAlreadyExists
+	CodeRitefileDecode
+	CodeRitefileVersionCheckError
+	CodeRitefileInvalid
+	CodeRitefileCycle
+	CodeRitefileDoesNotMatchChecksum
 )
 
 // Task related exit codes

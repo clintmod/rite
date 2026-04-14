@@ -15,10 +15,10 @@ func Empty(*ast.Task) (string, error) {
 }
 
 func Name(t *ast.Task) (string, error) {
-	return fmt.Sprintf("%s:%s", t.Location.Taskfile, t.LocalName()), nil
+	return fmt.Sprintf("%s:%s", t.Location.Ritefile, t.LocalName()), nil
 }
 
 func Hash(t *ast.Task) (string, error) {
 	h, err := hashstructure.Hash(t, hashstructure.FormatV2, nil)
-	return fmt.Sprintf("%s:%s:%d", t.Location.Taskfile, t.LocalName(), h), err
+	return fmt.Sprintf("%s:%s:%d", t.Location.Ritefile, t.LocalName(), h), err
 }

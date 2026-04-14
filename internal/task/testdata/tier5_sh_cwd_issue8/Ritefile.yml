@@ -1,0 +1,18 @@
+version: "3"
+
+# Fixture for issue #8: pins the tier-5 vs tier-6/7 `sh:` cwd asymmetry.
+# Tier-5 include-site vars resolve `sh:` in the entrypoint dir (where they
+# were authored). Tier-6/7 vars (authored in the included file and task)
+# resolve in the task dir.
+
+includes:
+  sub:
+    taskfile: sub/Ritefile.yml
+    vars:
+      TIER5_PWD:
+        sh: echo "t5=$(basename $(pwd))"
+
+tasks:
+  default:
+    cmds:
+      - task: sub:show

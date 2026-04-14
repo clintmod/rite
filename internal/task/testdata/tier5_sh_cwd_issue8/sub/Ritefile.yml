@@ -1,0 +1,16 @@
+version: "3"
+
+vars:
+  TIER6_PWD:
+    sh: echo "t6=$(basename $(pwd))"
+
+tasks:
+  show:
+    dir: ./taskdir
+    vars:
+      TIER7_PWD:
+        sh: echo "t7=$(basename $(pwd))"
+    cmds:
+      - 'echo "TIER5=${TIER5_PWD}"'
+      - 'echo "TIER6=${TIER6_PWD}"'
+      - 'echo "TIER7=${TIER7_PWD}"'

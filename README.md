@@ -126,4 +126,4 @@ MIT. See [`LICENSE`](./LICENSE). Original copyright © 2016 Andrey Nering; fork 
 4. **`vars:` auto-exports to the cmd shell environ.** Add `export: false` on any var holding a secret that shouldn't leak.
 5. **Shell env always wins over Ritefile env:** SPEC tier 1 has no opt-out.
 
-Run `rite --migrate <path/to/Taskfile.yml>` and it will: (a) write a `Ritefile.yml` with include-paths rewritten, and (b) emit warnings to stderr for every site where the old and new meanings differ (OVERRIDE-VAR, OVERRIDE-ENV, DOTENV-ENTRY, SECRET-VAR, SCHEMA-URL).
+Run `rite --migrate <path/to/Taskfile.yml>` and it will: (a) write a `Ritefile.yml` with include-paths and special-var references rewritten, and (b) emit warnings to stderr for every site where the old and new meanings differ (`OVERRIDE-VAR`, `OVERRIDE-ENV`, `DOTENV-ENTRY`, `SECRET-VAR`, `TEMPLATE-KEPT`). The old `SCHEMA-URL` warning is gone — migrate now rewrites the `# yaml-language-server` directive in place instead of flagging it.

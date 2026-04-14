@@ -75,9 +75,21 @@ rite migrate: SECRET-VAR     Taskfile.yml vars.GITHUB_TOKEN: name matches a secr
 
 ### 2. Review every warning
 
-Each warning category calls out a behavior that silently changes. Skim the list and decide per site whether the rite behavior is what you want (usually yes — it's the reason you're switching) or whether to edit the Ritefile to preserve the old intent.
+Each warning category calls out a behavior that silently changes — or, for `TEMPLATE-KEPT`, a syntactic site the rewriter could not confidently rewrite. Skim the list and decide per site whether the rite behavior is what you want (usually yes — it's the reason you're switching) or whether to edit the Ritefile to preserve the old intent.
 
-The five categories are documented below.
+The current warning taxonomy is:
+
+| Code | Class | Emitted when |
+|---|---|---|
+| `OVERRIDE-VAR` | semantic | task-scope `vars:` key is shadowed by an entrypoint key |
+| `OVERRIDE-ENV` | semantic | task-scope `env:` key is shadowed by an entrypoint key |
+| `DOTENV-ENTRY` | semantic | task-level `dotenv:` file collides with entrypoint env/dotenv |
+| `SECRET-VAR` | safety | var name matches a secret pattern and will auto-export to cmds |
+| `TEMPLATE-KEPT` | syntactic | Go-template syntax was left in place because no `${VAR}` equivalent exists |
+
+Each is documented below.
+
+> **No more `SCHEMA-URL` warning.** Earlier versions of rite emitted `SCHEMA-URL` whenever a Taskfile carried a `# yaml-language-server: $schema=…` directive pointing at go-task's schema. Migrate now rewrites that directive to rite's hosted schema automatically, so the warning is obsolete. If you're reading older docs or migrate output that mention it, you can ignore — the behavior is fixed in place, not flagged.
 
 ### 3. Run tasks through `rite` against the new file
 
@@ -103,9 +115,9 @@ rm Ritefile.yml
 
 You're back to the pre-migration state. Re-run `rite --migrate` any time to regenerate.
 
-## The five user-visible semantic breaks
+## The user-visible semantic breaks
 
-All five flow from one root change: first-in-wins precedence.
+Five user-visible semantic changes — all five flow from one root change: first-in-wins precedence. The sixth warning class (`TEMPLATE-KEPT`) isn't a semantic break; it flags Go-template syntax the rewriter couldn't safely convert to `${VAR}` form.
 
 ### 1. Task-scope `vars:` no longer override entrypoint `vars:`
 
@@ -168,6 +180,22 @@ vars:
 ```
 
 Warning code: `SECRET-VAR` — the migrate tool matches name patterns including `*_TOKEN`, `*_SECRET`, `*_KEY`, `PASSWORD*`, `API_KEY`, `PRIVATE_KEY`, `ACCESS_KEY`.
+
+### Syntactic: `TEMPLATE-KEPT` (Go-template syntax the rewriter skipped)
+
+Migrate rewrites simple Go-template variable references to rite-native `${VAR}` form — it catches <span v-pre>`{{ .VAR }}`</span> and the two `default`-pipe shapes (<span v-pre>`{{ .VAR | default "x" }}`</span> and <span v-pre>`{{ default .OTHER .VAR }}`</span>), both of which round-trip through rite's shell preprocessor with no semantic change for the common exported-var case.
+
+Everything else — `if`/`range` control flow, function calls like `printf` or `index`, sprig helpers, multi-step pipes beyond `default` — is **left untouched** and reported via `TEMPLATE-KEPT` so you can review and rewrite by hand.
+
+```
+rite migrate: TEMPLATE-KEPT Taskfile.yml:42: kept Go-template syntax "{{if eq .MODE \"release\"}}--release{{end}}" — no equivalent ${VAR} form; review manually.
+```
+
+Unlike the semantic warnings above, this one doesn't signal a behavior change — it signals that the syntactic modernization pass couldn't convert the expression and you're left with the upstream form. Go templates still work in rite, so ignoring the warning is safe; the warning just flags sites where the idiomatic rewrite would save you a backtick-heavy Go-template expression in exchange for a shell-native one.
+
+**Opt-out:** `rite --migrate --keep-go-templates Taskfile.yml` suppresses the whole pass (no rewrites, no warnings). Useful when you know your Ritefile relies on Go-template semantics that shell preprocessing doesn't match.
+
+**Caveat on `default`:** <span v-pre>`{{ .VAR | default "x" }}`</span> rewrites to `${VAR:-x}`, which resolves through the cmd shell at exec time. The shell only sees **exported** rite vars, so for a var marked `export: false`, the default fires even when rite has set the var. The Go-template form sees every rite var regardless of export. For the common case this matches; if you're relying on a non-exported var feeding a defaulted template, either add `export: true` or opt out with `--keep-go-templates`.
 
 ### 5. Shell env always wins over the Ritefile's `env:` block
 

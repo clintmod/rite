@@ -18,13 +18,21 @@ hero:
 
 features:
   - title: First-in-wins precedence
-    details: "Shell env beats CLI args beats entrypoint defaults beats task-scope. Task-scope vars blocks are defaults only — if any higher tier set the name, the task value is ignored. Eight documented tiers, no surprises."
+    details: "Shell env beats CLI args beats entrypoint defaults beats task-scope. Task-scope vars blocks are defaults only — if any higher tier set the name, the task value is ignored. Seven documented tiers, no surprises."
+    link: /precedence
+    linkText: Read the precedence model
   - title: "${VAR} and {{.VAR}} are interchangeable"
     details: "Both syntaxes resolve against the same variable set with identical precedence. Use shell-native for commands, Go-template for conditionals and globs. Pick whichever reads cleaner."
+    link: /syntax
+    linkText: Read the syntax reference
   - title: Every var exports
     details: "A declared variable reaches the cmd shell environ by default. Opt out with export: false. No more vars vs env asymmetry."
+    link: /precedence#env-blocks
+    linkText: Read the env rules
   - title: One-way migration
     details: "rite --migrate Taskfile.yml produces a Ritefile and flags every site where first-in-wins would change the meaning of your existing config. No compatibility shim — an intentional break, documented line by line."
+    link: /migration
+    linkText: Read the migration guide
 ---
 
 ## Install

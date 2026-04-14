@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	task "github.com/clintmod/rite/internal/task"
 )
 
@@ -145,6 +147,72 @@ tasks:
 	}
 }
 
+// TestMigrateRewritesLegacySpecialVars locks in the rewrites for the
+// four special vars that were initially missed when `rite migrate`
+// shipped: .TASKFILE, .TASKFILE_DIR, .ROOT_TASKFILE, .TASK_VERSION.
+// Before #36 these rendered as the empty string because neither a
+// migrate rewrite nor a runtime alias existed. Both halves are locked
+// in: this test covers the migrate rewrite; the runtime alias is
+// covered by TestLegacySpecialVarAliasesResolve below.
+func TestMigrateRewritesLegacySpecialVars(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	src := filepath.Join(dir, "Taskfile.yml")
+	input := `version: '3'
+tasks:
+  banner:
+    cmds:
+      - echo "{{.TASKFILE}} lives in {{.TASKFILE_DIR}}"
+      - echo "root is {{.ROOT_TASKFILE}}"
+      - echo "version {{.TASK_VERSION}}"
+  other:
+    # .TASKFILE in a comment is left alone.
+    vars:
+      MY_TASKFILE: static
+    cmds:
+      - echo {{.MY_TASKFILE}}
+`
+	if err := os.WriteFile(src, []byte(input), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	dst, err := task.Migrate(src, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(out)
+
+	wantFrags := []string{
+		`{{.RITEFILE}} lives in {{.RITEFILE_DIR}}`,
+		`root is {{.ROOT_RITEFILE}}`,
+		`version {{.RITE_VERSION}}`,
+		`{{.MY_TASKFILE}}`,         // user var stays untouched
+		`# .TASKFILE in a comment`, // non-template occurrence stays untouched
+	}
+	for _, w := range wantFrags {
+		if !strings.Contains(got, w) {
+			t.Errorf("output missing %q\nGOT:\n%s", w, got)
+		}
+	}
+
+	unwantFrags := []string{
+		".TASKFILE}",      // old name should not survive inside a template
+		".TASKFILE_DIR}",  // ditto
+		".ROOT_TASKFILE}", // ditto
+		".TASK_VERSION}",  // ditto
+		".RITEFILE_DIR_",  // no cascading
+		".ROOT_RITEFILE_", // no cascading
+	}
+	for _, w := range unwantFrags {
+		if strings.Contains(got, w) {
+			t.Errorf("output unexpectedly contains %q\nGOT:\n%s", w, got)
+		}
+	}
+}
+
 // TestMigrateRewritesAdjacentSpecialVars covers the case where two
 // .TASK / .TASK_DIR refs appear inside the same `{{ … }}` expression,
 // with or without a separator between them. A single pass of the
@@ -214,6 +282,61 @@ func TestMigrateRewritesAdjacentSpecialVars(t *testing.T) {
 				t.Errorf("output still contains un-rewritten ref\nGOT:\n%s", got)
 			}
 		})
+	}
+}
+
+// TestLegacySpecialVarAliasesResolve runs a Ritefile that references the
+// go-task special var names (.TASKFILE, .TASKFILE_DIR, .ROOT_TASKFILE,
+// .TASK_VERSION) and asserts each one renders a non-empty, sensible
+// value. This is the runtime half of the #36 fix: even for Ritefiles
+// that never pass through `rite migrate` (hand-authored, or authored
+// before the rewriter learned these names), the compat aliases have
+// to keep producing the expected values instead of the empty string.
+func TestLegacySpecialVarAliasesResolve(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	ritefilePath := filepath.Join(dir, "Ritefile.yml")
+	body := `version: '3'
+tasks:
+  legacy:
+    cmds:
+      - echo "TASKFILE={{.TASKFILE}}"
+      - echo "TASKFILE_DIR={{.TASKFILE_DIR}}"
+      - echo "ROOT_TASKFILE={{.ROOT_TASKFILE}}"
+      - echo "TASK_VERSION={{.TASK_VERSION}}"
+`
+	require.NoError(t, os.WriteFile(ritefilePath, []byte(body), 0o644))
+
+	var stdout bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithEntrypoint(ritefilePath),
+		task.WithStdout(&stdout),
+		task.WithStderr(io.Discard),
+		task.WithSilent(true),
+	)
+	require.NoError(t, e.Setup(), "Setup")
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "legacy"}), "Run")
+
+	got := stdout.String()
+	// The exact on-disk path representation uses forward slashes (the
+	// compiler calls filepath.ToSlash on these values for cross-platform
+	// consistency), so compare against a normalized expected string.
+	wantLines := []string{
+		"TASKFILE=" + filepath.ToSlash(ritefilePath),
+		"TASKFILE_DIR=" + filepath.ToSlash(dir),
+		"ROOT_TASKFILE=" + filepath.ToSlash(ritefilePath),
+	}
+	for _, w := range wantLines {
+		if !strings.Contains(got, w) {
+			t.Errorf("output missing %q\nGOT:\n%s", w, got)
+		}
+	}
+	// TASK_VERSION comes from internal/version; we don't assert the exact
+	// string (it's "3.49.1" in dev builds, set via ldflags in releases) —
+	// only that it's present and non-empty.
+	if strings.Contains(got, "TASK_VERSION=\n") || !strings.Contains(got, "TASK_VERSION=") {
+		t.Errorf("TASK_VERSION rendered empty\nGOT:\n%s", got)
 	}
 }
 

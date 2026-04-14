@@ -14,7 +14,7 @@ brew install rite
 ```toml
 # mise.toml
 [tools]
-"ubi:clintmod/rite" = "v0.1.0"
+"ubi:clintmod/rite" = "v1.0.0"
 ```
 
 Then `mise install`. The [ubi backend](https://mise.jdx.dev/dev-tools/backends/ubi.html) downloads the prebuilt binary from the GitHub release — no Go toolchain needed.
@@ -22,10 +22,10 @@ Then `mise install`. The [ubi backend](https://mise.jdx.dev/dev-tools/backends/u
 > **Older mise (pre-2026.4.x)?** The `ubi:` backend in older versions mangles `v`-prefixed tags. Either upgrade (`mise self-update`) or fall back to the `go:` backend, which works on any version but builds from source:
 > ```toml
 > [tools]
-> "go:github.com/clintmod/rite/cmd/rite" = "0.1.0"
+> "go:github.com/clintmod/rite/cmd/rite" = "1.0.0"
 > ```
 
-### From source (Go 1.25+)
+### From source (Go 1.26+)
 
 ```sh
 go install github.com/clintmod/rite/cmd/rite@latest

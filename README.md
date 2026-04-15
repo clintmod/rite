@@ -114,6 +114,7 @@ MIT. See [`LICENSE`](./LICENSE). Original copyright © 2016 Andrey Nering; fork 
 - [x] **1.0 prep:** CHANGELOG, Migrating-from-go-task guide, remote-Ritefile removal, N-deep include env-export fix, full special-var rewrite/alias coverage, Go 1.25 dropped from CI.
 - [x] **v1.0.0:** public API rename (`Task*` → `Ritefile*`/`Rite*`), `rite --migrate` flag, schema-version upper bound, includes sandboxing (rejects `://`, `../`, symlink escape; redacts parse-error snippets from non-Ritefile targets), and concurrency hardening (`Vars.Merge` lock, signal-handler ctx cancel, `templater.Cache` race). The closed SemVer contract; see [`CHANGELOG.md`](./CHANGELOG.md).
 - [x] **v1.0.3:** migrate clobber fix (#76), template modernization (#74), docs audit cleanup, security hardening — see [`CHANGELOG.md`](./CHANGELOG.md) for the full list.
+- [ ] **v2.0 (planned):** drop the `env:` block. Phase 4 already unified `vars:` and `env:` into a single variable table with shared precedence; `env:` has been a vestigial synonym ever since. Keeping it around is pure ceremony and the direct cause of ambiguity bugs like [#129](https://github.com/clintmod/rite/issues/129) (same name in both blocks at the same scope). In 2.0, only `vars:` is accepted; `export: false` remains the opt-out for secrets. Migrate will fold existing `env:` entries into `vars:` one-to-one. SPEC simplifies to "there is one variable table, full stop."
 
 ## Migrating from go-task
 

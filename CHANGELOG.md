@@ -13,6 +13,15 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+### Fixed
+
+- Preprocessor now respects POSIX shell quoting. Ritefiles intending to emit a
+  literal `$X` from inside single-quoted strings, quoted heredocs
+  (`<<'EOF'` / `<<\EOF` / `<<"EOF"`), or backslash-escaped forms (`\$X`) now
+  work as expected. Previously, the preprocessor substituted every `${NAME}` /
+  `$NAME` regardless of quote state, forcing workarounds like sed sentinels.
+  (#121)
+
 ## [1.0.2] - 2026-04-14
 
 Patch release: one UX feature, one new flag, concurrency hardening, test-corpus expansion, and a docs pass.

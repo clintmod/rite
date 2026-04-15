@@ -203,51 +203,262 @@ func replaceImpl[T any](v T, cache *Cache, extra map[string]any, expandShell boo
 // `$?`, `$1`, or an env-only var not declared in the Ritefile pass through
 // unchanged for mvdan/sh to interpret downstream. Only refs whose name is a
 // known key in data get substituted.
+//
+// Quoting honors POSIX shell semantics: `'…'` suppresses expansion entirely,
+// `"…"` keeps expanding, `\$` outside or inside double quotes is a literal
+// `$`. Heredocs participate too — `<<'DELIM'` or `<<\DELIM` disables
+// expansion in the body; bare `<<DELIM` keeps it. Single-quoted strings
+// treat `\` as a literal character (POSIX). This exists so Ritefiles can
+// emit literal `$X` runs (heredoc help text, sed scripts, etc.) without
+// sentinel workarounds — see #121.
 func ExpandShell(s string, data map[string]any) string {
 	if !strings.ContainsRune(s, '$') {
 		return s
 	}
 	var b strings.Builder
 	b.Grow(len(s))
+
+	const (
+		qNone = iota
+		qSingle
+		qDouble
+	)
+	state := qNone
+
+	var pending []heredocState // declared on current line, body starts at next \n
+	var active *heredocState   // currently inside a heredoc body
+
 	i := 0
 	for i < len(s) {
 		c := s[i]
-		if c != '$' {
+
+		if active != nil {
+			// At line start (i==0 or just past a \n), check end-of-body.
+			atLineStart := i == 0 || s[i-1] == '\n'
+			if atLineStart {
+				lineStart := i
+				if active.stripTab {
+					for lineStart < len(s) && s[lineStart] == '\t' {
+						lineStart++
+					}
+				}
+				lineEnd := lineStart
+				for lineEnd < len(s) && s[lineEnd] != '\n' {
+					lineEnd++
+				}
+				if s[lineStart:lineEnd] == active.delim {
+					b.WriteString(s[i:lineEnd])
+					i = lineEnd
+					active = nil
+					continue
+				}
+			}
+			if active.expand {
+				if c == '\\' && i+1 < len(s) && s[i+1] == '$' {
+					b.WriteByte('$')
+					i += 2
+					continue
+				}
+				if c == '$' {
+					adv, ok := writeDollar(&b, s, i, data)
+					if ok {
+						i += adv
+						continue
+					}
+				}
+			}
 			b.WriteByte(c)
 			i++
 			continue
 		}
-		// c == '$'
-		if i+1 >= len(s) {
-			b.WriteByte('$')
+
+		switch state {
+		case qSingle:
+			b.WriteByte(c)
+			i++
+			if c == '\'' {
+				state = qNone
+			}
+			continue
+
+		case qDouble:
+			if c == '"' {
+				b.WriteByte(c)
+				i++
+				state = qNone
+				continue
+			}
+			if c == '\\' && i+1 < len(s) && s[i+1] == '$' {
+				// POSIX: \$ in "..." is a literal $.
+				b.WriteByte('$')
+				i += 2
+				continue
+			}
+			if c == '$' {
+				adv, ok := writeDollar(&b, s, i, data)
+				if ok {
+					i += adv
+					continue
+				}
+			}
+			b.WriteByte(c)
 			i++
 			continue
 		}
-		next := s[i+1]
-		if next == '$' {
-			// $$ → literal $
+
+		// state == qNone, no active heredoc.
+		if c == '\n' && len(pending) > 0 {
+			b.WriteByte('\n')
+			h := pending[0]
+			pending = pending[1:]
+			active = &h
+			i++
+			continue
+		}
+		if c == '\'' {
+			b.WriteByte(c)
+			i++
+			state = qSingle
+			continue
+		}
+		if c == '"' {
+			b.WriteByte(c)
+			i++
+			state = qDouble
+			continue
+		}
+		if c == '\\' && i+1 < len(s) && s[i+1] == '$' {
+			// POSIX: \$ outside quotes is a literal $.
 			b.WriteByte('$')
 			i += 2
 			continue
 		}
-		name, raw, advance := parseShellRef(s[i+1:])
-		if name == "" {
-			// Not a valid ref (e.g. `$?`, `$1`, `$-`) — keep literal.
-			b.WriteByte('$')
-			i++
-			continue
+		if c == '<' && i+1 < len(s) && s[i+1] == '<' {
+			if h, end, ok := parseHeredocStart(s, i); ok {
+				b.WriteString(s[i:end])
+				pending = append(pending, h)
+				i = end
+				continue
+			}
 		}
-		if v, ok := data[name]; ok {
-			fmt.Fprint(&b, v)
-		} else {
-			// Unknown var — preserve the original syntax so the shell can
-			// resolve it from its own env if desired.
-			b.WriteByte('$')
-			b.WriteString(raw)
+		if c == '$' {
+			adv, ok := writeDollar(&b, s, i, data)
+			if ok {
+				i += adv
+				continue
+			}
 		}
-		i += 1 + advance
+		b.WriteByte(c)
+		i++
 	}
 	return b.String()
+}
+
+// writeDollar handles the `$…` substitution at s[i]. Returns the number of
+// bytes consumed and whether anything was written. If !ok, the caller should
+// fall through to the default literal-byte branch.
+func writeDollar(b *strings.Builder, s string, i int, data map[string]any) (int, bool) {
+	if i+1 >= len(s) {
+		b.WriteByte('$')
+		return 1, true
+	}
+	if s[i+1] == '$' {
+		b.WriteByte('$')
+		return 2, true
+	}
+	name, raw, advance := parseShellRef(s[i+1:])
+	if name == "" {
+		b.WriteByte('$')
+		return 1, true
+	}
+	if v, ok := data[name]; ok {
+		fmt.Fprint(b, v)
+	} else {
+		b.WriteByte('$')
+		b.WriteString(raw)
+	}
+	return 1 + advance, true
+}
+
+// heredocState carries the parsed shape of a `<<DELIM` declaration so
+// ExpandShell can decide whether to keep expanding inside the body.
+type heredocState struct {
+	delim    string
+	expand   bool
+	stripTab bool
+}
+
+// parseHeredocStart inspects s starting at the `<<` operator at position i.
+// Returns the heredoc state, the index just past the delimiter token, and ok
+// if a well-formed heredoc declaration was found.
+func parseHeredocStart(s string, i int) (h heredocState, end int, ok bool) {
+	j := i + 2
+	if j < len(s) && s[j] == '-' {
+		h.stripTab = true
+		j++
+	}
+	for j < len(s) && (s[j] == ' ' || s[j] == '\t') {
+		j++
+	}
+	if j >= len(s) {
+		return h, 0, false
+	}
+	switch s[j] {
+	case '\'':
+		k := strings.IndexByte(s[j+1:], '\'')
+		if k < 0 {
+			return h, 0, false
+		}
+		h.delim = s[j+1 : j+1+k]
+		h.expand = false
+		end = j + 1 + k + 1
+	case '"':
+		k := strings.IndexByte(s[j+1:], '"')
+		if k < 0 {
+			return h, 0, false
+		}
+		h.delim = s[j+1 : j+1+k]
+		h.expand = false
+		end = j + 1 + k + 1
+	case '\\':
+		k := j + 1
+		for k < len(s) && isHeredocDelimByte(s[k]) {
+			k++
+		}
+		if k == j+1 {
+			return h, 0, false
+		}
+		h.delim = s[j+1 : k]
+		h.expand = false
+		end = k
+	default:
+		k := j
+		for k < len(s) && isHeredocDelimByte(s[k]) {
+			k++
+		}
+		if k == j {
+			return h, 0, false
+		}
+		h.delim = s[j:k]
+		h.expand = true
+		end = k
+	}
+	if h.delim == "" {
+		return h, 0, false
+	}
+	return h, end, true
+}
+
+func isHeredocDelimByte(c byte) bool {
+	switch {
+	case c == '_', c == '-', c == '.':
+		return true
+	case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z':
+		return true
+	case c >= '0' && c <= '9':
+		return true
+	}
+	return false
 }
 
 // parseShellRef reads a variable reference from the start of s (which is

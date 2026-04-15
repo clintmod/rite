@@ -338,49 +338,286 @@ tasks:
     cmds:
       - gorelease -base={{.LATEST}}
 
-  release:*:
-    desc: Prepare the project for a new release
+  release:prepare:
+    desc: "Stage a release PR — bumps version examples, dates the CHANGELOG, opens the PR. Pass VERSION=X.Y.Z (no v prefix)."
     summary: |
-      This task will do the following:
+      Codifies the "## Pre-tag audit" half of RELEASING.md.
 
-      - Update the version and date in the CHANGELOG.md file
-      - Update the version in the package.json and package-lock.json files
-      - Copy the latest docs to the "current" version on the website
-      - Commit the changes
-      - Create a new tag
-      - Push the commit/tag to the repository
-      - Create a GitHub release
+      Refuses cleanly if branch release/v$VERSION already exists (locally or
+      remote). Re-runnable only after the prior staging branch is deleted.
 
-      To use the task, run "task release:<version>" where "<version>" is is one of:
+      Steps:
+        1. Validate VERSION (semver, no v-prefix), tree state, main is current.
+        2. Run rite test + rite lint locally; refuse on any failure.
+        3. Confirm latest CI on origin/main is green.
+        4. Cut release/v$VERSION off origin/main.
+        5. Bump internal/version/version.txt, install-example version pins,
+           insert new dated section in CHANGELOG.md (preserves [Unreleased]).
+        6. Commit, push branch, open draft PR titled "release: stage v$VERSION".
 
-      - "major" - Bumps the major number
-      - "minor" - Bumps the minor number
-      - "patch" - Bumps the patch number
-      - A semver compatible version number (e.g. "1.2.3")
-    vars:
-      VERSION:
-        sh: "go run ./cmd/release --version {{index .MATCH 0}}"
-      COMPLETE_MESSAGE: |
-        Creating release with GoReleaser: https://github.com/go-task/task/actions/workflows/release.yml
-
-        Please wait for the CI to finish and then do the following:
-
-        - Copy the changelog for v{{.VERSION}} to the GitHub release
-        - Update and push the snapcraft manifest in https://github.com/go-task/snap/blob/main/snap/snapcraft.yaml
+      Hand-offs left for the human (intentional):
+        - Filling in the one-line release-summary blurb in CHANGELOG.
+        - Reviewing + merging the PR.
+      After merge, run `rite release:tag VERSION=$VERSION`.
+    requires:
+      vars: [VERSION]
     preconditions:
-      - sh: test $(git rev-parse --abbrev-ref HEAD) = "main"
-        msg: "You must be on the main branch to release"
-      - sh: "[[ -z $(git diff --shortstat main) ]]"
-        msg: "You must have a clean working tree to release"
-    prompt: "Are you sure you want to release version {{.VERSION}}?"
+      - sh: 'printf %s "{{.VERSION}}" | grep -Eq "^[0-9]+\.[0-9]+\.[0-9]+$"'
+        msg: "VERSION must be semver X.Y.Z (no v prefix). Got: {{.VERSION}}"
+      - sh: 'test "$(git rev-parse --abbrev-ref HEAD)" = "main"'
+        msg: "release:prepare must run from main"
+      - sh: 'test -z "$(git status --porcelain)"'
+        msg: "Working tree must be clean"
+      - sh: 'git fetch -q origin && test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"'
+        msg: "Local main must match origin/main exactly. Run: git pull origin main"
+      - sh: '! git rev-parse --verify --quiet "release/v{{.VERSION}}" >/dev/null'
+        msg: "Local branch release/v{{.VERSION}} already exists. Delete it (git branch -D release/v{{.VERSION}}) or pick a different VERSION."
+      - sh: '! git ls-remote --exit-code --heads origin "release/v{{.VERSION}}" >/dev/null 2>&1'
+        msg: "Remote branch release/v{{.VERSION}} already exists on origin. Close the existing PR / delete the branch, then re-run."
+      - sh: '! git rev-parse --verify --quiet "v{{.VERSION}}" >/dev/null'
+        msg: "Tag v{{.VERSION}} already exists locally — that version has already shipped. Pick the next patch/minor."
+      - sh: '! git ls-remote --exit-code --tags origin "v{{.VERSION}}" >/dev/null 2>&1'
+        msg: "Tag v{{.VERSION}} already exists on origin — that version has already shipped."
     cmds:
-      - cmd: echo "Releasing v{{.VERSION}}"
-        silent: true
-      - "go run ./cmd/release {{.VERSION}}"
-      - "git add --all"
-      - "git commit -m v{{.VERSION}}"
-      - "git push"
-      - "git tag -a v{{.VERSION}} -m v{{.VERSION}}"
-      - "git push origin tag v{{.VERSION}}"
-      - cmd: printf "%s" '{{.COMPLETE_MESSAGE}}'
-        silent: true
+      - task: _release:audit
+      - task: _release:bump
+        vars:
+          VERSION: "{{.VERSION}}"
+      - cmd: |
+          set -e
+          branch="release/v{{.VERSION}}"
+          git checkout -b "$branch"
+          git add CHANGELOG.md README.md website/src/getting-started.md website/src/index.md website/src/ci.md website/src/special-vars.md internal/version/version.txt
+          git commit -m "release: stage v{{.VERSION}}"
+          git push -u origin "$branch"
+          gh pr create --repo clintmod/rite \
+            --base main --head "$branch" \
+            --title "release: stage v{{.VERSION}}" \
+            --body "Staging branch for v{{.VERSION}}.
+
+          - [ ] Fill in CHANGELOG.md \`## [{{.VERSION}}]\` summary blurb
+          - [ ] CI green
+          - [ ] Squash-merge
+
+          After merge: \`rite release:tag VERSION={{.VERSION}}\` then \`rite release:verify VERSION={{.VERSION}}\`."
+          echo
+          echo "release:prepare done. Next: edit CHANGELOG blurb, get CI green, merge PR, then:"
+          echo "  rite release:tag VERSION={{.VERSION}}"
+
+  release:tag:
+    desc: "Tag the merged release commit on main and push the tag (triggers goreleaser). Pass VERSION=X.Y.Z."
+    summary: |
+      Codifies the "## Tag" section of RELEASING.md.
+
+      STRICT: refuses if v$VERSION already exists anywhere (local or remote).
+      Never force-pushes. Validates that the merged release prep landed
+      (CHANGELOG section dated, version.txt bumped) before pushing.
+    requires:
+      vars: [VERSION]
+    preconditions:
+      - sh: 'printf %s "{{.VERSION}}" | grep -Eq "^[0-9]+\.[0-9]+\.[0-9]+$"'
+        msg: "VERSION must be semver X.Y.Z (no v prefix). Got: {{.VERSION}}"
+      - sh: 'test "$(git rev-parse --abbrev-ref HEAD)" = "main"'
+        msg: "release:tag must run from main"
+      - sh: 'test -z "$(git status --porcelain)"'
+        msg: "Working tree must be clean"
+      - sh: 'git fetch -q origin && test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"'
+        msg: "Local main must match origin/main. Run: git pull origin main"
+      - sh: '! git rev-parse --verify --quiet "v{{.VERSION}}" >/dev/null'
+        msg: "Tag v{{.VERSION}} already exists locally. Tags are immutable once published — pick a new patch."
+      - sh: '! git ls-remote --exit-code --tags origin "v{{.VERSION}}" >/dev/null 2>&1'
+        msg: "Tag v{{.VERSION}} already exists on origin. Tags are immutable once published — pick a new patch."
+      - sh: 'test "$(cat internal/version/version.txt | tr -d "[:space:]")" = "v{{.VERSION}}"'
+        msg: "internal/version/version.txt does not equal v{{.VERSION}}. Did the release:prepare PR get merged?"
+      - sh: 'grep -Eq "^## \[{{.VERSION}}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md'
+        msg: "CHANGELOG.md missing dated section '## [{{.VERSION}}] - YYYY-MM-DD'. Did the release:prepare PR get merged?"
+    cmds:
+      - cmd: |
+          set -e
+          git tag -a "v{{.VERSION}}" -m "rite v{{.VERSION}}"
+          git push origin "v{{.VERSION}}"
+          echo
+          echo "Tag v{{.VERSION}} pushed. Goreleaser workflow should be running now."
+          echo "Verify with:  rite release:verify VERSION={{.VERSION}}"
+
+  release:verify:
+    desc: "Poll for the goreleaser workflow + release artifacts after release:tag. Pass VERSION=X.Y.Z."
+    summary: |
+      Codifies the "## Post-tag verify" section of RELEASING.md.
+
+      Polls the goreleaser workflow (up to ~10 min), then asserts the GitHub
+      release page exists with archives. Reports progress each iteration.
+      Read-only — safe to re-run.
+    requires:
+      vars: [VERSION]
+    preconditions:
+      - sh: 'printf %s "{{.VERSION}}" | grep -Eq "^[0-9]+\.[0-9]+\.[0-9]+$"'
+        msg: "VERSION must be semver X.Y.Z (no v prefix). Got: {{.VERSION}}"
+      - sh: 'git ls-remote --exit-code --tags origin "v{{.VERSION}}" >/dev/null 2>&1'
+        msg: "Tag v{{.VERSION}} not found on origin. Run release:tag first."
+    cmds:
+      - cmd: |
+          set -e
+          tag="v{{.VERSION}}"
+          echo "==> waiting for goreleaser workflow on $tag (timeout ~10 min)"
+          deadline=$(( $(date +%s) + 600 ))
+          status=""
+          conclusion=""
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            line=$(gh run list --repo clintmod/rite --workflow release.yml --event push --limit 20 \
+                     --json headBranch,status,conclusion,databaseId \
+                     --jq ".[] | select(.headBranch == \"$tag\") | [.status, .conclusion, .databaseId] | @tsv" \
+                     | head -n1)
+            if [ -z "$line" ]; then
+              echo "  (no goreleaser run for $tag yet — sleeping 15s)"
+              sleep 15
+              continue
+            fi
+            status=$(printf %s "$line" | cut -f1)
+            conclusion=$(printf %s "$line" | cut -f2)
+            run_id=$(printf %s "$line" | cut -f3)
+            if [ "$status" = "completed" ]; then
+              echo "  goreleaser run $run_id completed: $conclusion"
+              break
+            fi
+            echo "  goreleaser run $run_id status=$status — sleeping 20s"
+            sleep 20
+          done
+          if [ "$status" != "completed" ]; then
+            echo "TIMEOUT: goreleaser workflow did not complete within 10 min."
+            echo "Check: gh run list --repo clintmod/rite --workflow release.yml --limit 5"
+            exit 1
+          fi
+          if [ "$conclusion" != "success" ]; then
+            echo "FAIL: goreleaser conclusion=$conclusion"
+            echo "Inspect: gh run view $run_id --repo clintmod/rite --log-failed"
+            exit 1
+          fi
+      - cmd: |
+          set -e
+          tag="v{{.VERSION}}"
+          echo "==> checking release page for $tag"
+          if ! gh release view "$tag" --repo clintmod/rite >/dev/null 2>&1; then
+            echo "FAIL: release page for $tag not found"
+            exit 1
+          fi
+          assets=$(gh release view "$tag" --repo clintmod/rite --json assets --jq '.assets | length')
+          echo "  release $tag has $assets assets"
+          if [ "$assets" -lt 10 ]; then
+            echo "FAIL: expected at least 10 assets (archives + checksums + packages), got $assets"
+            exit 1
+          fi
+      - cmd: |
+          set -e
+          tag="v{{.VERSION}}"
+          echo "==> checking Homebrew tap formula"
+          if formula=$(gh api repos/clintmod/homebrew-tap/contents/Formula/rite.rb --jq .content 2>/dev/null | base64 -d); then
+            if printf %s "$formula" | grep -Eq "$tag|{{.VERSION}}"; then
+              echo "  formula references $tag"
+            else
+              echo "WARN: tap formula does not yet reference $tag (Homebrew bump may be in flight — re-run release:verify if needed)"
+            fi
+          else
+            echo "WARN: could not read homebrew-tap formula (token scope or transient API failure)"
+          fi
+      - cmd: |
+          echo
+          echo "release:verify done for v{{.VERSION}}."
+          echo "Manual residual checks (see RELEASING.md ## Post-tag verify):"
+          echo "  - brew upgrade rite && rite --version  (on a dev box)"
+          echo "  - go install github.com/clintmod/rite/cmd/rite@v{{.VERSION}} && rite --version"
+          echo "  - clintmod.github.io/rite/ shows the new CHANGELOG section"
+
+  _release:audit:
+    desc: Internal — pre-tag audit (test, lint, CI green check). Used by release:prepare.
+    internal: true
+    cmds:
+      - cmd: |
+          set -e
+          echo "==> rite test"
+      - task: test
+      - cmd: |
+          set -e
+          echo "==> rite lint"
+      - task: lint
+      - cmd: |
+          set -e
+          echo "==> latest CI on origin/main"
+          # Pull the most recent push-event run on main and confirm conclusion=success.
+          line=$(gh run list --repo clintmod/rite --branch main --event push --limit 1 \
+                   --json status,conclusion,databaseId,workflowName \
+                   --jq '.[0] | [.status, .conclusion, .databaseId, .workflowName] | @tsv')
+          if [ -z "$line" ]; then
+            echo "FAIL: no recent CI runs found on main"
+            exit 1
+          fi
+          status=$(printf %s "$line" | cut -f1)
+          conclusion=$(printf %s "$line" | cut -f2)
+          run_id=$(printf %s "$line" | cut -f3)
+          wf=$(printf %s "$line" | cut -f4)
+          if [ "$status" != "completed" ] || [ "$conclusion" != "success" ]; then
+            echo "FAIL: most recent main CI run ($wf #$run_id) is $status/$conclusion — fix before releasing"
+            exit 1
+          fi
+          echo "  main CI green ($wf #$run_id)"
+
+  _release:bump:
+    desc: Internal — bump version.txt + install-example pins + CHANGELOG date. Used by release:prepare.
+    internal: true
+    requires:
+      vars: [VERSION]
+    cmds:
+      - cmd: |
+          set -e
+          new="v{{.VERSION}}"
+          old=$(cat internal/version/version.txt | tr -d '[:space:]')
+          today=$(date +%Y-%m-%d)
+          echo "==> bumping $old -> $new (date: $today)"
+
+          # version.txt — embedded into the binary as the local-fallback version.
+          printf '%s\n' "$new" > internal/version/version.txt
+
+          # CHANGELOG: insert dated section right after [Unreleased]. Preserves
+          # the [Unreleased] header so future PRs always have a place to land.
+          # Refuses if the previous prepare already inserted today's section
+          # (idempotency guard — caller's branch-existence check is the primary
+          # gate but this catches manual re-runs).
+          if grep -Eq "^## \[{{.VERSION}}\]" CHANGELOG.md; then
+            echo "FAIL: CHANGELOG.md already has a ## [{{.VERSION}}] section"
+            exit 1
+          fi
+          awk -v ver="{{.VERSION}}" -v date="$today" '
+            /^## \[Unreleased\]$/ {
+              print
+              print ""
+              print "## [" ver "] - " date
+              next
+            }
+            { print }
+          ' CHANGELOG.md > CHANGELOG.md.new && mv CHANGELOG.md.new CHANGELOG.md
+
+          # README.md — bump only the install-example lines, NOT the historical
+          # roadmap bullets (`- [x] **vX.Y.Z:**`). Use targeted patterns rather
+          # than a blanket s/$old/$new/g.
+          sed -i.bak \
+            -e "s|^\*\*Status: $old shipped\.\*\*|**Status: $new shipped.**|" \
+            -e "s|sh -s -- -b ~/bin $old|sh -s -- -b ~/bin $new|" \
+            -e "s|\"ubi:clintmod/rite\" = \"$old\"|\"ubi:clintmod/rite\" = \"$new\"|" \
+            README.md
+          rm -f README.md.bak
+
+          # website/src — these files are pure install-example surface, no
+          # historical-roadmap concern, so a global s/$old/$new/g per file is
+          # safe. Strip the 'v' for the bare-semver `go:` mise example in
+          # getting-started.md.
+          old_bare="${old#v}"
+          new_bare="${new#v}"
+          for f in website/src/getting-started.md website/src/index.md website/src/ci.md website/src/special-vars.md; do
+            sed -i.bak \
+              -e "s|$old|$new|g" \
+              -e "s|\"$old_bare\"|\"$new_bare\"|g" \
+              "$f"
+            rm -f "$f.bak"
+          done
+
+          echo "  bumped: internal/version/version.txt CHANGELOG.md README.md website/src/{getting-started,index,ci,special-vars}.md"

@@ -4,11 +4,94 @@
 `v*` on `main`; `goreleaser` publishes archives, packages, and the
 Homebrew tap in one pass.
 
-This doc is the pre-flight checklist. Work through it top to bottom; do
-not skip steps. If any step fails, fix first and restart — do not paper
-over.
+The release pipeline is codified as three Ritefile tasks. Run them in
+order; each one validates its own preconditions and refuses cleanly on
+mismatch (no partial state). If any task fails, fix the underlying
+issue and re-run — do not paper over.
 
-## Pre-tag audit
+## TL;DR — three commands
+
+```bash
+rite release:prepare VERSION=X.Y.Z   # opens staging PR, bumps everything
+# ...review CHANGELOG blurb, get CI green, squash-merge the PR...
+git checkout main && git pull origin main
+rite release:tag VERSION=X.Y.Z       # tags merged commit, pushes tag
+rite release:verify VERSION=X.Y.Z    # polls workflow + asserts artifacts
+```
+
+`VERSION` is bare semver (no `v` prefix). Each task regex-validates it.
+
+The detailed checklist below documents what each task does internally —
+useful for debugging, partial recovery, and audit. The tasks themselves
+are the source of truth; this doc trails them.
+
+## What each task does
+
+### `release:prepare VERSION=X.Y.Z`
+
+Codifies the **Pre-tag audit** checklist. Idempotent at the branch
+level — re-running while `release/v$VERSION` already exists refuses
+cleanly.
+
+1. Validates `VERSION` is `\d+\.\d+\.\d+`.
+2. Asserts current branch is `main`, tree clean, local matches
+   `origin/main`, and neither `release/v$VERSION` (branch) nor
+   `v$VERSION` (tag) already exists locally or on origin.
+3. Runs `rite test` and `rite lint` locally. Hard-fails on any failure.
+4. Asserts the most recent push-event run on `origin/main` is
+   `completed/success`.
+5. Reads the previous version from `internal/version/version.txt` and
+   bumps:
+   - `internal/version/version.txt` → `vX.Y.Z`
+   - `CHANGELOG.md` — inserts `## [X.Y.Z] - YYYY-MM-DD` immediately
+     after `## [Unreleased]` (preserving the `[Unreleased]` header so
+     subsequent PRs always have a place to land entries).
+   - `README.md` — only the install-example pins (`**Status: v$OLD
+     shipped.**`, the `~/bin v$OLD` pin example, the `ubi:` line). The
+     historical roadmap bullets (`- [x] **v$OLD:**`) are deliberately
+     not bumped — they record what shipped when, not what's current.
+   - `website/src/{getting-started,index,ci,special-vars}.md` — full
+     `s/$OLD/$NEW/g` (these files have no historical-roadmap concern).
+6. Cuts a `release/v$VERSION` branch, commits the bump as
+   `release: stage v$VERSION`, pushes, and opens a draft PR via `gh`.
+
+The release-summary blurb (the one-line description that goes under
+the new `## [X.Y.Z]` header in `CHANGELOG.md`) is **left blank for the
+human to fill in**, on purpose — it's the only piece of release prose
+that isn't mechanically derivable.
+
+### `release:tag VERSION=X.Y.Z`
+
+Codifies the **Tag** section. **Strict** — refuses if `v$VERSION`
+already exists anywhere; never force-pushes.
+
+1. Validates `VERSION` regex, branch is `main`, tree clean, local
+   matches `origin/main`.
+2. Asserts `v$VERSION` does not exist locally or on origin.
+3. Asserts the merged staging changes actually landed on main:
+   `internal/version/version.txt` reads `v$VERSION`, and `CHANGELOG.md`
+   has a dated `## [X.Y.Z] - YYYY-MM-DD` section. Refuses if either is
+   missing — that means the staging PR didn't merge or wasn't run.
+4. `git tag -a v$VERSION -m "rite v$VERSION"` and pushes the tag,
+   which triggers the goreleaser workflow.
+
+### `release:verify VERSION=X.Y.Z`
+
+Codifies the **Post-tag verify** section. Read-only, safe to re-run.
+
+1. Polls `gh run list --workflow release.yml` for a run on the matching
+   tag, up to a 10-minute deadline. Reports progress on every poll.
+   Fails on workflow timeout, failure, or cancellation.
+2. Asserts the GitHub release page exists for `v$VERSION` and has at
+   least 10 assets (archives + checksums + packages).
+3. Best-effort check that the Homebrew tap formula references the new
+   version. Warns (does not fail) on mismatch — the tap bump occasionally
+   lags the goreleaser run.
+4. Prints the residual manual smoke checks (`brew upgrade rite`,
+   `go install …@v$VERSION`, docs site rebuild) — those depend on a
+   different machine or external state and aren't worth automating.
+
+## Pre-tag audit (manual checklist — what `release:prepare` automates)
 
 - [ ] Main branch CI fully green (most recent push on `main` shows
       Test, Lint, Coexistence, Docs, `lint-jsonschema`, Race all SUCCESS

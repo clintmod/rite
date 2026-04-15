@@ -64,6 +64,8 @@ The tool writes `Ritefile.yml` in the same directory. **The original `Taskfile.y
 - Special-var references: <span v-pre>`{{.TASKFILE}}`</span> → `${RITEFILE}`, <span v-pre>`{{.TASKFILE_DIR}}`</span> → `${RITEFILE_DIR}`, etc.
 - Adjacent `.TASK` / `.TASK_DIR` references into their `.RITE_NAME` / `.RITE_TASK_DIR` aliases in a single expression
 
+> **Known gap:** migrate does **not** rewrite self-referential CLI calls inside `cmds:`. A line like `cmds: ['task lint']` (one task shelling out to the runner to invoke another) stays as `task lint` in the generated Ritefile and will either fail or silently hit the old go-task binary. Grep your Ritefile for `task ` after migrating and change those to `rite`. Tracked in [#128](https://github.com/clintmod/rite/issues/128).
+
 The tool emits a warning to stderr for every site where the old and new meanings diverge. The output is grep-friendly:
 
 ```

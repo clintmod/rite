@@ -433,6 +433,22 @@
         },
         "interval": {
           "type": "integer"
+        },
+        "timestamps": {
+          "oneOf": [
+            {
+              "type": "boolean",
+              "description": "true uses the default ISO 8601 UTC millisecond format; false disables timestamps (useful at task scope to opt out of a global-on setting)."
+            },
+            {
+              "type": "string",
+              "description": "A strftime-style format string, e.g. \"[%H:%M:%S]\". See SPEC §Output Timestamps for the supported directive subset."
+            }
+          ],
+          "examples": [
+            true,
+            "[%Y-%m-%d %H:%M:%S]"
+          ]
         }
       },
       "type": "object"
@@ -651,6 +667,22 @@
         },
         "failfast": {
           "type": "boolean"
+        },
+        "timestamps": {
+          "oneOf": [
+            {
+              "type": "boolean",
+              "description": "true uses the default ISO 8601 UTC millisecond format; false disables timestamps (useful at task scope to opt out of a global-on setting)."
+            },
+            {
+              "type": "string",
+              "description": "A strftime-style format string, e.g. \"[%H:%M:%S]\". See SPEC §Output Timestamps for the supported directive subset."
+            }
+          ],
+          "examples": [
+            true,
+            "[%Y-%m-%d %H:%M:%S]"
+          ]
         }
       },
       "type": "object"

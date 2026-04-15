@@ -1,0 +1,10 @@
+version: 3
+tasks:
+  echo:
+    cmds:
+      - echo hello
+  two-line:
+    cmds:
+      - |
+        echo line1
+        echo line2

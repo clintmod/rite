@@ -79,6 +79,17 @@ var (
 	Global           bool
 	Experiments      bool
 	Interactive      bool
+	// Timestamps carries the CLI value of `--timestamps`. NoOptDefVal is
+	// set so a bare `--timestamps` (no value) means "on with default
+	// layout"; a string value is a strftime format; the flag going
+	// unchanged leaves this nil, which means "no CLI override — fall
+	// through to Ritefile scope".
+	Timestamps *ast.Timestamps
+	// timestampsRaw is the raw string value bound to pflag; it is
+	// translated into a *ast.Timestamps by parseTimestampsFlag after
+	// Parse() returns.
+	timestampsRaw     string
+	timestampsChanged bool
 )
 
 func init() {
@@ -148,6 +159,14 @@ func init() {
 	pflag.BoolVarP(&Global, "global", "g", false, "Runs global Ritefile, from $HOME/{R,r}itefile.{yml,yaml}.")
 	pflag.BoolVar(&Experiments, "experiments", false, "Lists all the available experiments and whether or not they are enabled.")
 
+	// --timestamps accepts an optional value: bare `--timestamps` means
+	// "on with the default ISO-8601 UTC ms layout"; `--timestamps=<fmt>`
+	// uses the given strftime format. NoOptDefVal makes the bare form
+	// bind to the sentinel "true" string.
+	pflag.StringVar(&timestampsRaw, "timestamps", "", "Prefix every rite-emitted line (cmd stdout/stderr and rite's own log lines) with a timestamp. Bare flag uses ISO 8601 UTC ms; --timestamps=<strftime> takes a custom format. Set RITE_TIMESTAMPS=1 (or =<strftime>) for env-var form.")
+	tsFlag := pflag.Lookup("timestamps")
+	tsFlag.NoOptDefVal = "true"
+
 	// Gentle force experiment will override the force flag and add a new force-all flag
 	if experiments.GentleForce.Enabled() {
 		pflag.BoolVarP(&Force, "force", "f", false, "Forces execution of the directly called task.")
@@ -157,6 +176,15 @@ func init() {
 	}
 
 	pflag.Parse()
+
+	// Resolve --timestamps / RITE_TIMESTAMPS. CLI flag wins; env var is the
+	// fallback for users who don't want to type it every invocation. The
+	// env var supports the same value grammar as the flag (empty/true/false
+	// or a strftime format). "0"/"false"/"off" explicitly disable —
+	// useful as an escape hatch in CI where a top-level `timestamps: true`
+	// is inherited but a single run needs clean output.
+	timestampsChanged = pflag.Lookup("timestamps").Changed
+	Timestamps = resolveTimestamps(timestampsChanged, timestampsRaw, env.GetRiteEnv("TIMESTAMPS"))
 
 	// Auto-detect color based on environment when not explicitly configured
 	// Priority: CLI flag > RITE_COLOR env > riterc config > NO_COLOR > FORCE_COLOR/CI > default
@@ -173,6 +201,45 @@ func init() {
 	} else {
 		// Explicit config: sync with fatih/color
 		color.NoColor = !Color
+	}
+}
+
+// resolveTimestamps translates the raw CLI flag value (or, when the flag
+// was not passed, RITE_TIMESTAMPS) into a *ast.Timestamps. Returns nil when
+// neither source is set, so the executor falls through to Ritefile scope.
+//
+// Value grammar (CLI and env share it):
+//
+//	""           → unset (nil when flag not passed; empty env var is
+//	               also treated as unset so `unset RITE_TIMESTAMPS`
+//	               and `RITE_TIMESTAMPS=` mean the same thing)
+//	"true"/"1"   → on, default layout
+//	"false"/"0"  → off (explicit opt-out against a Ritefile-enabled scope)
+//	anything else → strftime format, on
+func resolveTimestamps(flagChanged bool, flagValue, envValue string) *ast.Timestamps {
+	raw := ""
+	switch {
+	case flagChanged:
+		raw = flagValue
+	case envValue != "":
+		raw = envValue
+	default:
+		return nil
+	}
+	switch raw {
+	case "true", "1", "on":
+		on := true
+		return &ast.Timestamps{Enabled: &on}
+	case "false", "0", "off":
+		off := false
+		return &ast.Timestamps{Enabled: &off}
+	case "":
+		// --timestamps=<empty> with NoOptDefVal set shouldn't reach here,
+		// but defensively treat it as "unset".
+		return nil
+	default:
+		on := true
+		return &ast.Timestamps{Enabled: &on, Format: raw}
 	}
 }
 
@@ -266,6 +333,7 @@ func (o *flagsOption) ApplyToExecutor(e *task.Executor) {
 		task.WithTaskSorter(sorter),
 		task.WithVersionCheck(true),
 		task.WithFailfast(Failfast),
+		task.WithTimestamps(Timestamps),
 	)
 }
 

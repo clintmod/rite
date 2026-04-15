@@ -73,6 +73,7 @@ func (e *Executor) CompiledTaskForTaskList(call *Call) (*ast.Task, error) {
 		Watch:                origTask.Watch,
 		Namespace:            origTask.Namespace,
 		Failfast:             origTask.Failfast,
+		Timestamps:           origTask.Timestamps,
 	}, nil
 }
 
@@ -142,6 +143,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		Failfast:             origTask.Failfast,
 		Namespace:            origTask.Namespace,
 		FullName:             fullName,
+		Timestamps:           origTask.Timestamps,
 	}
 	new.Dir, err = execext.ExpandLiteral(new.Dir)
 	if err != nil {

@@ -46,6 +46,12 @@ type (
 		Interval     time.Duration
 		Failfast     bool
 
+		// Timestamps carries the CLI / env-var choice for the `--timestamps`
+		// flag. Nil means "no CLI-level override"; the effective value for
+		// each task is resolved at run time (CLI > task > top-level) via
+		// resolveTimestamps().
+		Timestamps *ast.Timestamps
+
 		// I/O
 		Stdin  io.Reader
 		Stdout io.Writer
@@ -60,6 +66,13 @@ type (
 		TaskSorter         sort.Sorter
 		UserWorkingDir     string
 		EnableVersionCheck bool
+
+		// tsCtx carries the run-wide timestamp wiring built at setup time.
+		// It is populated by setupTimestamps(); callers that don't go
+		// through Setup (unit tests) simply see a nil context and no
+		// timestamping is applied.
+		tsCtx          *timestampContext
+		tsCloseLoggers func()
 
 		fuzzyModel     *fuzzy.Model
 		fuzzyModelOnce sync.Once
@@ -455,6 +468,22 @@ type versionCheckOption struct {
 
 func (o *versionCheckOption) ApplyToExecutor(e *Executor) {
 	e.EnableVersionCheck = o.enableVersionCheck
+}
+
+// WithTimestamps carries the CLI / env-var value for the `--timestamps` flag.
+// A nil value means "no CLI-level override"; a non-nil tri-state overrides
+// both the task-level and top-level `timestamps:` settings for every task in
+// this run.
+func WithTimestamps(ts *ast.Timestamps) ExecutorOption {
+	return &timestampsOption{ts}
+}
+
+type timestampsOption struct {
+	ts *ast.Timestamps
+}
+
+func (o *timestampsOption) ApplyToExecutor(e *Executor) {
+	e.Timestamps = o.ts
 }
 
 // WithFailfast tells the [Executor] whether or not to check the version of

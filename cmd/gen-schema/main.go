@@ -337,6 +337,19 @@ func baseTypeMapper(t reflect.Type) *jsonschema.Schema {
 			Description: "Warning prompts displayed before the task runs. User must answer 'y' to proceed (override with --yes).",
 		}
 
+	// Timestamps parses a scalar — `true`, `false`, or a strftime format string.
+	// Without this override, the reflector would walk the struct fields and emit
+	// a spurious `{Enabled, Format}` object shape that doesn't match the YAML.
+	case reflect.TypeOf(ast.Timestamps{}):
+		return &jsonschema.Schema{
+			OneOf: []*jsonschema.Schema{
+				{Type: "boolean", Description: "true uses the default ISO 8601 UTC millisecond format; false disables timestamps (useful at task scope to opt out of a global-on setting)."},
+				{Type: "string", Description: "A strftime-style format string, e.g. \"[%H:%M:%S]\". See SPEC §Output Timestamps for the supported directive subset."},
+			},
+			Description: "Prefix every emitted line (cmd output + rite's own log lines) with a timestamp. Settable at the entrypoint, per task, or via --timestamps / RITE_TIMESTAMPS. Precedence: CLI > task > top-level.",
+			Examples:    []any{true, "[%Y-%m-%d %H:%M:%S]"},
+		}
+
 	// Platform parses a scalar "os", "arch", or "os/arch".
 	case reflect.TypeOf(ast.Platform{}):
 		return &jsonschema.Schema{

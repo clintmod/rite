@@ -1,0 +1,10 @@
+version: 3
+timestamps: true
+output:
+  group:
+    begin: "::group::{{.TASK}}"
+    end: "::endgroup::"
+tasks:
+  grouped:
+    cmds:
+      - echo inner-line

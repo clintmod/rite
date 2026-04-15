@@ -28,20 +28,21 @@ var ErrIncludedRitefilesCantHaveDotenvs = errors.New("rite: Included Ritefiles c
 
 // Ritefile is the abstract syntax tree for a Ritefile
 type Ritefile struct {
-	Location string          `yaml:"-"`
-	Version  *semver.Version `yaml:"version"`
-	Output   Output          `yaml:"output"`
-	Method   string          `yaml:"method"`
-	Includes *Includes       `yaml:"includes"`
-	Set      []string        `yaml:"set"`
-	Shopt    []string        `yaml:"shopt"`
-	Vars     *Vars           `yaml:"vars"`
-	Env      *Vars           `yaml:"env"`
-	Tasks    *Tasks          `yaml:"tasks"`
-	Silent   bool            `yaml:"silent"`
-	Dotenv   []string        `yaml:"dotenv"`
-	Run      string          `yaml:"run"`
-	Interval time.Duration   `yaml:"interval"`
+	Location   string          `yaml:"-"`
+	Version    *semver.Version `yaml:"version"`
+	Output     Output          `yaml:"output"`
+	Method     string          `yaml:"method"`
+	Includes   *Includes       `yaml:"includes"`
+	Set        []string        `yaml:"set"`
+	Shopt      []string        `yaml:"shopt"`
+	Vars       *Vars           `yaml:"vars"`
+	Env        *Vars           `yaml:"env"`
+	Tasks      *Tasks          `yaml:"tasks"`
+	Silent     bool            `yaml:"silent"`
+	Dotenv     []string        `yaml:"dotenv"`
+	Run        string          `yaml:"run"`
+	Interval   time.Duration   `yaml:"interval"`
+	Timestamps *Timestamps     `yaml:"timestamps,omitempty"`
 }
 
 // Merge merges the second Ritefile into the first
@@ -93,19 +94,20 @@ func (tf *Ritefile) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
 	case yaml.MappingNode:
 		var taskfile struct {
-			Version  *semver.Version
-			Output   Output
-			Method   string
-			Includes *Includes
-			Set      []string
-			Shopt    []string
-			Vars     *Vars
-			Env      *Vars
-			Tasks    *Tasks
-			Silent   bool
-			Dotenv   []string
-			Run      string
-			Interval time.Duration
+			Version    *semver.Version
+			Output     Output
+			Method     string
+			Includes   *Includes
+			Set        []string
+			Shopt      []string
+			Vars       *Vars
+			Env        *Vars
+			Tasks      *Tasks
+			Silent     bool
+			Dotenv     []string
+			Run        string
+			Interval   time.Duration
+			Timestamps *Timestamps
 		}
 		if err := node.Decode(&taskfile); err != nil {
 			return errors.NewRitefileDecodeError(err, node)
@@ -123,6 +125,7 @@ func (tf *Ritefile) UnmarshalYAML(node *yaml.Node) error {
 		tf.Dotenv = taskfile.Dotenv
 		tf.Run = taskfile.Run
 		tf.Interval = taskfile.Interval
+		tf.Timestamps = taskfile.Timestamps
 		if tf.Includes == nil {
 			tf.Includes = NewIncludes()
 		}

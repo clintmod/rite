@@ -152,10 +152,18 @@ tasks:
     generates:
       - "website/src/public/schema.json"
       - "website/src/public/schema/v3.json"
+      - "website/src/next/public/schema.json"
+      - "website/src/next/public/schema/v3.json"
     cmds:
-      - mkdir -p website/src/public/schema
+      # Canonical schema lives at the site root so stable consumer URLs
+      # (clintmod.github.io/rite/schema.json, /rite/schema/v3.json) keep
+      # working. A copy is mirrored into next/ so the per-version Schema
+      # page in next/ can link to its own tagged schema path.
+      - mkdir -p website/src/public/schema website/src/next/public/schema
       - go run ./cmd/gen-schema > website/src/public/schema.json
       - go run ./cmd/gen-schema -id https://clintmod.github.io/rite/schema/v3.json > website/src/public/schema/v3.json
+      - cp website/src/public/schema.json website/src/next/public/schema.json
+      - cp website/src/public/schema/v3.json website/src/next/public/schema/v3.json
 
   generate:mocks:
     desc: Runs Mockery to create mocks
@@ -383,11 +391,14 @@ tasks:
       - task: _release:bump
         vars:
           VERSION: "{{.VERSION}}"
+      - task: release:snapshot-docs
+        vars:
+          VERSION: "{{.VERSION}}"
       - cmd: |
           set -e
           branch="release/v{{.VERSION}}"
           git checkout -b "$branch"
-          git add CHANGELOG.md README.md website/src/getting-started.md website/src/index.md website/src/ci.md website/src/special-vars.md internal/version/version.txt
+          git add CHANGELOG.md README.md website/src/next/getting-started.md website/src/next/index.md website/src/next/ci.md website/src/next/special-vars.md internal/version/version.txt "website/src/v{{.VERSION}}"
           git commit -m "release: stage v{{.VERSION}}"
           git push -u origin "$branch"
           gh pr create --repo clintmod/rite \
@@ -528,6 +539,85 @@ tasks:
           echo "  - go install github.com/clintmod/rite/cmd/rite@v{{.VERSION}} && rite --version"
           echo "  - clintmod.github.io/rite/ shows the new CHANGELOG section"
 
+  release:snapshot-docs:
+    desc: "Copy website/src/next/ into website/src/v$VERSION/ for this release. Pass VERSION=X.Y.Z."
+    summary: |
+      Part of the versioned docs site (issue #132). Called automatically
+      from release:prepare so the staging PR already contains the snapshot
+      — by the time the tag lands, the /v<VERSION>/ tree is live on main.
+
+      Idempotent guard: refuses if website/src/v$VERSION/ already exists.
+      Delete it or bump VERSION to re-run.
+
+      Internal markdown links in the snapshot are rewritten from
+      absolute (](/foo)) to relative (](./foo)) so navigation stays
+      within the version dir. YAML hero links in index.md pick up a
+      /v$VERSION/ prefix for the same reason.
+
+      spec.md / changelog.md are written as thin stubs that link out to
+      the tag-pinned GitHub URLs — inlining the raw SPEC/CHANGELOG breaks
+      the VitePress build because the Vue SFC compiler tokenises
+      Go-template syntax inside fenced blocks. See CLAUDE.md
+      "Known sharp edges" for the gory details.
+    requires:
+      vars: [VERSION]
+    preconditions:
+      - sh: 'printf %s "{{.VERSION}}" | grep -Eq "^[0-9]+\.[0-9]+\.[0-9]+$"'
+        msg: "VERSION must be semver X.Y.Z (no v prefix). Got: {{.VERSION}}"
+      - sh: 'test -d "website/src/next"'
+        msg: "website/src/next/ not found — has the versioned-docs restructure (issue #132) landed?"
+      - sh: 'test ! -d "website/src/v{{.VERSION}}"'
+        msg: "website/src/v{{.VERSION}} already exists — delete it or pick another VERSION."
+    cmds:
+      - cmd: |
+          set -e
+          ver="v{{.VERSION}}"
+          dst="website/src/${ver}"
+          echo "==> snapshotting website/src/next/ -> ${dst}"
+          cp -R website/src/next/ "${dst}/"
+
+          # Rewrite absolute in-page markdown links to relative so links
+          # resolve inside the version dir (not the site root).
+          for f in "${dst}"/*.md; do
+            [ -f "$f" ] || continue
+            perl -i -pe 's{\]\(/([a-z][a-z0-9-]*)(#[^\)]*)?\)}{](./$1$2)}g' "$f"
+          done
+
+          # Rewrite YAML hero links in index.md: /next/foo -> /vX.Y.Z/foo.
+          # Pass ver via env so perl sees it without bash clobbering $1.
+          if [ -f "${dst}/index.md" ]; then
+            VER="${ver}" perl -i -pe 's{link: /next/}{link: /$ENV{VER}/}g' "${dst}/index.md"
+          fi
+
+          # SPEC + CHANGELOG stubs (see task summary for why we don't inline).
+          cat > "${dst}/spec.md" <<EOF_SPEC
+          ---
+          title: SPEC (${ver})
+          ---
+
+          # SPEC at ${ver}
+
+          The design contract at this release is preserved on GitHub:
+
+          <https://github.com/clintmod/rite/blob/${ver}/SPEC.md>
+          EOF_SPEC
+
+          cat > "${dst}/changelog.md" <<EOF_CHANGELOG
+          ---
+          title: CHANGELOG (${ver})
+          ---
+
+          # CHANGELOG at ${ver}
+
+          The release notes at this tag are preserved on GitHub:
+
+          <https://github.com/clintmod/rite/blob/${ver}/CHANGELOG.md>
+
+          Release page: <https://github.com/clintmod/rite/releases/tag/${ver}>
+          EOF_CHANGELOG
+
+          echo "  snapshot: ${dst} ($(find "${dst}" -name '*.md' | wc -l | tr -d ' ') .md files)"
+
   _release:audit:
     desc: Internal — pre-tag audit (test, lint, CI green check). Used by release:prepare.
     internal: true
@@ -606,13 +696,15 @@ tasks:
             README.md
           rm -f README.md.bak
 
-          # website/src — these files are pure install-example surface, no
-          # historical-roadmap concern, so a global s/$old/$new/g per file is
-          # safe. Strip the 'v' for the bare-semver `go:` mise example in
-          # getting-started.md.
+          # website/src/next — these files are pure install-example surface,
+          # no historical-roadmap concern, so a global s/$old/$new/g per file
+          # is safe. Strip the 'v' for the bare-semver `go:` mise example in
+          # getting-started.md. (Post-#132 docs live under next/; see
+          # website/src/<tag>/ for tagged snapshots — those are immutable
+          # mirrors of what shipped and must NOT be bumped here.)
           old_bare="${old#v}"
           new_bare="${new#v}"
-          for f in website/src/getting-started.md website/src/index.md website/src/ci.md website/src/special-vars.md; do
+          for f in website/src/next/getting-started.md website/src/next/index.md website/src/next/ci.md website/src/next/special-vars.md; do
             sed -i.bak \
               -e "s|$old|$new|g" \
               -e "s|\"$old_bare\"|\"$new_bare\"|g" \
@@ -620,4 +712,4 @@ tasks:
             rm -f "$f.bak"
           done
 
-          echo "  bumped: internal/version/version.txt CHANGELOG.md README.md website/src/{getting-started,index,ci,special-vars}.md"
+          echo "  bumped: internal/version/version.txt CHANGELOG.md README.md website/src/next/{getting-started,index,ci,special-vars}.md"

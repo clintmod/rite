@@ -95,6 +95,7 @@ function sidebarFor(version: string) {
         { text: 'CI integration', link: p('ci') },
         { text: 'Schema', link: p('schema') },
         { text: '.riterc config', link: p('riterc') },
+        { text: 'Docs versioning', link: p('versioning') },
       ],
     },
     {

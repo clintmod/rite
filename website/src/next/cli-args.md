@@ -45,7 +45,7 @@ rite parallel-test -- pkg-a pkg-b pkg-c
 
 ## Splitting a string into args
 
-If you have `CLI_ARGS` as a string but need to count or iterate the individual tokens, the `splitArgs` template helper splits on shell-style quoting (`"foo bar" baz` → two tokens, not three). It pipes into `len` for a count or `range` for iteration. See [syntax — template helpers](/syntax) for the Go-template form.
+If you have `CLI_ARGS` as a string but need to count or iterate the individual tokens, the `splitArgs` template helper splits on shell-style quoting (`"foo bar" baz` → two tokens, not three). It pipes into `len` for a count or `range` for iteration. See [syntax — template helpers](./syntax) for the Go-template form.
 
 In practice, prefer `CLI_ARGS_LIST` over splitting `CLI_ARGS` yourself — it's already split correctly and works with `for: { var: CLI_ARGS_LIST }` directly.
 

@@ -47,7 +47,7 @@ rite destroy --yes
 
 This is the only way to make a prompt-gated task run unattended. Don't bake `--yes` into a script that other humans run interactively — the prompt is there for a reason.
 
-The same flag is exposed to task templates as [`CLI_ASSUME_YES`](/special-vars#cli-assume-yes) if you have custom confirmation logic outside of `prompt:`.
+The same flag is exposed to task templates as [`CLI_ASSUME_YES`](./special-vars#cli-assume-yes) if you have custom confirmation logic outside of `prompt:`.
 
 ## Templating
 

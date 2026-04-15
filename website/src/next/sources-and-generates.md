@@ -57,7 +57,7 @@ sources:
   - './Makefile'
 ```
 
-Inside a glob you can use [Go-template syntax](/syntax#go-template-var) to interpolate vars:
+Inside a glob you can use [Go-template syntax](./syntax#go-template-var) to interpolate vars:
 
 ```yaml
 tasks:

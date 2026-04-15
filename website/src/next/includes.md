@@ -44,7 +44,7 @@ includes:
     excludes: [deploy]            # pretend these task names don't exist here
 ```
 
-See [schema: includes](/schema#includes) for the exhaustive list of keys.
+See [schema: includes](./schema#includes) for the exhaustive list of keys.
 
 ## What variables the included file sees
 

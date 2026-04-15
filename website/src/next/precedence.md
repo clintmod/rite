@@ -111,7 +111,7 @@ $ rite migrate LOG_LEVEL=trace
 logged at trace                     # tier 2 (CLI) beats both env: blocks
 ```
 
-The `rite --migrate` tool flags Taskfiles whose `env:` semantics change under this model — see the [migration guide](/migration).
+The `rite --migrate` tool flags Taskfiles whose `env:` semantics change under this model — see the [migration guide](./migration).
 
 ### `dotenv:` precedence
 

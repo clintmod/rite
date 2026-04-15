@@ -115,7 +115,7 @@ The precondition is a hard guard — invoking `release` with a dirty tree is a b
 
 ## Templating and variable precedence
 
-Both forms (shell and template) have access to the task's full variable set, including shell env (tier 1), CLI args (tier 2), and dynamic `sh:` vars. Variable precedence applies normally — see [precedence](/precedence). A common pattern: gate prod-only behavior on a shell env var the CI sets, with a Ritefile default for local dev.
+Both forms (shell and template) have access to the task's full variable set, including shell env (tier 1), CLI args (tier 2), and dynamic `sh:` vars. Variable precedence applies normally — see [precedence](./precedence). A common pattern: gate prod-only behavior on a shell env var the CI sets, with a Ritefile default for local dev.
 
 ```yaml
 vars:

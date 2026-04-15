@@ -13,7 +13,7 @@ rite --validate path/to/Ritefile.yml
 rite --validate --json
 ```
 
-On success the command prints `ok` to stdout and exits `0`. On failure it exits with one of the Ritefile-related [exit codes](/cli#exit-codes) and prints a human-readable error to stderr.
+On success the command prints `ok` to stdout and exits `0`. On failure it exits with one of the Ritefile-related [exit codes](./cli#exit-codes) and prints a human-readable error to stderr.
 
 `--validate` is mutually exclusive with `--init`, `--migrate`, and task execution — it runs, reports, and exits.
 
@@ -57,7 +57,7 @@ Failure:
 }
 ```
 
-`code` is the [exit code](/cli#exit-codes) the process will return (same code routes via the process exit status), letting editor integrations map errors to the right category. When the underlying error carries file/line info (typed-shape mismatches surfaced as schema decode errors), the entry also includes `file`, `line`, and `col`.
+`code` is the [exit code](./cli#exit-codes) the process will return (same code routes via the process exit status), letting editor integrations map errors to the right category. When the underlying error carries file/line info (typed-shape mismatches surfaced as schema decode errors), the entry also includes `file`, `line`, and `col`.
 
 The JSON is always emitted to stdout; human-readable error text still goes to stderr, which most CI parsers ignore. That split lets you pipe the JSON into `jq` without sanitizing around diagnostics.
 
@@ -74,7 +74,7 @@ The JSON is always emitted to stdout; human-readable error text still goes to st
 | `104` | Invalid Ritefile — YAML could not be parsed |
 | `105` | Include cycle detected |
 
-See the full [exit code table](/cli#exit-codes) for the context these fit into.
+See the full [exit code table](./cli#exit-codes) for the context these fit into.
 
 ## CI example
 

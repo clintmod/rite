@@ -47,7 +47,7 @@ All six `CLI_*` vars let a task see *how* it was invoked — whether `--force` w
 
 ### `CLI_ARGS` and `CLI_ARGS_LIST`
 
-Covered in depth on [Forwarding CLI args](/cli-args). Short version:
+Covered in depth on [Forwarding CLI args](./cli-args). Short version:
 
 ```yaml
 tasks:
@@ -114,7 +114,7 @@ tasks:
       - rm -rf .cache
 ```
 
-See [Warning prompts](/prompt) for the built-in `prompt:` field, which reads `CLI_ASSUME_YES` automatically.
+See [Warning prompts](./prompt) for the built-in `prompt:` field, which reads `CLI_ASSUME_YES` automatically.
 
 ## `RITE_*` / file-path / task-name vars — runtime context
 
@@ -233,4 +233,4 @@ cmds:
   - echo ${RITEFILE}       # shell-preprocessor form — same value
 ```
 
-They resolve against the same variable set at the same precedence tier. Pick whichever reads cleaner for the surrounding cmd. See [Syntax](/syntax) for the full rules.
+They resolve against the same variable set at the same precedence tier. Pick whichever reads cleaner for the surrounding cmd. See [Syntax](./syntax) for the full rules.

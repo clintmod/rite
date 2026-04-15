@@ -37,13 +37,13 @@ Runs the named task(s), passing any `KEY=value` pairs as CLI-tier vars (tier 2).
 | `--output-group-end TMPL` | Printed after a grouped task's output (requires `--output=group`) |
 | `--output-group-error-only` | Discard output from successful grouped tasks (requires `--output=group`) |
 | `-d`, `--dir DIR` | Set the Ritefile's working directory |
-| `-g`, `--global` | Run the global Ritefile under `$HOME` (see [File discovery](/file-discovery)) |
+| `-g`, `--global` | Run the global Ritefile under `$HOME` (see [File discovery](./file-discovery)) |
 | `-t`, `--taskfile FILE` | Point at an explicit Ritefile |
 | `--no-status` | Omit up-to-date status from `--list --json` |
 | `--nested` | Nest namespaces in `--list --json` output |
-| `--migrate [FILE]` | Convert a go-task Taskfile to a Ritefile. See [Migration](/migration) |
+| `--migrate [FILE]` | Convert a go-task Taskfile to a Ritefile. See [Migration](./migration) |
 | `--keep-go-templates` | With `--migrate`, leave Go-template var refs as-is rather than rewriting to `${VAR}` |
-| `--validate [FILE]` | Parse + schema-check the Ritefile without running any task. Pair with `--json` for machine-readable output. See [Validate](/validate) |
+| `--validate [FILE]` | Parse + schema-check the Ritefile without running any task. Pair with `--json` for machine-readable output. See [Validate](./validate) |
 | `--completion SHELL` | Print completion script (`bash`, `zsh`, `fish`, `powershell`) |
 | `--experiments` | List experiment flags and whether each is enabled |
 | `--version` | Print version |
@@ -51,7 +51,7 @@ Runs the named task(s), passing any `KEY=value` pairs as CLI-tier vars (tier 2).
 
 Full list with default values: `rite --help`.
 
-Each of `--verbose`, `--silent`, `--force`, and `--yes` is also surfaced to task templates as a `CLI_*` bool — see [Special `CLI_*` variables](/special-vars) if a task needs to branch on which flags were passed.
+Each of `--verbose`, `--silent`, `--force`, and `--yes` is also surfaced to task templates as a `CLI_*` bool — see [Special `CLI_*` variables](./special-vars) if a task needs to branch on which flags were passed.
 
 ## Listing and inspecting tasks
 
@@ -107,7 +107,7 @@ FOO=bar rite build             # 1. Shell env — tier 1 (wins over everything)
 rite build FOO=bar             # 2. CLI positional — tier 2
 ```
 
-See [Variable precedence](/precedence) for the full tier list.
+See [Variable precedence](./precedence) for the full tier list.
 
 ## Passing args to the task itself
 
@@ -124,7 +124,7 @@ tasks:
       - myprogram {{.CLI_ARGS}}
 ```
 
-`CLI_ARGS` (and the other `CLI_*` specials) are marked non-export, so they're visible inside Ritefile templating but don't leak into the process environ of cmd shells. For the full list — `CLI_ARGS`, `CLI_ARGS_LIST`, `CLI_FORCE`, `CLI_SILENT`, `CLI_VERBOSE`, `CLI_ASSUME_YES` — see [Special `CLI_*` variables](/special-vars).
+`CLI_ARGS` (and the other `CLI_*` specials) are marked non-export, so they're visible inside Ritefile templating but don't leak into the process environ of cmd shells. For the full list — `CLI_ARGS`, `CLI_ARGS_LIST`, `CLI_FORCE`, `CLI_SILENT`, `CLI_VERBOSE`, `CLI_ASSUME_YES` — see [Special `CLI_*` variables](./special-vars).
 
 ## Exit codes
 
@@ -142,7 +142,7 @@ When a cmd inside a task exits non-zero, rite's default exit code is `201` (`Cod
 
 ## Environment variables rite reads
 
-All flag-equivalents read their value from a `RITE_<NAME>` env var if the flag wasn't set on the CLI. Precedence is: CLI flag > env > [`.riterc.yml`](/migration#riterc) > default.
+All flag-equivalents read their value from a `RITE_<NAME>` env var if the flag wasn't set on the CLI. Precedence is: CLI flag > env > [`.riterc.yml`](./migration#riterc) > default.
 
 | Var | Flag equivalent | Purpose |
 |---|---|---|
@@ -162,4 +162,4 @@ All flag-equivalents read their value from a `RITE_<NAME>` env var if the flag w
 | `FORCE_COLOR` | *(no flag)* | Force ANSI color on even without a TTY (if nothing else is set) |
 | `CI` | *(no flag)* | When truthy, rite behaves like `FORCE_COLOR` for CI annotation output |
 
-Task-declared variables reach cmd shells through the process environ by default (see [syntax §Non-exported](/syntax#non-exported-variables)).
+Task-declared variables reach cmd shells through the process environ by default (see [syntax §Non-exported](./syntax#non-exported-variables)).

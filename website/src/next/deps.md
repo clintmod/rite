@@ -44,7 +44,7 @@ Call-site vars land at the callee's tier 2 (CLI-equivalent) — they beat the ca
 `deps:` run **concurrently by default** — rite parallelizes the graph. If two of your tasks shouldn't run at the same time (e.g. both touch the same cache file), reach for:
 
 - **Serial chain:** use `cmds: [- task: a, - task: b]` inside a task instead of `deps: [a, b]`. Cmds inside a task run sequentially.
-- **`run: once`:** see [run modes](/syntax#commands).
+- **`run: once`:** see [run modes](./syntax#commands).
 - **`--concurrency 1`:** a CLI-level cap on total concurrent tasks.
 
 ## Cross-included deps
@@ -61,7 +61,7 @@ tasks:
     cmds: ['go build ./...']
 ```
 
-Namespaces nest — `foo:lib:greet` is valid if `foo` includes `lib` which has a `greet` task. See [schema: `includes`](/schema#includes).
+Namespaces nest — `foo:lib:greet` is valid if `foo` includes `lib` which has a `greet` task. See [schema: `includes`](./schema#includes).
 
 ## deps vs cmds: task
 

@@ -28,7 +28,7 @@ The pattern matches every name beginning with `start-`. To make the cmds *use* t
 
 `MATCH` is a list of the captured chunks (one per `*`), available inside the task's Go-template context. The standard pattern: alias the captured value through `vars:` so cmds can reference it as a normal `${SERVICE}` (or whatever name fits the domain).
 
-The Go-template form for indexing into `MATCH` is described in [syntax — template helpers](/syntax). The relevant helper is `index`, which takes the list and a zero-based position. A `vars:` alias built from `MATCH[0]` looks like (in pseudocode form here, since the docs site can't safely render the literal Go-template braces inside a YAML fenced block):
+The Go-template form for indexing into `MATCH` is described in [syntax — template helpers](./syntax). The relevant helper is `index`, which takes the list and a zero-based position. A `vars:` alias built from `MATCH[0]` looks like (in pseudocode form here, since the docs site can't safely render the literal Go-template braces inside a YAML fenced block):
 
 > `vars: { SERVICE: <go-template indexing MATCH[0]> }`
 

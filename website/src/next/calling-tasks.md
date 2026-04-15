@@ -12,7 +12,7 @@ tasks:
       - go build ./...
 ```
 
-`generate` and `lint` run **first and concurrently**. Once both finish, `go build` runs. See [task dependencies](/deps) for the full deps story.
+`generate` and `lint` run **first and concurrently**. Once both finish, `go build` runs. See [task dependencies](./deps) for the full deps story.
 
 ## `cmds: - task: foo` — run inline, sequentially
 
@@ -49,7 +49,7 @@ tasks:
       - GOOS=${OS} GOARCH=${ARCH} go build -o bin/app-${OS}-${ARCH} ./cmd/app
 ```
 
-Call-site `vars:` land at the callee's **CLI tier (tier 2)** in the [precedence table](/precedence) — they beat the callee's task-scope defaults but lose to shell env. So:
+Call-site `vars:` land at the callee's **CLI tier (tier 2)** in the [precedence table](./precedence) — they beat the callee's task-scope defaults but lose to shell env. So:
 
 ```sh
 $ rite build-all                # OS=linux/darwin from call sites
@@ -81,4 +81,4 @@ A task can call itself, but rite has no cycle detection beyond a recursion limit
 - **`deps:`** — when the work is independent of order and could run in parallel. Sibling deps run concurrently.
 - **`cmds: - task:`** — when ordering matters or the callee shares output with the caller's other cmds. Sequential, in the parent's log stream.
 
-If you have `deps: [a, b]`, a and b may start simultaneously. If you have `cmds: [{task: a}, {task: b}]`, a runs to completion, then b. See [`deps`](/deps) for more on the distinction.
+If you have `deps: [a, b]`, a and b may start simultaneously. If you have `cmds: [{task: a}, {task: b}]`, a runs to completion, then b. See [`deps`](./deps) for more on the distinction.

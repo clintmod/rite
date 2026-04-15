@@ -6,7 +6,7 @@ outline: deep
 
 # Ritefile Schema Reference
 
-This page documents every property of the Ritefile schema (version 3) and the types it accepts. The shape is near-identical to go-task's Taskfile v3 schema; the *semantics* are where rite differs — see [precedence](/precedence) for the seven-tier variable model and [migration](/migration) for the five user-visible breaks.
+This page documents every property of the Ritefile schema (version 3) and the types it accepts. The shape is near-identical to go-task's Taskfile v3 schema; the *semantics* are where rite differs — see [precedence](./precedence) for the seven-tier variable model and [migration](./migration) for the five user-visible breaks.
 
 > **JSON schema URLs.** Two copies are published; pick based on how much
 > churn you're willing to tolerate:
@@ -673,7 +673,7 @@ tasks:
       - go build -ldflags="-s -w" ./...
 ```
 
-Go-template conditionals (see [Syntax](/syntax#go-template-var)) also work wherever a shell command does — they're evaluated first, then the result is handed to the shell.
+Go-template conditionals (see [Syntax](./syntax#go-template-var)) also work wherever a shell command does — they're evaluated first, then the result is handed to the shell.
 
 #### `dir`
 
@@ -768,7 +768,7 @@ tasks:
 - **Description**: Override the display name shown in logs, `--list`, and the
   `RITE_NAME` special var. The canonical name (map key) is unchanged — only
   what the user sees. Useful when a task key is terse but you want a
-  human-readable label. See [Label override](/label).
+  human-readable label. See [Label override](./label).
 
 ```yaml
 tasks:
@@ -783,7 +783,7 @@ tasks:
 - **Type**: `map[string]Variable`
 - **Description**: Task-scoped variables. Under rite's first-in-wins
   precedence, these are defaults — shell env, CLI args, and include-site
-  vars can override them. See [precedence](/precedence) for the full
+  vars can override them. See [precedence](./precedence) for the full
   ordering.
 
 ```yaml
@@ -838,7 +838,7 @@ tasks:
 - **Default**: inherits from root `silent:`
 - **Description**: Suppress the task's command echo and header. The CLI
   `--silent` / `-s` flag overrides this. See
-  [Silent / dry-run / ignore-error](/silent-dry-ignore).
+  [Silent / dry-run / ignore-error](./silent-dry-ignore).
 
 ```yaml
 tasks:
@@ -855,7 +855,7 @@ tasks:
 - **Description**: Mark the task as needing an attached TTY (stdin/stdout).
   Forces serial execution with other interactive tasks so their prompts
   don't clobber each other. Use for editors, REPLs, or commands that prompt
-  for input. See [Interactive cmds](/interactive).
+  for input. See [Interactive cmds](./interactive).
 
 ```yaml
 tasks:
@@ -871,7 +871,7 @@ tasks:
 - **Default**: `false`
 - **Description**: Hide the task from `--list` and block direct invocation
   from the CLI. Internal tasks are callable only as deps or from `task:`
-  references. See [Internal tasks](/internal-tasks).
+  references. See [Internal tasks](./internal-tasks).
 
 ```yaml
 tasks:
@@ -893,7 +893,7 @@ tasks:
 - **Description**: Continue the task even if one of its `cmds` returns a
   non-zero exit code. Applies to every command in the task unless a
   command-level `ignore_error:` overrides it. See
-  [Silent / dry-run / ignore-error](/silent-dry-ignore).
+  [Silent / dry-run / ignore-error](./silent-dry-ignore).
 
 ```yaml
 tasks:
@@ -911,7 +911,7 @@ tasks:
 - **Options**: `always`, `once`, `when_changed`
 - **Description**: How often the task's body runs within a single `rite`
   invocation. `once` is common for expensive setup deps. See
-  [Run modes](/run-modes).
+  [Run modes](./run-modes).
 
 ```yaml
 tasks:

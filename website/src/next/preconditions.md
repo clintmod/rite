@@ -104,7 +104,7 @@ Both gate task execution. The difference is what *not running* means:
 | Use when | Invoking the task without the condition is a bug | Invoking the task without the condition is a valid no-op |
 | Where it lives | Top of task, list form with `sh:` + `msg:` | Top of task or per-cmd, single expression |
 
-Common pattern: combine both. Preconditions enforce hard invariants (working tree clean, required secrets present); `if:` controls feature-flag-style branches (deploy only when on the release branch, run cleanup only in prod). See [conditional execution (`if:`)](/conditionals) for full coverage of the `if:` family.
+Common pattern: combine both. Preconditions enforce hard invariants (working tree clean, required secrets present); `if:` controls feature-flag-style branches (deploy only when on the release branch, run cleanup only in prod). See [conditional execution (`if:`)](./conditionals) for full coverage of the `if:` family.
 
 ## Interactive prompting for missing variables
 

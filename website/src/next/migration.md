@@ -15,7 +15,7 @@ rite takes the opposite position. Under rite:
 3. Ritefile entrypoint `vars:` / `env:` come after.
 4. Task-scope `vars:` / `env:` are **defaults only** — they apply when no higher tier has set the name.
 
-That single change is what this whole fork is about. See [the precedence page](/precedence) for the formal tier table and [SPEC.md §Variable Precedence](https://github.com/clintmod/rite/blob/main/SPEC.md) for the contract.
+That single change is what this whole fork is about. See [the precedence page](./precedence) for the formal tier table and [SPEC.md §Variable Precedence](https://github.com/clintmod/rite/blob/main/SPEC.md) for the contract.
 
 ## Install alongside go-task (or replace it)
 

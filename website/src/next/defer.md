@@ -59,7 +59,7 @@ tasks:
       - aws s3 rm s3://load-results/${ENV} --recursive
 ```
 
-`vars:` on the deferred call are forwarded as if you'd written `task: cleanup` in the normal cmd position. They land at the callee's CLI tier (tier 2 in [precedence](/precedence)).
+`vars:` on the deferred call are forwarded as if you'd written `task: cleanup` in the normal cmd position. They land at the callee's CLI tier (tier 2 in [precedence](./precedence)).
 
 ## Silent defers
 

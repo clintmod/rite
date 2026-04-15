@@ -45,7 +45,7 @@ rite test SERVICE=api      # runs in ./api
 rite test SERVICE=worker   # runs in ./worker
 ```
 
-The dir is templated *after* variable resolution, so first-in-wins applies — shell env beats CLI which beats Ritefile defaults. See [variable precedence](/precedence).
+The dir is templated *after* variable resolution, so first-in-wins applies — shell env beats CLI which beats Ritefile defaults. See [variable precedence](./precedence).
 
 ## Inheritance through deps and `task:` calls
 

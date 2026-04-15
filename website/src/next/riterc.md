@@ -12,7 +12,7 @@ experiments. The file is entirely optional — rite works without one.
 
 The name is deliberately rite-specific so it can coexist with `go-task`'s
 `.taskrc.yml` in the same tree without either tool reading the other's
-config. See the [migration guide](/migration#config-file) for how to port
+config. See the [migration guide](./migration#config-file) for how to port
 a `.taskrc.yml` to `.riterc.yml`.
 
 ## File discovery
@@ -121,7 +121,7 @@ concurrency: 4
 - **Description**: Mark every task as interactive (forcing serial
   execution and TTY attachment). Usually you want per-task
   `interactive: true` instead — see
-  [Interactive cmds](/interactive). Equivalent to `--interactive`.
+  [Interactive cmds](./interactive). Equivalent to `--interactive`.
 
 ```yaml
 interactive: true
@@ -188,4 +188,4 @@ any given key is:
 5. XDG `$XDG_CONFIG_HOME/rite/riterc.yml` (lowest)
 
 This matches rite's overall first-in-wins model for Ritefile variables —
-see [precedence](/precedence) for the Ritefile-side rules.
+see [precedence](./precedence) for the Ritefile-side rules.

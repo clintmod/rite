@@ -47,7 +47,7 @@ Run rite as if it had been invoked from a different directory. Walk-up still app
 rite -d ~/code/myapp test
 ```
 
-The cmds run with their own `dir:` resolution (relative to the Ritefile, not your shell CWD). See [`dir:` in tasks](/dir).
+The cmds run with their own `dir:` resolution (relative to the Ritefile, not your shell CWD). See [`dir:` in tasks](./dir).
 
 ## Global Ritefile: `-g` / `--global`
 
@@ -95,6 +95,6 @@ Stdin Ritefiles can use `includes:` only with absolute paths or `-d` — they ha
 
 ## What rite does NOT do (vs. some alternatives)
 
-- **No automatic OS-suffix files.** rite does not silently merge `Ritefile_darwin.yml` when running on macOS. If you want that pattern, declare it explicitly via [includes with templated paths](/includes#os-specific-includes) — `includes: { local: ./Ritefile_${OS}.yml }`.
+- **No automatic OS-suffix files.** rite does not silently merge `Ritefile_darwin.yml` when running on macOS. If you want that pattern, declare it explicitly via [includes with templated paths](./includes#os-specific-includes) — `includes: { local: ./Ritefile_${OS}.yml }`.
 - **No XDG search.** rite doesn't look in `$XDG_CONFIG_HOME/rite/` for anything. The global Ritefile lives in `$HOME` (matching upstream); use `-g` to invoke it.
 - **No remote Ritefiles.** `includes:` accepts local paths only. Ritefiles should be checked in alongside the code they build so task execution stays idempotent and reproducible. If you need to share tasks across repos, vendor them in or generate them at build time.

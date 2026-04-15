@@ -60,7 +60,7 @@ tasks:
 
 ## Exit codes
 
-CI scripts care about exit codes. rite's are documented in [CLI § Exit codes](/cli#exit-codes). Two flags worth knowing for CI:
+CI scripts care about exit codes. rite's are documented in [CLI § Exit codes](./cli#exit-codes). Two flags worth knowing for CI:
 
 - `--exit-code` (`-x`) — exit with the failing cmd's exact code instead of rite's wrapped 200+ form. Useful when downstream CI tooling parses specific codes.
 - `--fail-on-status` — exit non-zero if any named task is *not up-to-date* (per `sources:` / `generates:`). Useful for "fail the build if the generated files weren't regenerated."
@@ -118,4 +118,4 @@ If you want to suppress annotations even on GitHub Actions (e.g., your workflow 
 
 ## Watch mode in CI
 
-Don't. `rite --watch` is interactive and never exits. CI runners will hang. See [watch § when not to use](/watch#when-not-to-use).
+Don't. `rite --watch` is interactive and never exits. CI runners will hang. See [watch § when not to use](./watch#when-not-to-use).

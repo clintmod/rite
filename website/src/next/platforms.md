@@ -69,7 +69,7 @@ Whichever cmd's platform matches runs; the others are skipped.
 
 ## Silent skip vs explicit error
 
-A task that skips because of `platforms:` exits 0 from the dependent's perspective — it didn't fail, it didn't run. If you want a "this task shouldn't be invoked on this OS" error instead, use [`requires:` or `preconditions:`](/preconditions) which fail loudly:
+A task that skips because of `platforms:` exits 0 from the dependent's perspective — it didn't fail, it didn't run. If you want a "this task shouldn't be invoked on this OS" error instead, use [`requires:` or `preconditions:`](./preconditions) which fail loudly:
 
 ```yaml
 tasks:

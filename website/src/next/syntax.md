@@ -1,6 +1,6 @@
 # Syntax reference
 
-A Ritefile is YAML. It looks a lot like a Taskfile — the differences are semantic (see [precedence](/precedence)) more than structural.
+A Ritefile is YAML. It looks a lot like a Taskfile — the differences are semantic (see [precedence](./precedence)) more than structural.
 
 ## Top-level keys
 
@@ -193,7 +193,7 @@ vars:
 ```
 
 - Lazily evaluated (only if referenced)
-- Per-resolution cache (see [precedence §Dynamic variables](/precedence#dynamic-variables))
+- Per-resolution cache (see [precedence §Dynamic variables](./precedence#dynamic-variables))
 - The `sh:` command runs in the task's working directory unless a `dir:` is set on the var
 
 ## References
@@ -243,4 +243,4 @@ The task is skipped when every `sources:` file is unchanged since the last `gene
 
 ## What's different from go-task
 
-The YAML schema is near-identical; the semantics are the thing rite actually changes. See [the migration guide](/migration) for the five user-visible breaks.
+The YAML schema is near-identical; the semantics are the thing rite actually changes. See [the migration guide](./migration) for the five user-visible breaks.

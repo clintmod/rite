@@ -49,7 +49,7 @@ The interval is a *minimum* gap between re-runs, not a polling interval — even
 
 ## What gets watched
 
-The `sources:` glob. Same syntax as [incremental builds](/sources-and-generates):
+The `sources:` glob. Same syntax as [incremental builds](./sources-and-generates):
 
 ```yaml
 tasks:

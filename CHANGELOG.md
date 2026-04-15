@@ -13,14 +13,17 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-04-15
+
+Patch release: correctness fix for the shell preprocessor + cross-platform install UX.
+
+### Changed
+
+- `rite install` task is now cross-platform and PATH-aware. Runs `go install`, detects whether `$(go env GOBIN)` (or `$(go env GOPATH)/bin`) is on `$PATH`. If yes, done. If no, walks XDG-first candidates (`~/.local/bin`, `~/bin`, `/usr/local/bin`) and symlinks the binary into the first one already on `$PATH`. If no candidate is on PATH, emits `export PATH=...` instructions to stderr and exits non-zero so the "almost done" state is visible. Matching `rite uninstall` removes only symlinks that `readlink -f` resolve to the freshly-installed binary (or dangling symlinks whose target was under `$gobin/`); refuses to touch symlinks pointing elsewhere (e.g. `brew`-managed) and plain files. Idempotent. CLAUDE.md's manual-symlink note replaced with a reference to the task. (#120)
+
 ### Fixed
 
-- Preprocessor now respects POSIX shell quoting. Ritefiles intending to emit a
-  literal `$X` from inside single-quoted strings, quoted heredocs
-  (`<<'EOF'` / `<<\EOF` / `<<"EOF"`), or backslash-escaped forms (`\$X`) now
-  work as expected. Previously, the preprocessor substituted every `${NAME}` /
-  `$NAME` regardless of quote state, forcing workarounds like sed sentinels.
-  (#121)
+- Preprocessor now respects POSIX shell quoting. Ritefiles intending to emit a literal `$X` from inside single-quoted strings, quoted heredocs (`<<'EOF'` / `<<\EOF` / `<<"EOF"`), or backslash-escaped forms (`\$X`) now work as expected. Previously, the preprocessor substituted every `${NAME}` / `$NAME` regardless of quote state, forcing workarounds like sed sentinels. (#121)
 
 ## [1.0.2] - 2026-04-14
 

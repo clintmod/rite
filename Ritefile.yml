@@ -23,14 +23,118 @@ tasks:
       - go run ./cmd/rite {{.CLI_ARGS}}
 
   install:
-    desc: Installs Task
+    desc: Installs rite and ensures the binary is on PATH (XDG-first symlink fallback)
     aliases: [i]
-    sources:
-      - './**/*.go'
-      - go.mod
-      - internal/version/version.txt   # //go:embed'd into the binary; a bare version bump changes nothing else
     cmds:
       - go install -v ./cmd/rite
+      # Note on $PATH: rite's ${VAR}/bare-$VAR preprocessor expands env-vars in cmd source
+      # at parse time, so any literal "$PATH" / "${PATH}" / even "\$PATH" in this YAML is
+      # substituted with the env value before bash sees it. The case-match below works
+      # because that substituted value happens to be exactly what we want to match against.
+      # The help text on stderr uses sed + a __D__ sentinel for the same reason — we can't
+      # write a literal "$PATH" string into the YAML and expect to print it.
+      - |
+        set -e
+        gobin=$(go env GOBIN)
+        [ -z "$gobin" ] && gobin="$(go env GOPATH)/bin"
+        target="$gobin/rite"
+        case ":$PATH:" in
+          *":$gobin:"*)
+            echo "rite -> $target (on PATH)"
+            exit 0
+            ;;
+        esac
+        for cand in "$HOME/.local/bin" "$HOME/bin" "/usr/local/bin"; do
+          case ":$PATH:" in
+            *":$cand:"*)
+              mkdir -p "$cand"
+              ln -sf "$target" "$cand/rite"
+              echo "rite -> $cand/rite (symlink to $target)"
+              exit 0
+              ;;
+          esac
+        done
+        sed -e "s|__T__|$target|g" -e "s|__G__|$gobin|g" -e 's|__D__|$|g' >&2 <<'HELP'
+        rite installed at __T__ but no candidate dir is on PATH.
+        Add one of these to your shell rc and re-run 'rite install':
+          export PATH="__D__HOME/.local/bin:__D__PATH"   # XDG (recommended)
+          export PATH="__D__HOME/bin:__D__PATH"          # legacy Unix
+          export PATH="__G__:__D__PATH"                  # GOBIN/GOPATH
+        HELP
+        exit 1
+
+  uninstall:
+    desc: Removes rite (go clean + only candidate symlinks pointing at our binary); idempotent
+    cmds:
+      - go clean -i ./cmd/rite
+      # Only rm a candidate path if it's a symlink that resolves to *our* installed
+      # binary, OR if it's a dangling symlink whose raw target lives under our
+      # $gobin (i.e. one of ours, just stale). Anything else — a brew-managed
+      # symlink resolving into the Cellar, a hand-placed regular file, an
+      # unrelated dangling link — is reported as "skipped" and left untouched.
+      #
+      # `readlink -f` is GNU and is in modern macOS BSD readlink, but absent on
+      # older macOS, Alpine's busybox, and some embedded Linux. The `resolve()`
+      # helper tries `-f` first and falls back to a manual symlink-chain walk
+      # using one-arg `readlink` + cd/pwd -P, which is in every POSIX shell.
+      - |
+        set -e
+        gobin=$(go env GOBIN)
+        [ -z "$gobin" ] && gobin="$(go env GOPATH)/bin"
+        target="$gobin/rite"
+        resolve() {
+          local p="$1" out t
+          out=$(readlink -f "$p" 2>/dev/null) && [ -n "$out" ] && { echo "$out"; return; }
+          while [ -L "$p" ]; do
+            t=$(readlink "$p") || break
+            case "$t" in
+              /*) p="$t" ;;
+              *)  p="$(cd "$(dirname "$p")" 2>/dev/null && pwd -P)/$t" ;;
+            esac
+          done
+          if [ -e "$p" ]; then
+            echo "$(cd "$(dirname "$p")" 2>/dev/null && pwd -P)/$(basename "$p")"
+          else
+            echo "$p"
+          fi
+        }
+        removed=0
+        skipped=0
+        for cand in "$HOME/.local/bin/rite" "$HOME/bin/rite" "/usr/local/bin/rite"; do
+          if [ ! -L "$cand" ] && [ ! -e "$cand" ]; then
+            continue
+          fi
+          if [ ! -L "$cand" ]; then
+            echo "skipped $cand (regular file, not a symlink we created)"
+            skipped=$((skipped + 1))
+            continue
+          fi
+          if [ ! -e "$cand" ]; then
+            raw=$(readlink "$cand")
+            case "$raw" in
+              "$gobin"/*)
+                rm -f "$cand"
+                echo "removed $cand (dangling, was -> $raw)"
+                removed=$((removed + 1))
+                ;;
+              *)
+                echo "skipped $cand (dangling, points to $raw — not under $gobin)"
+                skipped=$((skipped + 1))
+                ;;
+            esac
+            continue
+          fi
+          resolved=$(resolve "$cand")
+          if [ "$resolved" = "$target" ]; then
+            rm -f "$cand"
+            echo "removed $cand"
+            removed=$((removed + 1))
+          else
+            echo "skipped $cand (points to $resolved, not $target)"
+            skipped=$((skipped + 1))
+          fi
+        done
+        echo "uninstall done (removed $removed, skipped $skipped)"
 
   generate:
     aliases: [gen, g]

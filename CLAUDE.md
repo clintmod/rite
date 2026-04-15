@@ -27,9 +27,9 @@ See [`SPEC.md`](./SPEC.md) for the design contract. Any disagreement between thi
 
 **Build and install:**
 ```bash
-go install ./cmd/rite
-# Symlinks at ~/bin/rite → ~/go/bin/rite are set up on the dev machine.
+rite install   # go install ./cmd/rite + PATH-aware symlink fallback
 ```
+The `install:` task runs `go install` and, if `$(go env GOBIN || go env GOPATH)/bin` isn't on `$PATH`, walks XDG-first candidates (`~/.local/bin`, `~/bin`, `/usr/local/bin`) and symlinks the binary into the first one already on `$PATH`. `rite uninstall` undoes both the `go install` and any candidate symlinks (idempotent).
 
 **Smoke test:**
 ```bash

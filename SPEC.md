@@ -111,6 +111,16 @@ vars:
 
 Default is `export: true`. Shorthand `FOO: bar` is equivalent to `FOO: { value: bar, export: true }`.
 
+### What can be exported
+
+The process environ is a list of `KEY=VALUE` strings, so only scalar values have environ semantics under rite. Concretely:
+
+- **Exported:** `string`, `bool`, `int`, `float32`, `float64`.
+- **Not exported:** `map:` vars, lists, and any `ref:` whose resolved value is structured. These remain fully accessible inside Ritefile templating (`{{.MY_MAP.field}}`, <span v-pre>`{{range .ITEMS}}`</span>) but are **silently skipped** when the cmd shell environ is built, even if `export: true` is set explicitly. `export: true` on a non-scalar is a no-op, not an error.
+- **Needed in the environ anyway?** Encode to a scalar yourself: `MY_MAP_JSON: '{{toJson .MY_MAP}}'`. rite does not pick a flattening convention (`PREFIX_KEY=…` vs. JSON blob vs. other) — any choice would surprise half the audience.
+
+This rule is independent of the `export:` flag: the flag controls intent for scalars; structured types are gated by what the environ can physically represent.
+
 ---
 
 ## Template Syntax

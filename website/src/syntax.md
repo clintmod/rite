@@ -160,6 +160,28 @@ FOO:
   export: true
 ```
 
+### What can actually be exported
+
+The process environ is a flat list of `KEY=VALUE` strings, so only scalar values reach the cmd shell. Specifically:
+
+- **Scalars** — `string`, `bool`, `int`, `float` — export normally.
+- **Structured values** — `map:` vars, lists, `ref:` expressions that resolve to a map — are usable inside Ritefile templating but **silently skipped** when the cmd shell environ is built. Writing `export: true` on a map doesn't produce an error; it's just a no-op.
+
+If you genuinely need a structured value in the child process environ, encode it to a scalar yourself — rite won't pick a flattening convention for you:
+
+```yaml
+vars:
+  CONFIG:
+    map:
+      host: api.example.com
+      port: 8080
+  CONFIG_JSON: '{{toJson .CONFIG}}'   # scalar, exports cleanly
+tasks:
+  run:
+    cmds:
+      - echo "$CONFIG_JSON" | jq .host
+```
+
 ## Dynamic variables
 
 ```yaml

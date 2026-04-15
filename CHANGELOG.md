@@ -13,6 +13,10 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+### Added
+
+- `rite release:prepare` / `rite release:tag` / `rite release:verify` — three Ritefile tasks that codify the RELEASING.md playbook. `prepare` opens a staging PR (bumps `internal/version/version.txt`, dates the CHANGELOG, bumps install-example pins in README/website while preserving historical roadmap bullets). `tag` strictly refuses if the version was already tagged; never force-pushes. `verify` polls the goreleaser workflow with a 10-min deadline and asserts release artifacts. Each task `requires:` a `VERSION=X.Y.Z` var (semver, no `v` prefix) and validates preconditions before mutating anything. (#126)
+
 ## [1.0.3] - 2026-04-15
 
 Patch release: correctness fix for the shell preprocessor + cross-platform install UX.

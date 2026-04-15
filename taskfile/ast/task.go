@@ -44,6 +44,7 @@ type Task struct {
 	Watch         bool            `yaml:"watch"`
 	Location      *Location       `yaml:"-"`
 	Failfast      bool            `yaml:"failfast"`
+	Timestamps    *Timestamps     `yaml:"timestamps,omitempty"`
 	// Populated during merging
 	Namespace            string `yaml:"-" hash:"ignore"`
 	IncludeVars          *Vars  `yaml:"-"`
@@ -156,6 +157,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 			Requires      *Requires
 			Watch         bool
 			Failfast      bool
+			Timestamps    *Timestamps
 		}
 		if err := node.Decode(&task); err != nil {
 			return errors.NewRitefileDecodeError(err, node)
@@ -196,6 +198,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 		t.Requires = task.Requires
 		t.Watch = task.Watch
 		t.Failfast = task.Failfast
+		t.Timestamps = task.Timestamps
 		return nil
 	}
 
@@ -244,6 +247,7 @@ func (t *Task) DeepCopy() *Task {
 		FullName:             t.FullName,
 		Watch:                t.Watch,
 		Failfast:             t.Failfast,
+		Timestamps:           t.Timestamps.DeepCopy(),
 	}
 	return c
 }

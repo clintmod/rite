@@ -61,6 +61,7 @@ export default defineConfig({
           { text: 'Defer (cleanup)', link: '/defer' },
           { text: 'Prompts', link: '/prompt' },
           { text: 'Silent / dry-run / ignore-error', link: '/silent-dry-ignore' },
+          { text: 'Output timestamps', link: '/output-timestamps' },
           { text: 'Shell options (set/shopt)', link: '/set-shopt' },
           { text: 'Watch mode', link: '/watch' },
           { text: 'Interactive cmds', link: '/interactive' },

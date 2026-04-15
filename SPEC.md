@@ -175,6 +175,46 @@ rite owns its own filenames end-to-end. The paths below are **SPEC-level guarant
 
 ---
 
+## Output Timestamps
+
+`rite` has a built-in knob that prefixes every line it emits with a timestamp. Goal: a user who wants to tell where a long build spent its time should never have to pipe rite through `ts(1)`, and **rite's own stderr log lines** (task starts, warnings, migrate output, deprecation notices) get the same prefix as the cmd output — so a scrollback can be grepped by time without first demultiplexing rite-lines from cmd-lines.
+
+### Three scopes, one precedence
+
+Listed highest-wins first:
+
+1. **CLI / env var** — `rite --timestamps[=<fmt>]` or `RITE_TIMESTAMPS=<fmt>`. An explicit `false` / `0` / `off` value disables stamping even when the Ritefile turned it on.
+2. **Task-level `timestamps:`** — opt in or out one task at a time. Primary use case: project-wide on, one `timestamps: false` escape hatch for an interactive task (REPL, `pod install` with a spinner, `xcodebuild -showBuildSettings`).
+3. **Top-level `timestamps:`** — sibling of `set:` / `output:` at the entrypoint. Opts the whole project in.
+
+Omitted at all three scopes → timestamps off (today's behavior).
+
+### Values
+
+- `true` → default layout: `[2006-01-02T15:04:05.000Z]` (Go reference time). Always UTC — the host `$TZ` never leaks in. Milliseconds are zero-padded to a fixed three digits so column-oriented log tools keep working.
+- `"<strftime>"` → user format. The accepted subset is: `%Y %m %d %H %M %S %L %z %%` where `%L` renders as `.000` (three zero-padded milliseconds, dot-prefixed — same field shape as `ts -s %.S`). Everything outside this subset is a hard error at Ritefile parse time; this is not full glibc parity and doesn't pretend to be.
+- `false` → off. Required at task scope so a global-on can be escaped per task.
+
+The default layout is anchored in code as `ast.DefaultTimestampLayout`.
+
+### TTY behavior
+
+If the user explicitly turned timestamps on (CLI, env, or Ritefile), rite honors that even when stdout is a TTY. The task-level `timestamps: false` is the documented escape hatch for interactive commands. Silently dropping the feature on a TTY would surprise a user who deliberately asked for it.
+
+### What the task-level knob controls
+
+Task-level `timestamps:` controls the **cmd output voice** for that task — stdout/stderr of the shell rite spawns. rite's own `rite: [task] cmd` preamble line (which is a logger line, emitted before the cmd runs) uses the **global** timestamp setting (CLI > top-level), not the task-level value. Rationale: the task-level knob exists so an interactive cmd's TTY isn't fought by per-line prefixes; the preamble happens *before* the TTY is handed over, so stamping it is both harmless and keeps rite's log voice consistent across tasks.
+
+### Interaction with other features
+
+- `silent:` — when cmd output is suppressed there's nothing to prefix. No-op.
+- `output: group` — the group `begin:` / `end:` banners are rite's own output in the output pipeline and get stamped too.
+- `output: prefixed` — timestamp sits *before* the existing label: `[2026-04-15T14:23:01.123Z] [task:foo] line`.
+- Colored output — the prefix lands before the first byte of the line, so ANSI escapes survive intact.
+- Partial lines (no trailing `\n`) are buffered until newline arrives or the cmd exits; on exit they're flushed with a final timestamp and a synthesized `\n`. No mid-line prefixes.
+
+---
+
 ## Compatibility with go-task
 
 **None.** This is the intentional-break option. No flag enables Taskfile mode. No drop-in binary behavior.

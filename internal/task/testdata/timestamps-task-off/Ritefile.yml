@@ -1,0 +1,10 @@
+version: 3
+timestamps: true
+tasks:
+  stamped:
+    cmds:
+      - echo stamped-line
+  plain:
+    timestamps: false
+    cmds:
+      - echo plain-line

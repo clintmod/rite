@@ -34,6 +34,9 @@ func (e *Executor) Setup() error {
 		return err
 	}
 	e.setupStdFiles()
+	if err := e.setupTimestamps(); err != nil {
+		return err
+	}
 	if err := e.setupOutput(); err != nil {
 		return err
 	}
@@ -143,6 +146,37 @@ func (e *Executor) setupStdFiles() {
 	if e.Stderr == nil {
 		e.Stderr = os.Stderr
 	}
+}
+
+// setupTimestamps resolves CLI/top-level timestamp configuration and, if
+// timestamps are globally on, wraps the Executor's Stdout/Stderr before the
+// logger captures them. Must run after readTaskfile (needs e.Ritefile) and
+// setupStdFiles (needs e.Stdout / e.Stderr) but before setupLogger (the
+// logger snapshots e.Stdout / e.Stderr).
+func (e *Executor) setupTimestamps() error {
+	tc, err := e.buildTimestampContext()
+	if err != nil {
+		return err
+	}
+	e.tsCtx = tc
+	// Route rite's own logger through the timestamping sinks when the
+	// global scope (CLI > top-level) is on. We intentionally leave
+	// e.Stdout / e.Stderr *unwrapped* — cmd output is timestamped
+	// per-task by wrapCmdWriters() using the effective per-task layout,
+	// which may differ from the global layout (per-task strftime
+	// override) or be disabled entirely (task-level `timestamps: false`
+	// opt-out against a global-on setting). Wrapping e.Stdout globally
+	// would force every cmd line through the global layout and make the
+	// per-task override unreachable.
+	if e.Logger != nil {
+		loggerOut, loggerErr, closer := tc.wrapLoggerWriters(e.Logger.Stdout, e.Logger.Stderr)
+		e.Logger.Stdout = loggerOut
+		e.Logger.Stderr = loggerErr
+		e.tsCloseLoggers = closer
+	} else {
+		e.tsCloseLoggers = func() {}
+	}
+	return nil
 }
 
 func (e *Executor) setupLogger() {

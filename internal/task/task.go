@@ -420,7 +420,20 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		if err != nil {
 			return fmt.Errorf("rite: failed to get variables: %w", err)
 		}
-		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
+		// Per-task timestamp wrapping (ticket #130). Precedence is
+		// CLI > task > top-level. We wrap the Executor's Stdout/Stderr
+		// *before* the output-style WrapWriter so group/prefixed
+		// transformations compose with timestamps — the group/prefix
+		// writer emits whole lines to our TimestampWriter, which prefixes
+		// each with the resolved layout and forwards to the real fd.
+		// Stacking order matters: a prefixed `[task] foo` line then
+		// becomes `[timestamp] [task] foo`.
+		tsLayout, tsErr := e.tsCtx.effectiveLayoutForTask(t.Timestamps)
+		if tsErr != nil {
+			return fmt.Errorf("rite: invalid timestamps format: %w", tsErr)
+		}
+		tsOut, tsErrW, tsClose := e.tsCtx.wrapCmdWriters(e.Stdout, e.Stderr, tsLayout)
+		stdOut, stdErr, closer := outputWrapper.WrapWriter(tsOut, tsErrW, t.Prefix, outputTemplater)
 
 		err = execext.RunCommand(ctx, &execext.RunCommandOptions{
 			Command:   cmd.Cmd,
@@ -434,6 +447,9 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		})
 		if closeErr := closer(err); closeErr != nil {
 			e.Logger.Errf(logger.Red, "rite: unable to close writer: %v\n", closeErr)
+		}
+		if tsCloseErr := tsClose(); tsCloseErr != nil {
+			e.Logger.Errf(logger.Red, "rite: unable to flush timestamp writer: %v\n", tsCloseErr)
 		}
 		var exitCode interp.ExitStatus
 		if errors.As(err, &exitCode) && cmd.IgnoreError {

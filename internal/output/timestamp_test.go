@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,6 +18,26 @@ import (
 	"github.com/clintmod/rite/internal/output"
 	"github.com/clintmod/rite/taskfile/ast"
 )
+
+// safeBuffer is a mutex-wrapped bytes.Buffer so concurrent sink writes don't
+// race on the backing storage itself — we're testing the sink's serialization
+// of timestamp-order, not bytes.Buffer's (lack of) concurrency safety.
+type safeBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (s *safeBuffer) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.Write(p)
+}
+
+func (s *safeBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.String()
+}
 
 // fixedClock returns the same instant every call. Useful so golden-style
 // tests can assert exact prefix strings.
@@ -144,6 +166,62 @@ func TestTimestampSinkSerializesAcrossWriters(t *testing.T) {
 	re := regexp.MustCompile(`^\[2026-04-15T14:23:01\.000Z\] (out|err)-\d+$`)
 	for _, line := range strings.Split(strings.TrimRight(b.String(), "\n"), "\n") {
 		assert.Regexp(t, re, line)
+	}
+}
+
+// TestTimestampSinkConcurrentWritesProduceMonotonicTimestamps locks in the
+// invariant that sample-clock order matches emission order. If clock() is
+// sampled outside the sink mutex, two goroutines can pick timestamps T1 < T2
+// then race for the lock in the opposite order, and the log ends up with
+// timestamps going backwards. The fake clock yields mid-call to maximize the
+// interleaving window so a regression is caught reliably rather than
+// probabilistically.
+func TestTimestampSinkConcurrentWritesProduceMonotonicTimestamps(t *testing.T) {
+	t.Parallel()
+
+	var counter atomic.Int64
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	clock := func() time.Time {
+		n := counter.Add(1)
+		// Give the scheduler a chance to pick a racing goroutine between
+		// clock-sample and mutex-acquire — this is the window where the
+		// bug manifests.
+		runtime.Gosched()
+		return base.Add(time.Duration(n) * time.Microsecond)
+	}
+
+	// Microsecond resolution layout so counter.Add(1) increments show up
+	// in the rendered prefix. The default layout is millisecond, which
+	// would produce ties and mask the bug.
+	const layout = "20060102T150405.000000Z"
+
+	var buf safeBuffer
+	sink := output.NewTimestampSink(&buf, layout, clock, nil)
+
+	const N = 200
+	var wg sync.WaitGroup
+	for i := 0; i < N; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			w := output.NewTimestampWriter(sink)
+			_, _ = fmt.Fprintf(w, "line-%03d\n", i)
+			_ = w.Close()
+		}(i)
+	}
+	wg.Wait()
+
+	// Assert rendered timestamps are non-decreasing across every emitted line.
+	var prev time.Time
+	for _, line := range strings.Split(strings.TrimRight(buf.String(), "\n"), "\n") {
+		sp := strings.Index(line, " ")
+		require.GreaterOrEqual(t, sp, 0, "line missing space separator: %q", line)
+		ts, err := time.Parse(layout, line[:sp])
+		require.NoError(t, err, "parse %q", line[:sp])
+		if ts.Before(prev) {
+			t.Fatalf("non-monotonic: %v after %v\nfull log:\n%s", ts, prev, buf.String())
+		}
+		prev = ts
 	}
 }
 

@@ -145,9 +145,15 @@ func (s *TimestampSink) emit(line []byte) error {
 	if len(line) == 0 {
 		return nil
 	}
-	prefix := s.formatPrefix(s.clock())
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Sample the clock *inside* the mutex so clock-call order matches
+	// mutex-acquire order matches emission order — otherwise two racing
+	// goroutines can pick timestamps T1 < T2 then lose the mutex race,
+	// producing a log where timestamps go backwards. Small window, but
+	// real under contention, and "my log timestamps are non-monotonic"
+	// is an ugly bug report.
+	prefix := s.formatPrefix(s.clock())
 	// Build one byte slice and Write once — two separate Writes to the
 	// same sink can interleave with a concurrent plain-io.Writer that
 	// doesn't hold our mutex (e.g. if a caller bypasses our decorator).

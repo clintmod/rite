@@ -27,12 +27,11 @@ tasks:
     aliases: [i]
     cmds:
       - go install -v ./cmd/rite
-      # Note on $PATH: rite's ${VAR}/bare-$VAR preprocessor expands env-vars in cmd source
-      # at parse time, so any literal "$PATH" / "${PATH}" / even "\$PATH" in this YAML is
-      # substituted with the env value before bash sees it. The case-match below works
-      # because that substituted value happens to be exactly what we want to match against.
-      # The help text on stderr uses sed + a __D__ sentinel for the same reason — we can't
-      # write a literal "$PATH" string into the YAML and expect to print it.
+      # The preprocessor honors POSIX quoting (#121), so $PATH / $HOME inside the
+      # case statements (which are double-quoted strings) and inside the <<'HELP'
+      # quoted heredoc pass through to bash unchanged. Only the bare double-quoted
+      # cases (e.g. *":$PATH:"*) get rite-substituted at parse time, which is what
+      # the case-match relies on anyway.
       - |
         set -e
         gobin=$(go env GOBIN)
@@ -54,12 +53,12 @@ tasks:
               ;;
           esac
         done
-        sed -e "s|__T__|$target|g" -e "s|__G__|$gobin|g" -e 's|__D__|$|g' >&2 <<'HELP'
+        sed -e "s|__T__|$target|g" -e "s|__G__|$gobin|g" >&2 <<'HELP'
         rite installed at __T__ but no candidate dir is on PATH.
         Add one of these to your shell rc and re-run 'rite install':
-          export PATH="__D__HOME/.local/bin:__D__PATH"   # XDG (recommended)
-          export PATH="__D__HOME/bin:__D__PATH"          # legacy Unix
-          export PATH="__G__:__D__PATH"                  # GOBIN/GOPATH
+          export PATH="$HOME/.local/bin:$PATH"   # XDG (recommended)
+          export PATH="$HOME/bin:$PATH"          # legacy Unix
+          export PATH="__G__:$PATH"              # GOBIN/GOPATH
         HELP
         exit 1
 

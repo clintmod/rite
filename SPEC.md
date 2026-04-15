@@ -136,6 +136,14 @@ Both syntaxes resolve against the same variable set with identical precedence. T
 
 Literal `$` in a command: `$$` escapes to `$`. Literal `{{`: `{{"{{"}}`.
 
+The `${VAR}` / `$VAR` preprocessor honors POSIX shell quoting so a Ritefile can emit literal `$X` runs (heredoc help text, `sed` scripts, awk programs) without sentinel workarounds. Quoting rules:
+
+- **Single quotes (`'…'`)** suppress expansion entirely. `'$PATH'` passes through to the shell as the four characters `$PATH`. Backslashes inside single quotes are also literal (POSIX), so `'\$X'` is unchanged.
+- **Double quotes (`"…"`)** keep expanding. `"${NAME}"` expands; `"\${NAME}"` is a literal `${NAME}` (POSIX double-quote `\$`).
+- **Backslash outside quotes**: `\$` is a literal `$`. Other `\X` sequences pass through unchanged.
+- **Heredocs**: a quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) disables expansion in the body; bare `<<EOF` keeps it. The dash form (`<<-DELIM`) follows the same expansion rules. Body end is detected by an exact-match line of the delimiter (with optional leading tabs stripped only for `<<-`).
+- `$$` → literal `$` is unchanged inside or outside any quoted region.
+
 ---
 
 ## File Format

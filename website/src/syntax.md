@@ -64,7 +64,37 @@ cmds:
 
 `$$` escapes to a literal `$`.
 
-See [why the braced form is preferred](#why-braced) and [defensive `${VAR:-default}` conventions](#defensive-defaults) below.
+See [why the braced form is preferred](#why-braced), [defensive `${VAR:-default}` conventions](#defensive-defaults), and [POSIX quoting rules](#posix-quoting) below.
+
+#### POSIX quoting rules {#posix-quoting}
+
+The preprocessor honors POSIX shell quoting so a Ritefile can emit a literal `$X` (heredoc help text, sed/awk scripts) without sentinels.
+
+| context | example | result |
+|---|---|---|
+| outside quotes | <span v-pre>`${NAME}`</span> | expanded |
+| outside, backslash-escaped | <span v-pre>`\${NAME}`</span> | literal <span v-pre>`${NAME}`</span> |
+| double quotes | <span v-pre>`"${NAME}"`</span> | expanded |
+| double, backslash-escaped | <span v-pre>`"\${NAME}"`</span> | literal <span v-pre>`${NAME}`</span> |
+| single quotes | <span v-pre>`'${NAME}'`</span> | literal <span v-pre>`${NAME}`</span> |
+| single, with backslash | <span v-pre>`'\$X'`</span> | literal <span v-pre>`\$X`</span> (POSIX: `\` is literal in `'…'`) |
+| heredoc with bare delim | <span v-pre>`<<EOF`</span> body | expanded |
+| heredoc with quoted delim | <span v-pre>`<<'EOF'`</span>, <span v-pre>`<<"EOF"`</span>, <span v-pre>`<<\EOF`</span> body | literal |
+
+The `<<-DELIM` (tab-stripping) form follows the same rules; only the `'…'` / `"…"` / `\` decoration on the delimiter changes whether the body expands.
+
+A practical use: emitting installation instructions that mention shell variables verbatim.
+
+```yaml
+cmds:
+  - |
+    cat >&2 <<'HELP'
+    Add one of these to your shell rc:
+      export PATH="$HOME/.local/bin:$PATH"
+    HELP
+```
+
+Without quoting honor the preprocessor would substitute `$HOME` and `$PATH` from rite's environment before bash ever saw the heredoc, leaving the user with a confusingly literalized `export PATH="/home/you/.local/bin:/usr/bin:/bin..."` line. The quoted heredoc keeps it as the documentation source intended.
 
 #### Why the braced form is preferred {#why-braced}
 

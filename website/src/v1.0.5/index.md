@@ -8,10 +8,10 @@ hero:
   actions:
     - theme: brand
       text: Get started
-      link: /next/getting-started
+      link: /v1.0.5/getting-started
     - theme: alt
       text: Coming from go-task?
-      link: /next/migration
+      link: /v1.0.5/migration
     - theme: alt
       text: View on GitHub
       link: https://github.com/clintmod/rite
@@ -19,19 +19,19 @@ hero:
 features:
   - title: First-in-wins precedence
     details: "Shell env beats CLI args beats entrypoint defaults beats task-scope. Task-scope vars blocks are defaults only — if any higher tier set the name, the task value is ignored. Seven documented tiers, no surprises."
-    link: /next/precedence
+    link: /v1.0.5/precedence
     linkText: Read the precedence model
   - title: "${VAR} and {{.VAR}} are interchangeable"
     details: "Both syntaxes resolve against the same variable set with identical precedence. Use shell-native for commands, Go-template for conditionals and globs. Pick whichever reads cleaner."
-    link: /next/syntax
+    link: /v1.0.5/syntax
     linkText: Read the syntax reference
   - title: Every var exports
     details: "A declared variable reaches the cmd shell environ by default. Opt out with export: false. No more vars vs env asymmetry."
-    link: /next/precedence#env-blocks
+    link: /v1.0.5/precedence#env-blocks
     linkText: Read the env rules
   - title: One-way migration
     details: "rite --migrate Taskfile.yml produces a Ritefile and flags every site where first-in-wins would change the meaning of your existing config. No compatibility shim — an intentional break, documented line by line."
-    link: /next/migration
+    link: /v1.0.5/migration
     linkText: Read the migration guide
 ---
 

@@ -1,6 +1,7 @@
 package task
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"go.yaml.in/yaml/v3"
+	"mvdan.cc/sh/v3/syntax"
 )
 
 // Migrate reads a go-task Taskfile at srcPath, writes a converted Ritefile to
@@ -54,6 +56,10 @@ import (
 //	TEMPLATE-KEPT   a Go-template expression (`{{if}}`, `{{range}}`, sprig
 //	                helper, etc.) that has no equivalent ${VAR} form was
 //	                left verbatim — review manually.
+//	SELFREF-CMD     a cmd shelled out to the `task` binary (e.g. `task lint`,
+//	                `cd sub && task build`, `$(task --version)`); the head of
+//	                each affected CallExpr is rewritten to `rite` so the
+//	                migrated Ritefile drives itself instead of go-task.
 //
 // The yaml-language-server `$schema=` directive pointing at taskfile.dev is
 // rewritten to rite's hosted schema in place; the previous SCHEMA-URL
@@ -202,6 +208,7 @@ func emitMigratedFile(absSrc string, pathMap map[string]string, o migrateOptions
 	if !o.keepGoTemplates {
 		out = modernizeTemplates(out, absSrc, warn)
 	}
+	out = rewriteSelfRefCmds(out, absSrc, warn)
 
 	dst := pathMap[absSrc]
 	if o.dryRun {
@@ -670,6 +677,272 @@ var (
 	rxPipeDefault   = regexp.MustCompile(`^\.([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*default\s+(.+?)$`)
 	rxPrefixDefault = regexp.MustCompile(`^default\s+(.+?)\s+\.([A-Za-z_][A-Za-z0-9_]*)$`)
 )
+
+// rewriteSelfRefCmds rewrites every `task` CallExpr head in every shell-cmd
+// scalar to `rite`. Issue #128: a migrated Ritefile that still shells out
+// to the `task` binary either silently runs the old go-task (against a
+// Ritefile it can't find) or fails outright once the user has uninstalled
+// it. We close the loop by rewriting self-referential CLI invocations at
+// migrate time.
+//
+// Approach: walk the YAML to locate every shell-cmd scalar (cmd:, defer:,
+// sh:, and bare list items under cmds:), parse each value with mvdan/sh,
+// and rewrite *only* CallExpr nodes whose first Word is the literal
+// `task`. This is what catches the easy `task lint` cases AND the
+// adversarial ones — `cd sub && task build`, `$(task --version)`,
+// quoted strings, heredocs — that a regex would either miss or
+// false-positive on.
+//
+// What this does NOT rewrite:
+//
+//   - `echo task is cool` — `task` is a Word in the args, not the head of
+//     a CallExpr. Word-position occurrences (filenames, prose, flag
+//     values) are unambiguous to the shell parser.
+//   - `./task` / `bin/task` / `mytask` — the head Lit's value is `./task`
+//     / `mytask`, not the bare token `task`.
+//   - The YAML key `task:` (a structural keyword for the call-another-task
+//     cmd shape) — we operate on string values, not keys.
+//   - Cmds that fail to shell-parse — left untouched and reported with a
+//     SELFREF-CMD warning so the user can hand-review the line.
+//
+// Substitution strategy: for each rewrite-candidate scalar we know its
+// node line number from yaml.v3. We rewrite the line in place with a
+// single strings.Replace of the original value with the rewritten value
+// (line-scoped so we never collide with a same-text scalar elsewhere).
+// Block scalars (literal `|` / folded `>`) span multiple lines and don't
+// fit single-line substitution; they're skipped with a warning rather
+// than rewritten naively.
+func rewriteSelfRefCmds(s, srcPath string, warn io.Writer) string {
+	var doc yaml.Node
+	if err := yaml.Unmarshal([]byte(s), &doc); err != nil {
+		// The file already round-tripped through yaml.v3 in
+		// emitMigratedFile; if we can't reparse here something's wrong
+		// with the rewritten output. Better to no-op than to corrupt.
+		return s
+	}
+	scalars := collectShellCmdScalars(&doc)
+	if len(scalars) == 0 {
+		return s
+	}
+
+	lines := strings.Split(s, "\n")
+	for _, sc := range scalars {
+		// yaml.Node.Line is 1-indexed; line 0 means the node was
+		// constructed without source position info (shouldn't happen
+		// for a freshly-unmarshaled doc, but be defensive).
+		if sc.line < 1 || sc.line > len(lines) {
+			continue
+		}
+		// Block scalars (literal `|` / folded `>`) put the value on
+		// the lines AFTER the indicator. Single-line substring replace
+		// won't find the value on sc.line; rather than try to
+		// reconstruct the indented body, skip and warn so the user
+		// can handle it manually. SglQuoted/DblQuoted/plain styles
+		// keep the value on a single line.
+		if sc.style == yaml.LiteralStyle || sc.style == yaml.FoldedStyle {
+			rewritten, _, ok := rewriteShellCmd(sc.value)
+			if !ok || rewritten == sc.value {
+				continue
+			}
+			fmt.Fprintf(warn,
+				"rite migrate: SELFREF-CMD %s:%d: skipped block scalar — rewrite needed but cmd spans multiple source lines; edit by hand.\n",
+				srcPath, sc.line)
+			continue
+		}
+		rewritten, parseOK, ok := rewriteShellCmd(sc.value)
+		if !parseOK {
+			fmt.Fprintf(warn,
+				"rite migrate: SELFREF-CMD %s:%d: skipped — shell parse error on cmd %q; review manually.\n",
+				srcPath, sc.line, sc.value)
+			continue
+		}
+		if !ok || rewritten == sc.value {
+			continue
+		}
+		idx := sc.line - 1
+		// Replace exactly once: a single cmd value appears once on its
+		// source line (YAML idiom). Multi-occurrence pathologies (the
+		// same string twice on one line) would over-rewrite, but
+		// they're not realistic in cmd scalars.
+		if !strings.Contains(lines[idx], sc.value) {
+			// The value didn't survive verbatim on the source line
+			// (escaped quoting, line continuation, etc.). Skip with
+			// a warning rather than guess.
+			fmt.Fprintf(warn,
+				"rite migrate: SELFREF-CMD %s:%d: skipped — could not locate cmd value %q on its source line; review manually.\n",
+				srcPath, sc.line, sc.value)
+			continue
+		}
+		lines[idx] = strings.Replace(lines[idx], sc.value, rewritten, 1)
+		fmt.Fprintf(warn,
+			"rite migrate: SELFREF-CMD %s:%d: rewrote `task` CLI invocation to `rite`.\n",
+			srcPath, sc.line)
+	}
+	return strings.Join(lines, "\n")
+}
+
+// shellCmdScalar pairs a YAML scalar's source line with its decoded value
+// and quoting style, so the line-level substitution in
+// rewriteSelfRefCmds knows where to apply the rewrite and which scalars
+// need to be skipped because they span multiple source lines.
+type shellCmdScalar struct {
+	line  int
+	value string
+	style yaml.Style
+}
+
+// collectShellCmdScalars walks the YAML document and returns every scalar
+// node positioned in a shell-cmd-bearing slot. The recognized slots are:
+//
+//   - bare scalar items in a sequence whose key is `cmds`
+//   - the value scalar of a `cmd:` mapping key
+//   - the value scalar of a `defer:` mapping key (the deferred-cmd shape)
+//   - the value scalar of a `sh:` mapping key (preconditions + dynamic
+//     vars — both run their value through the shell)
+//
+// Anything else (var values, env values, descriptions, prompts, etc.) is
+// skipped — those positions don't go through the cmd shell so a literal
+// `task` token in them isn't a CLI invocation.
+func collectShellCmdScalars(root *yaml.Node) []shellCmdScalar {
+	var out []shellCmdScalar
+	walkYAML(root, "", func(parentKey string, n *yaml.Node) {
+		if n.Kind != yaml.ScalarNode {
+			return
+		}
+		switch parentKey {
+		case "cmd", "defer", "sh", "@cmds-item":
+			out = append(out, shellCmdScalar{
+				line:  n.Line,
+				value: n.Value,
+				style: n.Style,
+			})
+		}
+	})
+	return out
+}
+
+// walkYAML recursively visits each node, calling visit(parentKey, node).
+// parentKey is the YAML mapping key whose value contains node, or
+// `@cmds-item` for the special case of a scalar item directly inside a
+// `cmds:` sequence. Other sequence items get an empty parentKey.
+func walkYAML(n *yaml.Node, parentKey string, visit func(parentKey string, n *yaml.Node)) {
+	if n == nil {
+		return
+	}
+	visit(parentKey, n)
+	switch n.Kind {
+	case yaml.DocumentNode:
+		for _, c := range n.Content {
+			walkYAML(c, "", visit)
+		}
+	case yaml.MappingNode:
+		// Content alternates [key, value, key, value, ...].
+		for i := 0; i+1 < len(n.Content); i += 2 {
+			key := n.Content[i]
+			val := n.Content[i+1]
+			keyName := ""
+			if key.Kind == yaml.ScalarNode {
+				keyName = key.Value
+			}
+			if val.Kind == yaml.SequenceNode && keyName == "cmds" {
+				// Scalar items directly under cmds: are bare cmds;
+				// mapping items are full cmd structs (cmd:/defer:/etc.)
+				// and get visited via the regular walk below so their
+				// inner cmd:/defer: keys are picked up.
+				for _, item := range val.Content {
+					if item.Kind == yaml.ScalarNode {
+						visit("@cmds-item", item)
+					} else {
+						walkYAML(item, "", visit)
+					}
+				}
+				continue
+			}
+			walkYAML(val, keyName, visit)
+		}
+	case yaml.SequenceNode:
+		for _, c := range n.Content {
+			walkYAML(c, "", visit)
+		}
+	}
+}
+
+// rewriteShellCmd parses cmd as a shell snippet, finds every CallExpr
+// whose head Word is the literal `task`, and substitutes `rite` for the
+// `task` token at the exact byte offset reported by mvdan/sh.
+//
+// The bool results are:
+//
+//   - parseOK: the shell parser accepted the cmd. If false, the caller
+//     should leave the cmd untouched and emit a warning.
+//   - changed: at least one head literal was rewritten.
+//
+// Why offset-substitution instead of printer round-trip: mvdan/sh's
+// `syntax.NewPrinter().Print` is canonical, not preserving — it turns
+// `task a; task b` into `task a\ntask b` and backticks into `$(...)`.
+// That's fine for the parsed semantics but ruins the line-scoped
+// substitution `rewriteSelfRefCmds` does back into the YAML source
+// (a multi-line cmd value can't be re-injected into a single source
+// line). Using `lit.ValuePos.Offset()` to splice the rewrite into the
+// original text preserves all whitespace, separators, and quoting
+// around the rewritten word — which is what we need.
+func rewriteShellCmd(cmd string) (rewritten string, parseOK bool, changed bool) {
+	parser := syntax.NewParser()
+	file, err := parser.Parse(strings.NewReader(cmd), "")
+	if err != nil {
+		return cmd, false, false
+	}
+	type hit struct{ start, end int }
+	var hits []hit
+	syntax.Walk(file, func(node syntax.Node) bool {
+		ce, ok := node.(*syntax.CallExpr)
+		if !ok || len(ce.Args) == 0 {
+			return true
+		}
+		head := ce.Args[0]
+		if len(head.Parts) != 1 {
+			return true
+		}
+		lit, ok := head.Parts[0].(*syntax.Lit)
+		if !ok {
+			return true
+		}
+		if lit.Value != "task" {
+			return true
+		}
+		hits = append(hits, hit{
+			start: int(lit.ValuePos.Offset()),
+			end:   int(lit.ValueEnd.Offset()),
+		})
+		return true
+	})
+	if len(hits) == 0 {
+		return cmd, true, false
+	}
+	// Splice from the back so earlier offsets stay valid.
+	var buf bytes.Buffer
+	prev := 0
+	for _, h := range hits {
+		if h.start < prev || h.end > len(cmd) || h.end < h.start {
+			// Defensive: bail and leave the cmd untouched if mvdan/sh
+			// reported an out-of-range offset (shouldn't happen).
+			return cmd, true, false
+		}
+		buf.WriteString(cmd[prev:h.start])
+		buf.WriteString("rite")
+		prev = h.end
+	}
+	buf.WriteString(cmd[prev:])
+	return buf.String(), true, true
+}
+
+// RewriteShellCmdForTest exports rewriteShellCmd so unit tests in
+// migrate_test.go can drive the rewriter directly without spinning up a
+// full migrate cycle. Returns the rewritten cmd plus the same parseOK /
+// changed flags rewriteShellCmd uses internally.
+func RewriteShellCmdForTest(cmd string) (string, bool, bool) {
+	return rewriteShellCmd(cmd)
+}
 
 // migrateDoc captures the minimal shape we need for warning detection and
 // include traversal. Deliberately loose — unknown keys are ignored.

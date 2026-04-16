@@ -1,3 +1,4 @@
+rite migrate: SELFREF-CMD Taskfile.yml:29: rewrote `task` CLI invocation to `rite`.
 rite migrate: TEMPLATE-KEPT Taskfile.yml:21: kept Go-template syntax "{{ARCH}}" — no equivalent ${VAR} form; review manually.
 rite migrate: TEMPLATE-KEPT Taskfile.yml:21: kept Go-template syntax "{{OS}}" — no equivalent ${VAR} form; review manually.
 rite migrate: TEMPLATE-KEPT Taskfile.yml:22: kept Go-template syntax "{{exeExt}}" — no equivalent ${VAR} form; review manually.

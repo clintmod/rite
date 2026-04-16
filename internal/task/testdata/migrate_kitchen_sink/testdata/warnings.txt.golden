@@ -5,6 +5,9 @@ rite migrate: OVERRIDE-VAR ci/shared/secrets.yml task "rotate": vars.GITHUB_TOKE
 rite migrate: SECRET-VAR Taskfile.yml vars.API_TOKEN: name matches a secret pattern and will auto-export to cmd shells in rite. Add `export: false` to keep it Ritefile-internal.
 rite migrate: SECRET-VAR ci/shared/secrets.yml vars.AWS_SECRET_ACCESS_KEY: name matches a secret pattern and will auto-export to cmd shells in rite. Add `export: false` to keep it Ritefile-internal.
 rite migrate: SECRET-VAR ci/shared/secrets.yml vars.GITHUB_TOKEN: name matches a secret pattern and will auto-export to cmd shells in rite. Add `export: false` to keep it Ritefile-internal.
+rite migrate: SELFREF-CMD Taskfile.yml:108: rewrote `task` CLI invocation to `rite`.
+rite migrate: SELFREF-CMD Taskfile.yml:109: rewrote `task` CLI invocation to `rite`.
+rite migrate: SELFREF-CMD Taskfile.yml:110: rewrote `task` CLI invocation to `rite`.
 rite migrate: TEMPLATE-KEPT Taskfile.yml:45: kept Go-template syntax "{{else}}" — no equivalent ${VAR} form; review manually.
 rite migrate: TEMPLATE-KEPT Taskfile.yml:45: kept Go-template syntax "{{end}}" — no equivalent ${VAR} form; review manually.
 rite migrate: TEMPLATE-KEPT Taskfile.yml:45: kept Go-template syntax "{{if .CI}}" — no equivalent ${VAR} form; review manually.

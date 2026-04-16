@@ -1049,3 +1049,144 @@ tasks:
 		t.Errorf("unexpected DOTENV-ENTRY warning\nGOT:\n%s", warn.String())
 	}
 }
+
+// TestRewriteSelfRefCmds drives the shell-cmd rewriter directly with the
+// edge cases enumerated in #128. The rewriter must touch only the *head*
+// of a CallExpr — substring matches (`mytask`), filenames (`./task`), and
+// non-command occurrences (`echo task is cool`) all stay verbatim.
+//
+// The rewriter goes through mvdan/sh's parser and printer; the printer is
+// canonical, not preserving, so backticks become `$(…)` and some
+// whitespace inside `$(…)` may shift. We assert on the substantive
+// rewrite (`task` → `rite` at the head position) and on the no-rewrite
+// invariants, not on byte-for-byte formatting.
+func TestRewriteSelfRefCmds(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, in, want string
+		changed        bool
+	}{
+		{"bare", "task foo", "rite foo", true},
+		{"flag", "task --list", "rite --list", true},
+		{"and_chain", "cd sub && task build", "cd sub && rite build", true},
+		{"semicolon_chain", "task a; task b", "rite a; rite b", true},
+		{"pipe_chain", "task list | grep build", "rite list | grep build", true},
+		{"dollar_paren_subst", "$(task --version)", "$(rite --version)", true},
+		// Backticks preserved (we splice at byte offsets, not reprint).
+		{"backtick_subst", "`task --version`", "`rite --version`", true},
+		{"nested_in_dquote", `echo "v: $(task --version)"`, `echo "v: $(rite --version)"`, true},
+		{"echo_arg_unchanged", "echo task is cool", "echo task is cool", false},
+		{"path_unchanged", "./task", "./task", false},
+		{"absolute_path_unchanged", "/usr/local/bin/task", "/usr/local/bin/task", false},
+		{"substring_unchanged", "mytask foo", "mytask foo", false},
+		{"task_in_arg_unchanged", "go install github.com/go-task/task/v3/cmd/task@latest", "go install github.com/go-task/task/v3/cmd/task@latest", false},
+		{"sglquoted_arg_unchanged", `echo 'task --list'`, `echo 'task --list'`, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			got, parseOK, changed := task.RewriteShellCmdForTest(c.in)
+			if !parseOK {
+				t.Fatalf("parse failed for %q", c.in)
+			}
+			if changed != c.changed {
+				t.Errorf("changed = %v, want %v (in=%q out=%q)", changed, c.changed, c.in, got)
+			}
+			if got != c.want {
+				t.Errorf("rewrite mismatch:\n  in   = %q\n  got  = %q\n  want = %q", c.in, got, c.want)
+			}
+		})
+	}
+}
+
+// TestMigrateRewritesSelfRefCmds end-to-ends the SELFREF-CMD pass through
+// task.Migrate, asserting the YAML pre/post and the warning stream.
+// Verifies:
+//
+//   - Bare cmds: list items are rewritten (`task --list` → `rite --list`).
+//   - cmd: scalar values inside mapping shapes are rewritten.
+//   - Quoted cmds round-trip (single + double).
+//   - The structural `task:` YAML key (call-another-task shape) is NOT
+//     touched — that's a key, not a shell cmd.
+//   - One SELFREF-CMD warning per rewrite, file:line-tagged.
+func TestMigrateRewritesSelfRefCmds(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	src := filepath.Join(dir, "Taskfile.yml")
+	body := `version: '3'
+tasks:
+  ci:
+    cmds:
+      - task lint
+      - task test
+      - 'task --list'
+  bare-cmd:
+    cmds:
+      - cmd: task build
+        silent: true
+  call-another:
+    cmds:
+      - task: ci
+  noop:
+    cmds:
+      - echo "task is the name of the binary"
+      - ./task --not-the-binary
+`
+	require.NoError(t, os.WriteFile(src, []byte(body), 0o644))
+
+	var warn bytes.Buffer
+	dst, err := task.Migrate(src, &warn)
+	require.NoError(t, err)
+	out, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	gotS := string(out)
+	warnS := warn.String()
+
+	// Positive: every shell `task` invocation rewrote to `rite`.
+	for _, want := range []string{
+		"- rite lint",
+		"- rite test",
+		"- 'rite --list'",
+		"cmd: rite build",
+	} {
+		if !strings.Contains(gotS, want) {
+			t.Errorf("output missing %q\nGOT:\n%s", want, gotS)
+		}
+	}
+
+	// Negative: structural task: key, prose mentions, and ./task path stay.
+	for _, keep := range []string{
+		"- task: ci", // YAML key, not a shell cmd
+		`echo "task is the name of the binary"`,
+		"./task --not-the-binary",
+	} {
+		if !strings.Contains(gotS, keep) {
+			t.Errorf("expected unchanged fragment %q missing\nGOT:\n%s", keep, gotS)
+		}
+	}
+
+	// One warning per rewrite (4 cmds rewritten).
+	got := strings.Count(warnS, "SELFREF-CMD")
+	if got != 4 {
+		t.Errorf("SELFREF-CMD warning count = %d, want 4\nGOT:\n%s", got, warnS)
+	}
+}
+
+// TestRewriteSelfRefCmdsParseError asserts that a cmd which the shell
+// parser rejects survives unchanged (no rewrite, parseOK=false). The
+// migrate caller emits a warning so the user is told to review by hand.
+func TestRewriteSelfRefCmdsParseError(t *testing.T) {
+	t.Parallel()
+	// Unterminated double-quote — shell would also reject this.
+	in := `echo "task --list`
+	got, parseOK, changed := task.RewriteShellCmdForTest(in)
+	if parseOK {
+		t.Errorf("expected parseOK=false for malformed input %q", in)
+	}
+	if changed {
+		t.Errorf("expected changed=false for malformed input")
+	}
+	if got != in {
+		t.Errorf("expected unchanged output, got %q", got)
+	}
+}

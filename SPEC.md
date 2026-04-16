@@ -227,7 +227,7 @@ When a task's `cmds:` shells out to another `rite` invocation (`cmds: ['rite bui
 
 Rationale: every ounce of compat shim is a future maintenance tax and a semantic leak. Users who want go-task behavior can run go-task.
 
-A `rite migrate` tool exists to ease the one-way transition.
+A `rite migrate` tool exists to ease the one-way transition. It also rewrites self-referential `task` CLI invocations inside `cmds:` to `rite` so a migrated Ritefile drives itself instead of go-task (issue #128, code `SELFREF-CMD`).
 
 ---
 

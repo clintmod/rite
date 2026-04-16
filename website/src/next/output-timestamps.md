@@ -121,6 +121,25 @@ Task-level `timestamps:` controls the task's **cmd output** (the bytes the shell
 - **ANSI color escapes** are preserved — the timestamp lands before the first byte of the line, so color sequences aren't split.
 - **Partial lines** (a `printf '%s'` without a trailing newline) are buffered until newline arrives or the cmd exits. On exit rite flushes them with a final timestamp and a synthesized `\n` so log consumers never see half-stamped output.
 
+## Nested rite invocations
+
+When a `cmds:` entry shells out to another `rite` invocation, only the outermost rite stamps. A 3-deep chain (`default` → `rite middle` → `rite leaf` → `printf hello`) under `RITE_TIMESTAMPS=1` emits exactly one prefix per line, not three.
+
+The mechanism: whenever rite wraps a cmd's output with a timestamp writer, it also sets `RITE_TIMESTAMPS_HANDLED=1` in that cmd's environ. A nested rite that sees this marker in its own environ suppresses its timestamp wrapping — cmd output and logger lines alike — so the outer rite is the single source of prefixes. Non-rite children (`npm`, `bundle`, `cargo`) see the variable and ignore it.
+
+An inner `--timestamps` flag is deliberately *also* suppressed by the marker: re-wrapping already-prefixed output is the bug this prevents, not a feature. If you genuinely want nested stamping on a specific sub-invocation (unusual), clear the marker on that cmd:
+
+```yaml
+tasks:
+  default:
+    cmds:
+      - cmd: rite inner
+        env:
+          RITE_TIMESTAMPS_HANDLED: ''   # opt this one child back into wrapping
+```
+
+In-process subcalls via `cmds: - task: foo` never fork a process and were never affected by the bug; they continue to produce one prefix per line through the existing single-wrap path.
+
 ## Env var grammar
 
 `RITE_TIMESTAMPS` accepts the same values as the flag, plus common variants:

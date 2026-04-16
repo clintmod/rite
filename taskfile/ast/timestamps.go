@@ -12,6 +12,14 @@ import (
 // content. See SPEC §Output Timestamps.
 const DefaultTimestampLayout = "[2006-01-02T15:04:05.000Z]"
 
+// TimestampMarkerEnvVar is the marker variable rite injects into a cmd's
+// environ whenever its output is being wrapped by a TimestampWriter. A
+// nested rite invocation that sees this variable set to "1" skips its own
+// timestamp wrapping entirely — otherwise every level of nesting would add
+// another prefix and multi-level `rite`-calls-`rite` chains would emit
+// `[ts] [ts] [ts] line`. See SPEC §Output Timestamps / "Nested invocations".
+const TimestampMarkerEnvVar = "RITE_TIMESTAMPS_HANDLED"
+
 // Timestamps is the tri-state value for the `timestamps:` knob at both the
 // entrypoint level and the task level.
 //

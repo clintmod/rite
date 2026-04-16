@@ -435,10 +435,19 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		tsOut, tsErrW, tsClose := e.tsCtx.wrapCmdWriters(e.Stdout, e.Stderr, tsLayout)
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(tsOut, tsErrW, t.Prefix, outputTemplater)
 
+		// When this cmd's output is being wrapped by a TimestampWriter,
+		// advertise that via the marker env var (issue #136). A nested
+		// rite child sees it and suppresses its own wrapping, so the
+		// outer rite is the single source of timestamp prefixes.
+		cmdEnv := env.Get(t)
+		if tsLayout != "" {
+			cmdEnv = append(cmdEnv, ast.TimestampMarkerEnvVar+"=1")
+		}
+
 		err = execext.RunCommand(ctx, &execext.RunCommandOptions{
 			Command:   cmd.Cmd,
 			Dir:       t.Dir,
-			Env:       env.Get(t),
+			Env:       cmdEnv,
 			PosixOpts: slicesext.UniqueJoin(e.Ritefile.Set, t.Set, cmd.Set),
 			BashOpts:  slicesext.UniqueJoin(e.Ritefile.Shopt, t.Shopt, cmd.Shopt),
 			Stdin:     e.Stdin,

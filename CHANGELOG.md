@@ -13,6 +13,10 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+### Fixed
+
+- Nested `rite` invocations no longer stack timestamp prefixes. When `cmds:` shells out to another rite (`rite middle` → `rite leaf` → `printf hello`) under `RITE_TIMESTAMPS=1`, the outer rite now marks each wrapped cmd's environ with `RITE_TIMESTAMPS_HANDLED=1`; the child rite detects the marker and suppresses its own wrapping so only the outermost invocation stamps. Before this fix a 3-deep chain emitted `[ts] [ts] [ts] foo` — one prefix per level. Internal `cmds: - task: foo` subcalls were never affected (no fork, no marker path). Escape hatch for the rare user who wants nested stamping: `env: { RITE_TIMESTAMPS_HANDLED: '' }` on the inner cmd. (#136)
+
 ## [1.0.4] - 2026-04-15
 
 Output timestamping + versioned docs site + scriptable release pipeline.

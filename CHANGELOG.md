@@ -13,9 +13,21 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-04-15
+
+Output timestamping + versioned docs site + scriptable release pipeline.
+
 ### Added
 
-- `rite release:prepare` / `rite release:tag` / `rite release:verify` — three Ritefile tasks that codify the RELEASING.md playbook. `prepare` opens a staging PR (bumps `internal/version/version.txt`, dates the CHANGELOG, bumps install-example pins in README/website while preserving historical roadmap bullets). `tag` strictly refuses if the version was already tagged; never force-pushes. `verify` polls the goreleaser workflow with a 10-min deadline and asserts release artifacts. Each task `requires:` a `VERSION=X.Y.Z` var (semver, no `v` prefix) and validates preconditions before mutating anything. (#126)
+- **Per-line output timestamps.** `timestamps: true` (or a strftime format string) at the entrypoint or per task prefixes every line `rite` emits — cmd stdout/stderr, the `rite:` logger, and group banners — with an ISO 8601 UTC millisecond stamp by default. Also exposed as `--timestamps[=<fmt>]` and `RITE_TIMESTAMPS=<fmt>`; precedence CLI > task > top-level. Task-level `timestamps: false` opts a specific task out of a global-on setting (escape hatch for interactive cmds). Single line-buffering decorator wraps every emitter so logs are unified and monotonic under contention. (#130)
+- **Versioned documentation site.** `website/src/next/` holds the bleeding-edge main-branch docs; each tagged release gets an immutable snapshot under `website/src/v<X.Y.Z>/`. Version dropdown in the nav lets readers pin docs to their installed binary; `/` redirects to the latest released version, `/next/` is the explicit unreleased path. Past releases (v0.1.0, v1.0.0, v1.0.2, v1.0.3) backfilled from git history. New `release:snapshot-docs` task wired into `release:prepare` so cutting a release also cuts the docs snapshot. (#132)
+- **Scriptable release pipeline.** `rite release:prepare` / `rite release:tag` / `rite release:verify` — three Ritefile tasks that codify the RELEASING.md playbook. `prepare` opens a staging PR (bumps `internal/version/version.txt`, dates the CHANGELOG, bumps install-example pins in README/website while preserving historical roadmap bullets). `tag` strictly refuses if the version was already tagged; never force-pushes. `verify` polls the goreleaser workflow with a 10-min deadline and asserts release artifacts. Each task `requires:` a `VERSION=X.Y.Z` var (semver, no `v` prefix) and validates preconditions before mutating anything. (#126)
+
+### Documentation
+
+- Migrate guide flags self-referential `task` CLI calls in `cmds:` as a known gap (#128) — migrate doesn't rewrite `task lint` → `rite lint` today; users grep + hand-fix.
+- SPEC §vars/env Unification pins down what `export:` can put in the environ: only scalars; `map:` / `ref:`-to-structured are silently skipped, `export: true` on a map is a no-op.
+- README roadmap notes the planned v2.0 removal of the `env:` block (refs #129) — `vars:` and `env:` have been semantically unified since Phase 4.
 
 ## [1.0.3] - 2026-04-15
 

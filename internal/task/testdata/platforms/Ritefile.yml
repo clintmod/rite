@@ -68,4 +68,4 @@ tasks:
     env:
       EXAMPLE_VAR: {sh: exit 1}
     vars:
-      EXAMPLE_VAR: {sh: exit 2}
+      EXAMPLE_VAR_DEFAULT: {sh: exit 2}

@@ -110,6 +110,16 @@ func (tf *Ritefile) UnmarshalYAML(node *yaml.Node) error {
 			Timestamps *Timestamps
 		}
 		if err := node.Decode(&taskfile); err != nil {
+			// Surface a task-scope vars/env collision (issue #129) as the
+			// typed VarEnvCollisionError directly. The yaml decoder wraps
+			// any UnmarshalYAML error returned by Tasks.UnmarshalYAML, so
+			// without this unwrap callers see a generic decode error and
+			// the exit code is the decode bucket rather than the
+			// invalid-Ritefile bucket the collision actually belongs in.
+			var collision *errors.VarEnvCollisionError
+			if errors.As(err, &collision) {
+				return collision
+			}
 			return errors.NewRitefileDecodeError(err, node)
 		}
 		tf.Version = taskfile.Version
@@ -138,8 +148,37 @@ func (tf *Ritefile) UnmarshalYAML(node *yaml.Node) error {
 		if tf.Tasks == nil {
 			tf.Tasks = NewTasks()
 		}
+		// vars / env unification (SPEC §vars / env Unification): the two blocks
+		// share a single variable table, so the same key in both is ambiguous.
+		// Reject at load time rather than silently letting one win on
+		// map-iteration order. See issue #129.
+		if err := checkVarsEnvCollision(tf.Vars, tf.Env, ""); err != nil {
+			return err
+		}
 		return nil
 	}
 
 	return errors.NewRitefileDecodeError(nil, node).WithTypeMessage("taskfile")
+}
+
+// checkVarsEnvCollision returns a VarEnvCollisionError if any key appears in
+// both `vars` and `env`. Iterates `vars` in insertion order so the error names
+// the first colliding declaration deterministically. Returns on first hit —
+// one clear error beats a wall of them.
+//
+// `taskName` is empty for entrypoint/top-level scope and set to the task's
+// local name for task scope; the error formats accordingly.
+func checkVarsEnvCollision(vars, env *Vars, taskName string) error {
+	if vars == nil || env == nil {
+		return nil
+	}
+	for k := range vars.Keys() {
+		if _, ok := env.Get(k); ok {
+			return &errors.VarEnvCollisionError{
+				Name:     k,
+				TaskName: taskName,
+			}
+		}
+	}
+	return nil
 }

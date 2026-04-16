@@ -49,6 +49,7 @@ func (e *Executor) Setup() error {
 	if err := e.doVersionChecks(); err != nil {
 		return err
 	}
+	e.warnRedundantSelfRefs()
 	e.setupDefaults()
 	e.setupConcurrencyState()
 	return nil

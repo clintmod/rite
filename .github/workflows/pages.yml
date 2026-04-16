@@ -46,6 +46,24 @@ jobs:
         # domain — see website/.vitepress/config.ts.
         run: DOCS_BASE=/rite/ pnpm build
 
+      - name: Hoist per-version public/ dirs into dist/<version>/
+        # VitePress only hoists the root srcDir/public/ dir, so per-version
+        # snapshots under website/src/{v*,next}/public/ never reach the
+        # built site without this step. Copying after build exposes each
+        # frozen schema at clintmod.github.io/rite/v<X.Y.Z>/schema.json
+        # and the bleeding-edge one at /next/schema.json (closes #135).
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for dir in website/src/v*/public website/src/next/public; do
+            version=$(basename "$(dirname "$dir")")
+            dest="website/.vitepress/dist/${version}"
+            mkdir -p "$dest"
+            cp -R "$dir"/. "$dest/"
+            echo "hoisted $dir -> $dest"
+          done
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3

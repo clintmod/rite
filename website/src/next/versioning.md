@@ -19,6 +19,26 @@ with the **Version** dropdown in the top nav — or URL-pin it directly:
 Run `rite --version` to see what your binary reports, and visit the
 matching `/v<VERSION>/` path.
 
+## Schema URLs
+
+The JSON schema for Ritefiles is published at three URL shapes that
+mirror the docs convention above:
+
+| URL | Mutability | When to use |
+|-----|------------|-------------|
+| `https://clintmod.github.io/rite/schema.json` | Mutable (latest) | Editor / IDE defaults — always tracks the newest release |
+| `https://clintmod.github.io/rite/v<X.Y.Z>/schema.json` | Frozen at the tag | Pin in CI when you pin a `rite` binary version, so the schema matches what the binary accepts |
+| `https://clintmod.github.io/rite/next/schema.json` | Mutable | Bleeding-edge, tracks `main` |
+
+The format-versioned variants (`schema/v3.json`) live alongside each
+shape — e.g. `clintmod.github.io/rite/v1.0.4/schema/v3.json`.
+
+Example `yaml-language-server` directive pinned to a specific binary:
+
+```yaml
+# yaml-language-server: $schema=https://clintmod.github.io/rite/v1.0.4/schema.json
+```
+
 ## Why per-version docs?
 
 The install examples in the docs embed concrete version pins
@@ -48,6 +68,10 @@ you're reading.
 - VitePress discovers version dirs at build time by scanning
   `website/src/` for `vX.Y.Z/` subdirs; sidebars and the version dropdown
   are generated from that list.
+- The Pages workflow runs a hoist step after `vitepress build` that
+  copies `website/src/v*/public/` into `dist/v*/`, exposing each frozen
+  schema at `/v<X.Y.Z>/schema.json`. (VitePress only auto-publishes the
+  root `srcDir/public/` dir, not nested per-version `public/` dirs.)
 - `SPEC.md` and `CHANGELOG.md` aren't inlined into versioned dirs (the
   site's Vue toolchain chokes on Go-template syntax in fenced blocks) —
   each version's Spec / Changelog pages are thin stubs that link out to

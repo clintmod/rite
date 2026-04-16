@@ -1,0 +1,10 @@
+version: 3
+tasks:
+  probe:
+    cmds:
+      - printf 'marker=%s\n' "$RITE_TIMESTAMPS_HANDLED"
+  two-lines:
+    cmds:
+      - |
+        printf 'one\n'
+        printf 'two\n'

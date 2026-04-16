@@ -2,6 +2,7 @@ package task
 
 import (
 	"io"
+	"os"
 	"sync"
 
 	"github.com/clintmod/rite/internal/output"
@@ -41,6 +42,20 @@ type timestampContext struct {
 // instead of mid-run.
 func (e *Executor) buildTimestampContext() (*timestampContext, error) {
 	tc := &timestampContext{sharedMu: &sync.Mutex{}}
+	// Nested-invocation guard (issue #136): if a parent rite already
+	// wrapped this process's output with a TimestampWriter, it sets
+	// ast.TimestampMarkerEnvVar in our environ. We short-circuit to a
+	// no-op context so our lines reach the parent unwrapped — the parent
+	// prefixes them once. This is deliberately heavy-handed: even an
+	// explicit inner `--timestamps` is suppressed, because re-wrapping
+	// already-prefixed output would emit `[ts] [ts] line`. Users who
+	// genuinely want nested stamping can clear the marker on the inner
+	// cmd via `env: { RITE_TIMESTAMPS_HANDLED: "" }`.
+	if os.Getenv(ast.TimestampMarkerEnvVar) == "1" {
+		tc.cliSet = true
+		tc.cliOff = true
+		return tc, nil
+	}
 	if e.Timestamps.IsSet() {
 		tc.cliSet = true
 		if e.Timestamps.On() {

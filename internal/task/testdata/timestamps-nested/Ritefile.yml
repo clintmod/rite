@@ -1,0 +1,13 @@
+version: 3
+tasks:
+  outer:
+    cmds:
+      - task: middle
+  middle:
+    cmds:
+      - task: leaf
+  leaf:
+    cmds:
+      - |
+        printf 'alpha\n'
+        printf 'beta\n'

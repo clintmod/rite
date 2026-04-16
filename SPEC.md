@@ -213,6 +213,10 @@ Task-level `timestamps:` controls the **cmd output voice** for that task — std
 - Colored output — the prefix lands before the first byte of the line, so ANSI escapes survive intact.
 - Partial lines (no trailing `\n`) are buffered until newline arrives or the cmd exits; on exit they're flushed with a final timestamp and a synthesized `\n`. No mid-line prefixes.
 
+### Nested invocations
+
+When a task's `cmds:` shells out to another `rite` invocation (`cmds: ['rite build']`), a naive implementation would let each nested rite wrap its child's output — and since every level inherits `RITE_TIMESTAMPS` from the shell, three nested rites would emit `[ts] [ts] [ts] foo`: one prefix per level. rite avoids that by injecting `RITE_TIMESTAMPS_HANDLED=1` (anchored as `ast.TimestampMarkerEnvVar`) into a cmd's environ whenever its output is being wrapped. A child rite that finds this marker in its environ suppresses its own wrapping entirely — cmd voice *and* logger voice — so the outermost rite is the single source of timestamp prefixes regardless of nesting depth. Non-rite children see the variable and ignore it; it's a rite-internal signal. An inner `--timestamps` on the command line is deliberately suppressed by the marker: re-wrapping already-prefixed output is the bug we're preventing, not a feature. An escape hatch exists for the rare user who genuinely wants nested stamping — clear the marker on the inner cmd via `env: { RITE_TIMESTAMPS_HANDLED: "" }` — but it is intentionally ergonomic-unfriendly. Internal `cmds: - task: foo` subcalls stay in-process, don't fork a rite binary, and don't route through the marker; they're handled by the existing single-wrap path and were never the bug.
+
 ---
 
 ## Compatibility with go-task

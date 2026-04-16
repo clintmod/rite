@@ -170,6 +170,111 @@ func TestTimestampsWithGroupBanner(t *testing.T) {
 	assert.Contains(t, lines[2], "::endgroup::")
 }
 
+// TestTimestampsMarkerInjectedWhenWrapping verifies that when rite wraps a
+// cmd's output with a TimestampWriter, it also sets
+// RITE_TIMESTAMPS_HANDLED=1 in that cmd's environ. A nested rite process
+// that sees this marker suppresses its own wrapping (issue #136).
+func TestTimestampsMarkerInjectedWhenWrapping(t *testing.T) {
+	t.Parallel()
+
+	on := true
+	var stdout bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir("testdata/timestamps-marker"),
+		task.WithStdout(&stdout),
+		task.WithStderr(&bytes.Buffer{}),
+		task.WithTimestamps(&ast.Timestamps{Enabled: &on}),
+	)
+	require.NoError(t, e.Setup())
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "probe"}))
+
+	// Cmd saw the marker set to 1. Strip the timestamp prefix first; the
+	// payload itself must match.
+	line := firstNonEmptyLine(stdout.String())
+	stripped := timestampRe.ReplaceAllString(line, "")
+	assert.Equal(t, "marker=1", stripped)
+}
+
+// TestTimestampsMarkerAbsentWhenUnwrapped confirms the inverse: with
+// timestamps off at every scope, no marker leaks into the cmd environ.
+// Non-rite children would never read it, but we don't want stray rite
+// config bleeding into processes whose parent didn't opt into stamping.
+func TestTimestampsMarkerAbsentWhenUnwrapped(t *testing.T) {
+	t.Parallel()
+
+	var stdout bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir("testdata/timestamps-marker"),
+		task.WithStdout(&stdout),
+		task.WithStderr(&bytes.Buffer{}),
+	)
+	require.NoError(t, e.Setup())
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "probe"}))
+
+	// No wrapping, so no timestamp prefix and no marker.
+	assert.Equal(t, "marker=\n", stdout.String())
+}
+
+// TestTimestampsMarkerSuppressesInnerWrapping is the load-bearing
+// regression for #136. With the marker already set in rite's own environ
+// (simulating an outer rite that wrapped us), a CLI `--timestamps` on the
+// inner invocation is deliberately suppressed — otherwise the outer
+// already-prefixed line would get a second prefix, giving `[ts] [ts] foo`.
+// The outer rite's single wrap becomes the only source of timestamps.
+// This is the intended "marker beats explicit user request at the inner
+// level" semantics from the issue; it is not a bug.
+func TestTimestampsMarkerSuppressesInnerWrapping(t *testing.T) {
+	t.Setenv(ast.TimestampMarkerEnvVar, "1")
+
+	on := true
+	var stdout bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir("testdata/timestamps"),
+		task.WithStdout(&stdout),
+		task.WithStderr(&bytes.Buffer{}),
+		task.WithTimestamps(&ast.Timestamps{Enabled: &on}),
+	)
+	require.NoError(t, e.Setup())
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "echo"}))
+
+	// Output must NOT carry a timestamp prefix — the inner wrap was
+	// suppressed by the marker.
+	line := firstNonEmptyLine(stdout.String())
+	assert.Equal(t, "hello", line)
+	assert.NotRegexp(t, timestampRe, line)
+}
+
+// TestTimestampsInternalSubcallStillStampsOnce pins the invariant that the
+// marker-based fix doesn't regress the existing in-process `cmds: [task:
+// foo]` path. These subcalls never fork a rite process and so never route
+// through the marker; each line still gets exactly one timestamp.
+func TestTimestampsInternalSubcallStillStampsOnce(t *testing.T) {
+	t.Parallel()
+
+	on := true
+	var stdout bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir("testdata/timestamps-nested"),
+		task.WithStdout(&stdout),
+		task.WithStderr(&bytes.Buffer{}),
+		task.WithTimestamps(&ast.Timestamps{Enabled: &on}),
+	)
+	require.NoError(t, e.Setup())
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "outer"}))
+
+	lines := nonEmptyLines(stdout.String())
+	require.Len(t, lines, 2)
+	// Exactly one timestamp prefix per line — never two. Easiest check:
+	// the regex `[ts] [ts]` must not appear.
+	doublePrefix := regexp.MustCompile(`^\[\d{4}-[^]]+\]\s+\[\d{4}-`)
+	for _, line := range lines {
+		assert.Regexp(t, timestampRe, line)
+		assert.NotRegexp(t, doublePrefix, line, "double-prefixed line: %q", line)
+	}
+	assert.Contains(t, lines[0], "alpha")
+	assert.Contains(t, lines[1], "beta")
+}
+
 func firstNonEmptyLine(s string) string {
 	for _, line := range strings.Split(s, "\n") {
 		if line != "" {

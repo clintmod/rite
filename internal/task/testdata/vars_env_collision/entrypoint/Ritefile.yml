@@ -1,0 +1,11 @@
+version: '3'
+
+vars:
+  FOO: from-vars
+env:
+  FOO: from-env
+
+tasks:
+  show:
+    cmds:
+      - echo "$FOO"

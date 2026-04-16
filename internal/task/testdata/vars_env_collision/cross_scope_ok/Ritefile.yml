@@ -1,0 +1,11 @@
+version: '3'
+
+vars:
+  FOO: from-entrypoint-vars
+
+tasks:
+  deploy:
+    env:
+      FOO: from-task-env
+    cmds:
+      - echo "$FOO"

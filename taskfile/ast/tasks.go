@@ -260,6 +260,13 @@ func (t *Tasks) UnmarshalYAML(node *yaml.Node) error {
 				Column: keyNode.Column,
 			}
 
+			// vars / env unification at task scope (issue #129): a key declared
+			// in both task.vars and task.env is ambiguous under SPEC §vars /
+			// env Unification — fail at load time naming the task and key.
+			if err := checkVarsEnvCollision(v.Vars, v.Env, keyNode.Value); err != nil {
+				return err
+			}
+
 			// Add the task to the ordered map
 			t.Set(keyNode.Value, &v)
 		}

@@ -1,13 +1,13 @@
 version: '3'
 
 vars:
-  BAZ:
+  BAZ_VAL:
     sh: echo baz
 
 env:
   FOO: foo
   BAR: bar
-  BAZ: "{{.BAZ}}"
+  BAZ: "{{.BAZ_VAL}}"
   QUX: from_taskfile
 
 tasks:

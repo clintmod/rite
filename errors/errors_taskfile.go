@@ -129,6 +129,41 @@ func (err IncludeEscapesTreeError) Code() int {
 	return CodeRitefileInvalid
 }
 
+// VarEnvCollisionError is returned when a Ritefile declares the same variable
+// name in both `vars:` and `env:` at the same scope (entrypoint top-level or a
+// single task). Under rite's vars/env unification (SPEC §vars / env
+// Unification), the two blocks share a single variable table — declaring the
+// same key in both is ambiguous and the loader cannot pick a winner without
+// silently losing the other declaration.
+//
+// TaskName is empty when the collision is at the file's top level and set
+// to the task's local name when the collision lives inside a single task.
+type VarEnvCollisionError struct {
+	Name     string
+	TaskName string
+}
+
+func (err *VarEnvCollisionError) Error() string {
+	if err.TaskName != "" {
+		return fmt.Sprintf(
+			`variable %q declared in both tasks.%s.vars and tasks.%s.env. `+
+				`In rite, vars: and env: are the same variable table — pick one block.`,
+			err.Name,
+			err.TaskName,
+			err.TaskName,
+		)
+	}
+	return fmt.Sprintf(
+		`variable %q declared in both vars: and env: at top-level scope. `+
+			`In rite, vars: and env: are the same variable table — pick one block.`,
+		err.Name,
+	)
+}
+
+func (err *VarEnvCollisionError) Code() int {
+	return CodeRitefileInvalid
+}
+
 // RitefileDoesNotMatchChecksum is returned when a Ritefile's checksum does not
 // match the one pinned in the parent Ritefile.
 type RitefileDoesNotMatchChecksum struct {

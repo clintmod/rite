@@ -98,6 +98,8 @@ Ritefile has a single `vars:` concept. Every declared variable:
 
 No more `vars:` vs `env:` split. No more asymmetric precedence between the two. (Addresses go-task/task#2036.)
 
+Declaring the same name in both `vars:` and `env:` at the same scope (entrypoint top-level or a single task) is a **load-time error**. Picking a winner silently would hide the precedence the SPEC is built to make obvious.
+
 ### Non-exported variables
 
 If a variable should be visible inside Ritefile logic but **not** exported to the shell:

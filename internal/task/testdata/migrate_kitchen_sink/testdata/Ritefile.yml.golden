@@ -101,3 +101,13 @@ tasks:
       - for: [a, b]
         cmd: echo ${ITEM}
       - defer: echo done
+
+  selfref:
+    desc: Self-referential task CLI invocations — SELFREF-CMD rewrites.
+    cmds:
+      - rite --list
+      - cd ci && rite build
+      - 'echo "version: $(rite --version)"'
+      - echo task is just an arg here
+      - ./task --not-our-binary
+      - mytask --substring-not-rewritten

@@ -26,7 +26,7 @@ tasks:
     desc: List available tasks
     silent: true
     cmds:
-      - task --list
+      - rite --list
 
   sysinfo:
     desc: Display system information

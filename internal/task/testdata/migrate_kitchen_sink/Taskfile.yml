@@ -101,3 +101,13 @@ tasks:
       - for: [a, b]
         cmd: echo {{.ITEM}}
       - defer: echo done
+
+  selfref:
+    desc: Self-referential task CLI invocations — SELFREF-CMD rewrites.
+    cmds:
+      - task --list
+      - cd ci && task build
+      - 'echo "version: $(task --version)"'
+      - echo task is just an arg here
+      - ./task --not-our-binary
+      - mytask --substring-not-rewritten

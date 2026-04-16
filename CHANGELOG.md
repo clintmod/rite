@@ -13,6 +13,8 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-04-16
+
 ## [1.0.5] - 2026-04-15
 
 Patch: nested `rite` invocations no longer triple-stamp output.

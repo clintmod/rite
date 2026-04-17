@@ -355,6 +355,82 @@ func TestTimestampsListTasksIsNeverStamped(t *testing.T) {
 	}
 }
 
+// TestTimestampsColorResetPresentUnderTopLevelStamping is the load-
+// bearing regression for #151. Under `timestamps: true` at the top
+// level with color forced on, the `\x1b[0m` that fatih/color writes
+// after the "rite: [task] cmd" header MUST end up in the output stream
+// before the cmd's visible output — otherwise the green from the header
+// bleeds into subsequent lines in a real terminal.
+//
+// Root cause, per the issue: fatih/color emits its reset as a separate
+// Write with no newline. Before the fix, the Logger's TimestampWriter
+// buffered the trailing `\x1b[0m` forever (no newline => never drained),
+// and because cmd output goes through a *different* TimestampWriter
+// nothing ever hit the Logger's writer again. Fix: pure-SGR trailing
+// runs pass through inline (no timestamp prefix, no appended newline)
+// so the reset lands wherever fatih/color intended it.
+//
+// We assert the weakest correct property: the reset byte sequence
+// appears somewhere in the output stream ahead of the cmd's visible
+// content. Where exactly (wrapping the whole stamped line vs. sitting
+// on its own passthrough run vs. at the head of the next line) is an
+// implementation detail; any of those is "not lossy", which is what
+// #151 is about.
+func TestTimestampsColorResetPresentUnderTopLevelStamping(t *testing.T) {
+	// Not t.Parallel: see the comment on
+	// TestTimestampsListTasksIsNeverStamped — we have to un-stick the
+	// NO_COLOR test-harness default to actually exercise the color
+	// path, and that's racy with parallel tests.
+	t.Setenv("NO_COLOR", "")
+	prevNoColor := color.NoColor
+	color.NoColor = false
+	t.Cleanup(func() { color.NoColor = prevNoColor })
+
+	var stdout, stderr bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir("testdata/timestamps-list"), // top-level timestamps: true
+		task.WithStdout(&stdout),
+		task.WithStderr(&stderr),
+		task.WithColor(true),
+		task.WithVerbose(true), // force the `rite: [hello] echo hi` header
+	)
+	require.NoError(t, e.Setup())
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "hello"}))
+	// Close is what the CLI calls via defer; call it here so any
+	// buffered remnant also flushes.
+	e.Close()
+
+	// Merge streams in the most permissive way possible for the
+	// assertion — stdout gets cmd output, stderr gets the rite header.
+	// A real terminal sees them interleaved under a shared mutex; for
+	// the regression we just need to prove the reset is *present*
+	// somewhere, before `hi`.
+	combined := stderr.String() + stdout.String()
+
+	// Green opener from fatih/color — should be present (sanity).
+	assert.Contains(t, combined, "\x1b[32m", "expected green SGR for rite header: %q", combined)
+	// The bug: reset silently dropped. Assert it's here.
+	assert.Contains(t, combined, "\x1b[0m", "reset SGR from fatih/color was lost (#151): %q", combined)
+
+	// Stronger ordering assertion on stderr alone (where the Logger
+	// writes): the reset must appear somewhere *after* the green
+	// opener. If the three fatih/color writes are out of order the
+	// whole output is meaningless.
+	errStr := stderr.String()
+	greenIdx := strings.Index(errStr, "\x1b[32m")
+	resetIdx := strings.LastIndex(errStr, "\x1b[0m")
+	require.NotEqual(t, -1, greenIdx, "no green opener on stderr: %q", errStr)
+	require.NotEqual(t, -1, resetIdx, "no reset on stderr: %q", errStr)
+	assert.Greater(t, resetIdx, greenIdx, "reset must come after opener: %q", errStr)
+
+	// #148 invariant (still enforced by its own test, re-verified here):
+	// `rite -l` wasn't invoked, but the cmd output path should still
+	// be stamped. Prove that stdout has at least one timestamped line.
+	cmdLine := firstNonEmptyLine(stdout.String())
+	assert.Regexp(t, timestampRe, cmdLine, "cmd output should still be stamped under timestamps:true: %q", cmdLine)
+	assert.Contains(t, cmdLine, "hi")
+}
+
 // TestTimestampsListTasksNoStampingWhenTimestampsOff is the
 // timestamps-disabled control case: `rite -l` must also come out un-stamped
 // when the Ritefile doesn't set `timestamps:` at all. This is the trivial

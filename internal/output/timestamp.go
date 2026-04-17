@@ -80,7 +80,27 @@ func NewTimestampWriter(sink *TimestampSink) *TimestampWriter {
 
 // Write buffers input, emitting a timestamped line for each newline-
 // terminated segment. Partial trailing text stays in the buffer until the
-// next Write or Close.
+// next Write or Close — except for a trailing run of *pure SGR escape
+// sequences*, which is passed through inline without a timestamp and
+// without further buffering (see issue #151).
+//
+// Why the SGR-passthrough carve-out: fatih/color emits its reset as a
+// separate Write with no newline (sequence is `Write("\x1b[32m")`,
+// `Write("text\n")`, `Write("\x1b[0m")`). With timestamp wrapping the
+// trailing `\x1b[0m` is buffered forever — the next Write on *this*
+// writer is what would drain it, but in practice cmd output goes through
+// a *different* TimestampWriter (per-task override), so the Logger's
+// writer never sees another Write. End-of-run doesn't save us either
+// (tsCloseLoggers exists but wiring is belt-and-suspenders, and closing
+// would emit an ugly standalone `[ts] \x1b[0m` line anyway).
+//
+// An SGR transition is a zero-visible-width state change, not a "line"
+// of output. Passing it through inline — no timestamp prefix, no
+// appended newline — is semantically equivalent to the un-stamped
+// baseline, where the reset lands at the head of the next line whoever
+// writes next. We hold the sink mutex during the passthrough so ordering
+// versus other sinks (the cmd's stdout/stderr writers sharing our
+// sharedMu) is preserved.
 func (tw *TimestampWriter) Write(p []byte) (int, error) {
 	tw.mu.Lock()
 	defer tw.mu.Unlock()
@@ -93,6 +113,17 @@ func (tw *TimestampWriter) Write(p []byte) (int, error) {
 	tw.buf.Write(p)
 	if err := tw.drainLocked(false); err != nil {
 		return n, err
+	}
+	// After draining all newline-terminated lines, the buffer holds a
+	// trailing partial (or is empty). If that partial is pure ANSI SGR
+	// bytes (complete CSI sequences with no visible chars between them),
+	// pass it through inline — no timestamp, no newline — so the next
+	// line's prefix still lands at a line boundary and the SGR state
+	// transition isn't lost at end-of-run.
+	if sgr, ok := consumePureSGRTail(&tw.buf); ok {
+		if err := tw.sink.emitRaw(sgr); err != nil {
+			return n, err
+		}
 	}
 	return n, nil
 }
@@ -137,6 +168,27 @@ func (tw *TimestampWriter) drainLocked(force bool) error {
 			return err
 		}
 	}
+}
+
+// emitRaw writes bytes through the sink's underlying writer under the
+// shared mutex, with NO timestamp prefix and no newline handling. Used
+// for zero-visible-width passthrough of trailing ANSI SGR escapes so a
+// fatih/color reset doesn't get swallowed by the timestamp buffer (see
+// Write comment + issue #151).
+//
+// Holding the sink mutex here is load-bearing: stdout and stderr
+// TimestampSinks typically share one mutex so line emissions serialize
+// cleanly across FDs. Passing SGR bytes through without the mutex would
+// let them interleave in the middle of a concurrent timestamped line on
+// the other FD.
+func (s *TimestampSink) emitRaw(b []byte) error {
+	if len(b) == 0 {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, err := s.w.Write(b)
+	return err
 }
 
 // emit writes a single already-newline-terminated line, prefixed with the
@@ -264,4 +316,60 @@ func StrftimeToGoLayout(f string) (string, error) {
 		}
 	}
 	return b.String(), nil
+}
+
+// consumePureSGRTail inspects buf and, if its entire contents form a
+// run of one or more complete ANSI CSI escape sequences with no visible
+// characters or newlines between them, consumes those bytes and returns
+// them plus ok=true. Otherwise returns nil, false and leaves the buffer
+// unchanged.
+//
+// A CSI sequence is ESC `[` followed by zero or more parameter bytes in
+// 0x30..0x3F, zero or more intermediate bytes in 0x20..0x2F, and a final
+// byte in 0x40..0x7E. The typical color reset is `ESC[0m` (final byte
+// `m` = SGR), but we accept any final byte in the CSI range — the only
+// thing that matters for the passthrough contract is "zero visible
+// width, no newline, complete sequences only".
+//
+// Incomplete sequences (e.g. a lone trailing `ESC`, `ESC[`, or `ESC[0`
+// with no final byte yet) fail the check — we must not emit partial
+// escapes, so those stay buffered until more bytes arrive or Close
+// forces a flush. Similarly, a stray non-escape byte anywhere in the
+// run (including between two complete sequences) disqualifies the
+// whole tail.
+func consumePureSGRTail(buf *bytes.Buffer) ([]byte, bool) {
+	data := buf.Bytes()
+	if len(data) == 0 {
+		return nil, false
+	}
+	i := 0
+	for i < len(data) {
+		if data[i] != 0x1b {
+			return nil, false
+		}
+		if i+1 >= len(data) || data[i+1] != '[' {
+			return nil, false
+		}
+		j := i + 2
+		// Parameter bytes: 0x30..0x3F.
+		for j < len(data) && data[j] >= 0x30 && data[j] <= 0x3F {
+			j++
+		}
+		// Intermediate bytes: 0x20..0x2F.
+		for j < len(data) && data[j] >= 0x20 && data[j] <= 0x2F {
+			j++
+		}
+		// Final byte: 0x40..0x7E. Must be present to count as complete.
+		if j >= len(data) || data[j] < 0x40 || data[j] > 0x7E {
+			return nil, false
+		}
+		j++
+		i = j
+	}
+	// All bytes consumed into complete CSI sequences. Copy out and
+	// drain the buffer.
+	out := make([]byte, len(data))
+	copy(out, data)
+	buf.Reset()
+	return out, true
 }

@@ -177,7 +177,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 		if err := execext.RunCommand(ctx, &execext.RunCommandOptions{
 			Command: t.If,
 			Dir:     t.Dir,
-			Env:     env.Get(t),
+			Env:     env.ForwardColor(env.Get(t), e.colorOn()),
 		}); err != nil {
 			e.Logger.VerboseOutf(logger.Yellow, "rite: if condition not met - skipped: %q\n", call.Task)
 			return nil
@@ -378,7 +378,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		if err := execext.RunCommand(ctx, &execext.RunCommandOptions{
 			Command: cmd.If,
 			Dir:     t.Dir,
-			Env:     env.Get(t),
+			Env:     env.ForwardColor(env.Get(t), e.colorOn()),
 		}); err != nil {
 			e.Logger.VerboseOutf(logger.Yellow, "rite: [%s] if condition not met - skipped\n", t.Name())
 			return nil
@@ -443,6 +443,12 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		if tsLayout != "" {
 			cmdEnv = append(cmdEnv, ast.TimestampMarkerEnvVar+"=1")
 		}
+		// Forward the outer rite's color intent to color-aware children
+		// (issue #153). When rite itself has color on, the child's stdout
+		// is still a pipe to us, but the user's terminal is what
+		// ultimately renders the bytes — so color-aware CLIs should emit
+		// ANSI. The forwarding honors NO_COLOR / explicit =0 overrides.
+		cmdEnv = env.ForwardColor(cmdEnv, e.colorOn())
 
 		err = execext.RunCommand(ctx, &execext.RunCommandOptions{
 			Command:   cmd.Cmd,

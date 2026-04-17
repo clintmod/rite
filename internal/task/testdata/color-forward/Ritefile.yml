@@ -1,0 +1,6 @@
+version: '3'
+tasks:
+  default:
+    silent: true
+    cmds:
+      - 'printf "CLICOLOR_FORCE=%s FORCE_COLOR=%s\n" "${CLICOLOR_FORCE:-unset}" "${FORCE_COLOR:-unset}"'

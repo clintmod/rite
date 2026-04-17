@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/puzpuzpuz/xsync/v4"
 	"github.com/sajari/fuzzy"
 
@@ -89,6 +90,22 @@ type (
 		Fingerprint string
 	}
 )
+
+// colorOn reports whether rite itself is currently emitting color — i.e.
+// the user's terminal is rendering what we write, and color-aware children
+// should be told to keep their ANSI bytes even though their stdout is a
+// pipe into us (issue #153).
+//
+// Two gates:
+//   - e.Color: the explicit on/off from --color / RITE_COLOR / riterc. If
+//     the user turned color off, do not propagate color.
+//   - color.NoColor: fatih/color's runtime decision. Covers the stacked
+//     signals of NO_COLOR, FORCE_COLOR, CLICOLOR_FORCE, CI detection and
+//     isatty(stdout). When rite is itself in a pipe without a force flag,
+//     this is true → children should not get forced color either.
+func (e *Executor) colorOn() bool {
+	return e.Color && !color.NoColor
+}
 
 // NewExecutor creates a new [Executor] and applies the given functional options
 // to it.

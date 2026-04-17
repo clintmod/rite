@@ -90,6 +90,81 @@ func isTypeAllowed(v any) bool {
 	}
 }
 
+// ForwardColor appends the de-facto-standard "force color on" env vars
+// (CLICOLOR_FORCE=1 and FORCE_COLOR=1) to the given child environ slice when
+// rite's own color detection has resolved to on (issue #153).
+//
+// Motivation: when a rite task's `cmds:` spawn a color-aware child (another
+// `rite -l`, `ls`, `rg`, `fd`, ...) the child sees its stdout is a pipe to
+// rite's output machinery and strips color. The outer rite is still writing
+// to a real TTY, so the bytes the child would have emitted are exactly what
+// the user would see. Forwarding the well-known CLICOLOR_FORCE / FORCE_COLOR
+// signals lets modern CLIs opt into color even over pipes.
+//
+// Honored user overrides (no injection when any of these hold in the parent
+// environ, regardless of colorOn):
+//   - NO_COLOR is set to any non-empty value (no-color.org convention).
+//   - CLICOLOR_FORCE is explicitly set to "0".
+//   - FORCE_COLOR is explicitly set to "0".
+//
+// The passed-in environ takes precedence when the key is present there;
+// otherwise the process's own os.Environ() is consulted, because execext
+// falls back to os.Environ() when the cmd is spawned with an empty env
+// slice.
+//
+// NO_COLOR itself is never touched here — it passes through as the user set
+// it and the child can continue to honor it.
+func ForwardColor(environ []string, colorOn bool) []string {
+	if !colorOn {
+		return environ
+	}
+	// Walk the caller-provided environ first so explicit values there win.
+	var sawNoColor, sawCCF, sawFC bool
+	for _, kv := range environ {
+		eq := strings.IndexByte(kv, '=')
+		if eq < 0 {
+			continue
+		}
+		key, val := kv[:eq], kv[eq+1:]
+		switch key {
+		case "NO_COLOR":
+			sawNoColor = true
+			if val != "" {
+				return environ
+			}
+		case "CLICOLOR_FORCE":
+			sawCCF = true
+			if val == "0" {
+				return environ
+			}
+		case "FORCE_COLOR":
+			sawFC = true
+			if val == "0" {
+				return environ
+			}
+		}
+	}
+	// Fall back to os.Environ for keys not present in the caller's slice
+	// (execext resolves an empty cmd env to os.Environ() at spawn time, so
+	// those values will still reach the child).
+	if !sawNoColor {
+		if v, ok := os.LookupEnv("NO_COLOR"); ok && v != "" {
+			return environ
+		}
+	}
+	if !sawCCF {
+		if v, ok := os.LookupEnv("CLICOLOR_FORCE"); ok && v == "0" {
+			return environ
+		}
+	}
+	if !sawFC {
+		if v, ok := os.LookupEnv("FORCE_COLOR"); ok && v == "0" {
+			return environ
+		}
+	}
+	return append(environ, "CLICOLOR_FORCE=1", "FORCE_COLOR=1")
+}
+
 // GetRiteEnv returns the value of a RITE_-prefixed environment variable.
 // The prefix is applied automatically; callers pass the bare suffix.
 func GetRiteEnv(key string) string {

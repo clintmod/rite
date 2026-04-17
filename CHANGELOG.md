@@ -13,6 +13,8 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-04-17
+
 ## [1.0.8] - 2026-04-17
 
 Patch: `rite -l` and `rite --summary <task>` no longer carry timestamps under global `timestamps: true`.

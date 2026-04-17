@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fatih/color"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -273,6 +274,79 @@ func TestTimestampsInternalSubcallStillStampsOnce(t *testing.T) {
 	}
 	assert.Contains(t, lines[0], "alpha")
 	assert.Contains(t, lines[1], "beta")
+}
+
+// TestTimestampsListTasksStampsEveryLineWithColor is the regression test for
+// issue #145. Before the fix, `rite -l` (ListTasks) built a tabwriter on top
+// of `e.Stdout` — the *unwrapped* writer — so the header "rite: Available
+// tasks for this project:" went through the TimestampWriter but every task
+// row bypassed it. Two visible symptoms in the user's `cat -v` dump:
+//
+//  1. Only the first line carried a `[timestamp]` prefix.
+//  2. The second line was missing the leading `\x1b[0m` reset that
+//     fatih/color had buffered at the end of the previous write — because
+//     the bytes landed on a different writer, the TimestampWriter's buffered
+//     tail was never drained in-order with the tabwriter output.
+//
+// The fix points the tabwriter at `e.Logger.Stdout` (which *is* wrapped when
+// global timestamps are on), so every line the list printer emits — header
+// plus every task row — goes through the same TimestampWriter and comes out
+// stamped with ANSI bytes intact.
+//
+// This test asserts both symptoms: every non-empty line in the captured
+// output carries the default ISO-8601 prefix (symptom 1), and ANSI escape
+// bytes round-trip (symptom 2 — the raw bytes are present in the buffer).
+func TestTimestampsListTasksStampsEveryLineWithColor(t *testing.T) {
+	// Not t.Parallel: fatih/color reads BOTH the package-level `NoColor`
+	// flag AND the `NO_COLOR` env var at every `color.New()` call (via its
+	// `noColorIsSet()` helper), and the task-test harness sets
+	// `NO_COLOR=1` at package init (see `task_test.go`) to stabilize
+	// golden fixtures. We have to clear `NO_COLOR` and flip `NoColor` back
+	// on for the duration of the test, then restore. Parallel tests that
+	// rely on the default (no-color) state would race with us.
+	t.Setenv("NO_COLOR", "")
+	prevNoColor := color.NoColor
+	color.NoColor = false
+	t.Cleanup(func() { color.NoColor = prevNoColor })
+
+	var stdout bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir("testdata/timestamps-list"),
+		task.WithStdout(&stdout),
+		task.WithStderr(&bytes.Buffer{}),
+		task.WithColor(true),
+	)
+	require.NoError(t, e.Setup())
+
+	found, err := e.ListTasks(task.ListOptions{ListOnlyTasksWithDescriptions: true})
+	require.NoError(t, err)
+	require.True(t, found)
+
+	// Symptom 1: every non-empty line in the list output must carry the
+	// default ISO-8601 timestamp prefix, not just the header.
+	lines := nonEmptyLines(stdout.String())
+	require.GreaterOrEqual(t, len(lines), 3, "expected header + 2 task rows, got %d lines: %q", len(lines), stdout.String())
+	for i, line := range lines {
+		assert.Regexp(t, timestampRe, line, "line %d not stamped: %q", i, line)
+	}
+	// Header content sanity.
+	assert.Contains(t, lines[0], "rite: Available tasks for this project:")
+	// Task rows present.
+	joined := strings.Join(lines[1:], "\n")
+	assert.Contains(t, joined, "hello")
+	assert.Contains(t, joined, "world")
+
+	// Symptom 2: the ANSI-colored task-row bytes have to come *after* a
+	// timestamp on the same line, proving the colored bytes were routed
+	// through the TimestampWriter rather than bypassing it. The bullet is
+	// yellow (`\x1b[33m`) and the task name is green (`\x1b[32m`); both
+	// must appear *on* a timestamped line, not as a naked row that
+	// escaped the wrap.
+	for _, line := range lines[1:] {
+		assert.Contains(t, line, "\x1b[33m", "task-row line missing yellow bullet ANSI — likely bypassed TimestampWriter: %q", line)
+		assert.Contains(t, line, "\x1b[32m", "task-row line missing green task-name ANSI: %q", line)
+		assert.Contains(t, line, "\x1b[0m", "task-row line missing reset ANSI: %q", line)
+	}
 }
 
 func firstNonEmptyLine(s string) string {

@@ -88,8 +88,20 @@ func (e *Executor) ListTasks(o ListOptions) (bool, error) {
 	}
 	e.Logger.Outf(logger.Default, "rite: Available tasks for this project:\n")
 
-	// Format in tab-separated columns with a tab stop of 8.
-	w := tabwriter.NewWriter(e.Stdout, 0, 8, 6, ' ', 0)
+	// Format in tab-separated columns with a tab stop of 8. The tabwriter
+	// wraps `e.Logger.Stdout` (not `e.Stdout`) so its output goes through
+	// the same writer the preceding `Outf` line did — when top-level
+	// `timestamps:` is on, the logger's Stdout is a TimestampWriter, and
+	// routing through it keeps every rite-emitted line timestamped and
+	// keeps ANSI color bytes that the previous call buffered (fatih/color
+	// emits a trailing `\x1b[0m` reset with no newline, which the
+	// TimestampWriter holds until the next line lands) from leaking into
+	// an untimestamped side channel. Writing to `e.Stdout` directly —
+	// which is deliberately unwrapped so per-task `timestamps:` overrides
+	// can rewrite cmd output — splits the list across two writers, drops
+	// the buffered reset, and skips the timestamp on every row but the
+	// header. See issue #145.
+	w := tabwriter.NewWriter(e.Logger.Stdout, 0, 8, 6, ' ', 0)
 	for _, task := range tasks {
 		e.Logger.FOutf(w, logger.Yellow, "* ")
 		e.Logger.FOutf(w, logger.Green, task.Task)

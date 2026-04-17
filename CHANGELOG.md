@@ -13,6 +13,14 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-04-17
+
+Patch: `rite -l` now timestamps every row and preserves color bytes when global `timestamps:` is on.
+
+### Fixed
+
+- `rite -l` under top-level `timestamps: true` stamped only the header and mangled ANSI color output on the task rows. Root cause: the list printer's `tabwriter` wrapped `e.Stdout` (deliberately left unwrapped so per-task `timestamps:` overrides can rewrite cmd output) while the preceding `"rite: Available tasks for this project:"` header went through `e.Logger.Stdout` (which *is* the `TimestampWriter` when global stamping is on). Two visible symptoms: (1) only line 1 got a `[ts]` prefix — every task row bypassed the wrapper — and (2) line 2 was missing its leading `\x1b[0m` reset because fatih/color buffers a trailing reset with no newline in the `TimestampWriter`, and when the tabwriter wrote to a different writer that reset had nothing to ride on, leaking out-of-order into the side channel. Fix points the tabwriter at `e.Logger.Stdout` so every rite-emitted line of the listing flows through one writer — every row gets stamped and the buffered ANSI reset drains in-order at the head of the next line. No behavior change when stamping is off (the logger's Stdout is just the caller's writer). (#145)
+
 ## [1.0.6] - 2026-04-16
 
 Patch: three migrate/lint gaps closed and per-binary-version schema snapshots published.

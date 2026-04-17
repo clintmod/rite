@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,10 +11,10 @@ import (
 	task "github.com/clintmod/rite/internal/task"
 )
 
-// TestBareInvocationFallback covers the #102 fallback: when `rite` is invoked
-// with no positional task, a missing `default:` entry should surface the task
-// list (silent) instead of erroring. An entirely-empty Ritefile should print
-// a friendly hint.
+// TestBareInvocationFallback covers the #102 / #154 fallback: when `rite` is
+// invoked with no positional task, a missing `default:` entry should surface
+// the task list (identical to `rite -l`) instead of erroring. An entirely-
+// empty Ritefile should print a friendly hint.
 func TestBareInvocationFallback(t *testing.T) {
 	t.Parallel()
 
@@ -23,7 +22,7 @@ func TestBareInvocationFallback(t *testing.T) {
 		name               string
 		dir                string
 		wantHandled        bool
-		wantStdoutLines    []string
+		wantStdoutContains []string
 		wantStdoutEmpty    bool
 		wantStderrMentions string
 	}{
@@ -36,10 +35,16 @@ func TestBareInvocationFallback(t *testing.T) {
 			wantStdoutEmpty: true,
 		},
 		{
-			name:            "no default task — list silent",
-			dir:             "testdata/bare_nodefault",
-			wantHandled:     true,
-			wantStdoutLines: []string{"build", "test"},
+			name:        "no default task — list like `rite -l`",
+			dir:         "testdata/bare_nodefault",
+			wantHandled: true,
+			wantStdoutContains: []string{
+				"rite: Available tasks for this project:",
+				"* build:",
+				"Build the binary",
+				"* test:",
+				"Run tests",
+			},
 		},
 		{
 			name:               "empty Ritefile — friendly hint",
@@ -63,15 +68,15 @@ func TestBareInvocationFallback(t *testing.T) {
 			require.NoError(t, e.Setup())
 
 			log := &logger.Logger{Stdout: &stdout, Stderr: &stderr}
-			handled, err := bareInvocationFallback(e, log, false)
+			handled, err := bareInvocationFallback(e, log)
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantHandled, handled)
 
 			if tc.wantStdoutEmpty {
 				assert.Empty(t, stdout.String())
 			}
-			for _, line := range tc.wantStdoutLines {
-				assert.Contains(t, stdout.String(), line)
+			for _, want := range tc.wantStdoutContains {
+				assert.Contains(t, stdout.String(), want)
 			}
 			if tc.wantStderrMentions != "" {
 				// The "no tasks defined" hint is informational, written via
@@ -83,11 +88,50 @@ func TestBareInvocationFallback(t *testing.T) {
 	}
 }
 
-// TestBareInvocationFallbackDoesNotListInternal guards that a Ritefile with
-// no default and only non-desc tasks behaves consistently with `rite -l -s`
-// — i.e. prints nothing (not an error) when `allTasks=false`. #102's test
-// plan calls this out implicitly: silent-list semantics are preserved.
-func TestBareInvocationFallbackHidesDesclessWhenNotAll(t *testing.T) {
+// TestBareInvocationFallbackMatchesListFlag is the #154 contract: `rite` with
+// no args on a no-default Ritefile must produce byte-for-byte the same output
+// as `rite -l` on the same Ritefile. The two paths must share a formatter
+// (header + tabwriter) — not drift into parallel implementations.
+func TestBareInvocationFallbackMatchesListFlag(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/bare_nodefault"
+
+	// Bare-invocation output
+	var bareOut, bareErr bytes.Buffer
+	bareExec := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&bareOut),
+		task.WithStderr(&bareErr),
+		task.WithVersionCheck(true),
+	)
+	require.NoError(t, bareExec.Setup())
+	bareLog := &logger.Logger{Stdout: &bareOut, Stderr: &bareErr}
+	handled, err := bareInvocationFallback(bareExec, bareLog)
+	require.NoError(t, err)
+	require.True(t, handled)
+
+	// `rite -l` equivalent output through the same Executor.ListTasks path
+	var listOut, listErr bytes.Buffer
+	listExec := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&listOut),
+		task.WithStderr(&listErr),
+		task.WithVersionCheck(true),
+	)
+	require.NoError(t, listExec.Setup())
+	found, err := listExec.ListTasks(task.NewListOptions(true, false, false, false, false))
+	require.NoError(t, err)
+	require.True(t, found)
+
+	assert.Equal(t, listOut.String(), bareOut.String(),
+		"bare `rite` invocation must produce identical stdout to `rite -l`")
+}
+
+// TestBareInvocationFallbackHidesDesclessTasks guards that a Ritefile with no
+// default and a mix of desc/no-desc tasks hides the no-desc ones (consistent
+// with `rite -l`, which is what we're mimicking).
+func TestBareInvocationFallbackHidesDesclessTasks(t *testing.T) {
 	t.Parallel()
 
 	var stdout, stderr bytes.Buffer
@@ -100,13 +144,12 @@ func TestBareInvocationFallbackHidesDesclessWhenNotAll(t *testing.T) {
 	require.NoError(t, e.Setup())
 
 	log := &logger.Logger{Stdout: &stdout, Stderr: &stderr}
-	handled, err := bareInvocationFallback(e, log, false)
+	handled, err := bareInvocationFallback(e, log)
 	require.NoError(t, err)
 	assert.True(t, handled)
-	// "internal" has no desc and allTasks=false — must not appear.
+	// "internal" has no desc — must not appear (matches `rite -l` behavior).
 	assert.NotContains(t, stdout.String(), "internal")
 	// build and test both have descs — must appear.
-	names := strings.Fields(stdout.String())
-	assert.Contains(t, names, "build")
-	assert.Contains(t, names, "test")
+	assert.Contains(t, stdout.String(), "build")
+	assert.Contains(t, stdout.String(), "test")
 }

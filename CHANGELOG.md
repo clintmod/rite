@@ -13,6 +13,8 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-04-17
+
 ## [1.0.7] - 2026-04-17
 
 Patch: `rite -l` now timestamps every row and preserves color bytes when global `timestamps:` is on.

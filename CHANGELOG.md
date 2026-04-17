@@ -13,6 +13,16 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-04-17
+
+Patch: ANSI reset no longer swallowed by the timestamp wrap, color now forwarded to color-aware child cmds, bare `rite` routes through the `-l` formatter.
+
+### Fixed
+
+- `fatih/color`'s trailing `\x1b[0m` reset — emitted as a separate Write with no newline after a rite logger line — was silently dropped under top-level `timestamps: true`. Cause: the Logger's `TimestampWriter` buffered the reset waiting for `\n`; cmd output went through a *different* `TimestampWriter` (per-task override design), so nothing ever drained the Logger's buffer. In a real terminal the header's green bled onto subsequent lines. Fix: `TimestampWriter` now passes trailing runs of complete ANSI SGR escape sequences *inline* — no timestamp prefix, no appended newline — so zero-width color state transitions ride through to the sink at the byte position the writer intended. Backstop: `tsCloseLoggers` (previously assigned but never called) is now invoked via `defer e.Close()` in the CLI so any genuinely unterminated non-SGR partial flushes at exit instead of being dropped. Keeps the #145/#148 invariants enforced by their existing tests. (#151)
+- When a `cmd:` spawns a color-aware child (e.g. another `rite -l`), the child saw its stdout was a pipe and stripped color, so colors vanished whenever the outer rite's default task shelled out to another rite. Fix: rite now forwards its own color-on decision (`Executor.Color && !fatih/color.NoColor`, combining the `--color`/`RITE_COLOR` gate with `NO_COLOR` / `FORCE_COLOR` / `CLICOLOR_FORCE` / CI / isatty) to child cmds by injecting `CLICOLOR_FORCE=1` and `FORCE_COLOR=1` into the child env at every cmd-spawn site (`task.If`, `cmd.If`, main cmd path, preconditions). User-set off-signals (`NO_COLOR=<any>`, `CLICOLOR_FORCE=0`, `FORCE_COLOR=0`) pass through untouched. Dynamic-var `sh:` eval is deliberately left alone — forwarding color there would embed ANSI bytes into captured variable values. (#153)
+- `rite` invoked with no positional args on a Ritefile with no `default:` task now produces the same output as `rite -l` — header, tab columns, descriptions — instead of dumping bare task names one per line. The dispatch in `cmd/rite/task.go` routes through `Executor.ListTasks` with the same `ListOptions` as the `-l` flag, so the two invocations are byte-for-byte equivalent. Control regressions preserved: a present `default:` still runs the default, an empty Ritefile still prints the "no tasks defined" hint, explicit `rite -l` / `rite -a` / `rite --list-json` are untouched. (#154)
+
 ## [1.0.8] - 2026-04-17
 
 Patch: `rite -l` and `rite --summary <task>` no longer carry timestamps under global `timestamps: true`.

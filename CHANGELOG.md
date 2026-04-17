@@ -15,6 +15,12 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [1.0.8] - 2026-04-17
 
+Patch: `rite -l` and `rite --summary <task>` no longer carry timestamps under global `timestamps: true`.
+
+### Fixed
+
+- `rite -l` and `rite --summary <task>` are CLI metadata — on the same tier as `--help` and `--version` — and now bypass the global `TimestampWriter` regardless of top-level `timestamps:`. Under `timestamps: true`, v1.0.7 stamped every line of the listing (having just fixed the #145 "only the header got stamped" split-writer bug by routing both through the wrapped writer). The correct target is that the listing shouldn't be stamped **at all**: it's a query about the Ritefile, not task execution. Root cause: there was no Logger path that sidestepped the wrap applied by `setupTimestamps`. Fix preserves the pre-wrap writers as `Logger.RawStdout` / `RawStderr` during `setupTimestamps` and adds `UnstampedOutf` / `UnstampedErrf` / `UnstampedStdout` / `UnstampedStderr` accessors; `ListTasks` writes its header *and* points the tabwriter at the un-stamped writer so header + rows still share one writer (the load-bearing half of #145 — `fatih/color`'s buffered `\x1b[0m` reset still drains in-order — remains intact). The sibling bug in the `summary` package gets the same treatment. `--version`, `--help`, `--init`, `--experiments`, `--migrate`, `--validate`, and `--list-json` were already un-stamped (they run on loggers constructed before `e.Setup()` or write to the Executor's raw Stdout), so no change. Task execution itself still stamps as before under `timestamps: true`. (#148)
+
 ## [1.0.7] - 2026-04-17
 
 Patch: `rite -l` now timestamps every row and preserves color bytes when global `timestamps:` is on.

@@ -1,0 +1,7 @@
+version: '3'
+timestamps: true
+tasks:
+  hello:
+    desc: say hello
+    cmds:
+      - echo hi

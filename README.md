@@ -2,7 +2,7 @@
 
 > An idempotent task runner with Unix-native variable precedence.
 
-**Status: v1.0.5 shipped.** See [`CHANGELOG.md`](./CHANGELOG.md) for per-release notes and [`RELEASING.md`](./RELEASING.md) for the cut procedure.
+**Status: v1.0.6 shipped.** See [`CHANGELOG.md`](./CHANGELOG.md) for per-release notes and [`RELEASING.md`](./RELEASING.md) for the cut procedure.
 
 - Binary builds, test suite green on Linux / macOS / Windows × Go 1.26.
 - SPEC's 7-tier variable precedence and `${VAR}` shell-native preprocessor are live.
@@ -24,13 +24,13 @@ brew install clintmod/tap/rite
 ```
 curl -sSL https://raw.githubusercontent.com/clintmod/rite/main/install.sh | sh -s -- -b ~/bin
 ```
-Downloads the latest release archive, verifies its SHA-256 against `rite_checksums.txt`, and drops `rite` into `~/bin`. Pass a tag as the last argument to pin a version (`… | sh -s -- -b ~/bin v1.0.5`). Default bindir is `./bin` if `-b` is omitted.
+Downloads the latest release archive, verifies its SHA-256 against `rite_checksums.txt`, and drops `rite` into `~/bin`. Pass a tag as the last argument to pin a version (`… | sh -s -- -b ~/bin v1.0.6`). Default bindir is `./bin` if `-b` is omitted.
 
 **mise**:
 ```toml
 # mise.toml
 [tools]
-"ubi:clintmod/rite" = "v1.0.5"
+"ubi:clintmod/rite" = "v1.0.6"
 ```
 (Older mise? See [getting-started](https://clintmod.github.io/rite/getting-started#mise) for the `go:` fallback.)
 

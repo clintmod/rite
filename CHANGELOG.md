@@ -13,6 +13,20 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-04-16
+
+Patch: three migrate/lint gaps closed and per-binary-version schema snapshots published.
+
+### Added
+
+- Warn on self-referential `${VAR:-default}` patterns in `vars:` / `env:` declarations. The bash idiom is always redundant under rite's shell-env-wins precedence (SPEC §Variable Precedence) — a plain `KEY: default` has identical behavior — but it's easy to carry over from shell scripts. The form only appears to work inside `cmds:` because the literal `${…}` passes through `ExpandShell` and gets re-parsed by mvdan/sh at cmd-exec time; anywhere else in the Ritefile (another var's value, a precondition, a status check) the literal leaks through unresolved. Warnings fire once at Setup time, dedupe on `(key, default)`, and skip dynamic (`sh:`) / `ref:` vars. (#139)
+- Per-binary-version JSON schema snapshots published at `clintmod.github.io/rite/v<X.Y.Z>/schema.json` and `clintmod.github.io/rite/v<X.Y.Z>/schema/v3.json`. CI consumers that pin a specific rite version can now pin the schema URL the same way: `# yaml-language-server: $schema=https://clintmod.github.io/rite/v1.0.6/schema.json`. The canonical `/schema.json` and `/schema/v3.json` URLs are unchanged; the `/next/` path continues to track main. Backfill covers v1.0.2 onward; older tags predate the `public/` snapshot convention and aren't retroactively published. (#135)
+
+### Changed
+
+- `rite --migrate` now rewrites self-referential `task` CLI invocations inside `cmds:` to `rite`. The rewriter parses each cmd with `mvdan/sh` and only touches `CallExpr` nodes whose first word is literally `task`; substrings (`mytask`), paths (`./task`), echo arguments (`echo task is cool`), quoted strings (`'task --list'`), and the structural YAML `task:` key (the call-another-task shape) are all left alone. Each rewrite emits a new `SELFREF-CMD` migrate warning so the diff is auditable. Block-scalar cmds (`|` / `>`) span multiple lines and don't fit the line-scoped substitution — they're skipped with a `SELFREF-CMD` note pointing the user at a hand-edit. Closes the known gap documented in 1.0.4's Documentation notes. (#128)
+- Same-name collisions between `vars:` and `env:` at the same scope (entrypoint or task) are now a **load-time error**, not a silent pick. rite's SPEC unifies `vars:` and `env:` into one variable table, so declaring the same key in both blocks was always ambiguous — today rite silently resolved it via map-iteration order. The error names the scope and key, exit code 104. Different scopes (entrypoint `vars.FOO` vs task `env.FOO`) remain independent; that's not a collision. Two pre-existing testdata Ritefiles (`testdata/env/`, `testdata/platforms/`) carried the collision pattern unintentionally and were fixed without changing tested behavior. (#129)
+
 ## [1.0.5] - 2026-04-15
 
 Patch: nested `rite` invocations no longer triple-stamp output.

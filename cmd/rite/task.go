@@ -196,11 +196,12 @@ func run() error {
 	calls, globals := args.Parse(cliArgsPreDash...)
 
 	// If there are no calls, run the default task — unless the Ritefile
-	// doesn't define one, in which case list tasks silently (#102) so the
+	// doesn't define one, in which case list tasks (#102, #154) so the
 	// boilerplate `default: rite -l` task every project used to define
-	// becomes unnecessary.
+	// becomes unnecessary. The output is byte-for-byte equivalent to
+	// `rite -l` — same code path, same formatter.
 	if len(calls) == 0 {
-		handled, err := bareInvocationFallback(e, log, flags.ListAll)
+		handled, err := bareInvocationFallback(e, log)
 		if err != nil {
 			return err
 		}
@@ -250,11 +251,12 @@ func run() error {
 // bareInvocationFallback handles `rite` invoked with no positional task name.
 // If the Ritefile defines a task called "default", returns (false, nil) so
 // the caller proceeds with the normal default-task call. Otherwise prints
-// the task list in silent mode (or a "no tasks defined" hint when the
-// Ritefile is empty) and returns (true, nil) to short-circuit dispatch.
-// Closes #102 — removes the need for every Ritefile to define a boilerplate
-// `default: rite -l` task.
-func bareInvocationFallback(e *task.Executor, log *logger.Logger, allTasks bool) (handled bool, err error) {
+// the task list (byte-for-byte equivalent to `rite -l`) or a "no tasks
+// defined" hint when the Ritefile is empty, and returns (true, nil) to
+// short-circuit dispatch. Closes #102 (removes the need for every Ritefile
+// to define a boilerplate `default: rite -l` task) and #154 (routes through
+// the same formatter as `rite -l` rather than dumping bare names).
+func bareInvocationFallback(e *task.Executor, log *logger.Logger) (handled bool, err error) {
 	if _, ok := e.Ritefile.Tasks.Get("default"); ok {
 		return false, nil
 	}
@@ -262,7 +264,10 @@ func bareInvocationFallback(e *task.Executor, log *logger.Logger, allTasks bool)
 		log.Outf(logger.Yellow, "rite: no tasks defined; run `rite --init` to get started\n")
 		return true, nil
 	}
-	return true, e.ListTaskNames(allTasks)
+	// Share the exact code path as `rite -l` so output stays in lockstep
+	// (header, tab columns, colors, un-stamped writer routing). See #154.
+	_, err = e.ListTasks(task.NewListOptions(true, false, false, false, false))
+	return true, err
 }
 
 func runValidate(log *logger.Logger, src string) error {

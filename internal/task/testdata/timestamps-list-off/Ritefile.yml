@@ -1,0 +1,10 @@
+version: '3'
+tasks:
+  hello:
+    desc: say hello
+    cmds:
+      - echo hi
+  world:
+    desc: say world
+    cmds:
+      - echo bye

@@ -1,0 +1,775 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clintmod.github.io/rite/schema.json",
+  "$ref": "#/$defs/Ritefile",
+  "$defs": {
+    "Cmd": {
+      "oneOf": [
+        {
+          "type": "null",
+          "description": "Skipped — nil entries in cmds: are ignored at unmarshal time."
+        },
+        {
+          "type": "string",
+          "description": "A shell command."
+        },
+        {
+          "$ref": "#/$defs/CmdObject"
+        }
+      ],
+      "description": "A shell command string, null (ignored), or an object with cmd/task/defer/for fields."
+    },
+    "CmdObject": {
+      "properties": {
+        "cmd": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string"
+        },
+        "for": {
+          "oneOf": [
+            {
+              "type": "array",
+              "description": "A literal list of items to iterate."
+            },
+            {
+              "type": "string",
+              "description": "A var name to iterate, or the literal 'sources'/'generates' to iterate that glob."
+            },
+            {
+              "properties": {
+                "var": {
+                  "type": "string",
+                  "description": "Name of a var whose value (split on whitespace or split:) is iterated."
+                },
+                "list": {
+                  "type": "array",
+                  "description": "A literal list of items."
+                },
+                "matrix": {
+                  "additionalProperties": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "description": "Literal list of values along this axis."
+                      },
+                      {
+                        "properties": {
+                          "ref": {
+                            "type": "string",
+                            "description": "Reference another variable (must resolve to a list)."
+                          }
+                        },
+                        "type": "object",
+                        "description": "Ref form — pull the axis values from another variable."
+                      }
+                    ]
+                  },
+                  "type": "object",
+                  "description": "Named axes for a cartesian product. Each axis is a list or a {ref: '.VAR'} reference."
+                },
+                "split": {
+                  "type": "string",
+                  "description": "Separator for splitting a var's string value. Defaults to whitespace."
+                },
+                "as": {
+                  "type": "string",
+                  "description": "Rename the iteration variable from the default ITEM to a custom name."
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        "if": {
+          "type": "string"
+        },
+        "silent": {
+          "type": "boolean"
+        },
+        "set": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "shopt": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "vars": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "ignore_error": {
+          "type": "boolean"
+        },
+        "defer": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Shell command to run after the main cmds, on success and failure."
+            },
+            {
+              "$ref": "#/$defs/Defer"
+            }
+          ],
+          "description": "Cleanup to run after the task's main cmds complete (on both success and failure paths). String for a shell cmd, object for a task call with vars."
+        },
+        "platforms": {
+          "items": {
+            "type": "string",
+            "description": "OS/arch gate, e.g. 'linux', 'amd64', or 'linux/amd64'. Task/cmd silently skips on non-matching hosts.",
+            "examples": [
+              "linux",
+              "darwin/arm64",
+              "windows/amd64"
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Defer": {
+      "properties": {
+        "defer": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string"
+        },
+        "vars": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "silent": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "Dep": {
+      "oneOf": [
+        {
+          "type": "null",
+          "description": "Skipped — nil entries in deps: are ignored at unmarshal time."
+        },
+        {
+          "type": "string",
+          "description": "A task name."
+        },
+        {
+          "$ref": "#/$defs/DepObject"
+        }
+      ],
+      "description": "A task name string, null (ignored), or an object with task/vars/for fields."
+    },
+    "DepObject": {
+      "properties": {
+        "task": {
+          "type": "string"
+        },
+        "for": {
+          "oneOf": [
+            {
+              "type": "array",
+              "description": "A literal list of items to iterate."
+            },
+            {
+              "type": "string",
+              "description": "A var name to iterate, or the literal 'sources'/'generates' to iterate that glob."
+            },
+            {
+              "properties": {
+                "var": {
+                  "type": "string",
+                  "description": "Name of a var whose value (split on whitespace or split:) is iterated."
+                },
+                "list": {
+                  "type": "array",
+                  "description": "A literal list of items."
+                },
+                "matrix": {
+                  "additionalProperties": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "description": "Literal list of values along this axis."
+                      },
+                      {
+                        "properties": {
+                          "ref": {
+                            "type": "string",
+                            "description": "Reference another variable (must resolve to a list)."
+                          }
+                        },
+                        "type": "object",
+                        "description": "Ref form — pull the axis values from another variable."
+                      }
+                    ]
+                  },
+                  "type": "object",
+                  "description": "Named axes for a cartesian product. Each axis is a list or a {ref: '.VAR'} reference."
+                },
+                "split": {
+                  "type": "string",
+                  "description": "Separator for splitting a var's string value. Defaults to whitespace."
+                },
+                "as": {
+                  "type": "string",
+                  "description": "Rename the iteration variable from the default ITEM to a custom name."
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        "vars": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "silent": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "Enum": {
+      "properties": {
+        "ref": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Include": {
+      "properties": {
+        "taskfile": {
+          "type": "string"
+        },
+        "dir": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "excludes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "vars": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "flatten": {
+          "type": "boolean"
+        },
+        "checksum": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Output": {
+      "properties": {
+        "group": {
+          "$ref": "#/$defs/OutputGroup"
+        }
+      },
+      "type": "object"
+    },
+    "OutputGroup": {
+      "properties": {
+        "begin": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        },
+        "error_only": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "Precondition": {
+      "oneOf": [
+        {
+          "type": "null",
+          "description": "Skipped — nil entries in preconditions: are ignored at unmarshal time."
+        },
+        {
+          "type": "string",
+          "description": "Shell expression; if it exits non-zero, task is aborted with a default message."
+        },
+        {
+          "$ref": "#/$defs/PreconditionObject"
+        }
+      ],
+      "description": "A precondition check. String shorthand, null (ignored), or an object with sh: + optional msg:."
+    },
+    "PreconditionObject": {
+      "properties": {
+        "sh": {
+          "type": "string"
+        },
+        "msg": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Requires": {
+      "properties": {
+        "vars": {
+          "items": {
+            "$ref": "#/$defs/VarsWithValidation"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Ritefile": {
+      "properties": {
+        "version": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "examples": [
+            "3",
+            3
+          ]
+        },
+        "output": {
+          "$ref": "#/$defs/Output"
+        },
+        "method": {
+          "type": "string"
+        },
+        "includes": {
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "A path string (e.g. './lib')."
+              },
+              {
+                "$ref": "#/$defs/Include"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        "set": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "shopt": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "vars": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "env": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "tasks": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Task"
+          },
+          "type": "object"
+        },
+        "silent": {
+          "type": "boolean"
+        },
+        "dotenv": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "run": {
+          "type": "string"
+        },
+        "interval": {
+          "type": "integer"
+        },
+        "timestamps": {
+          "oneOf": [
+            {
+              "type": "boolean",
+              "description": "true uses the default ISO 8601 UTC millisecond format; false disables timestamps (useful at task scope to opt out of a global-on setting)."
+            },
+            {
+              "type": "string",
+              "description": "A strftime-style format string, e.g. \"[%H:%M:%S]\". See SPEC §Output Timestamps for the supported directive subset."
+            }
+          ],
+          "examples": [
+            true,
+            "[%Y-%m-%d %H:%M:%S]"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Task": {
+      "oneOf": [
+        {
+          "type": "null",
+          "description": "Empty task (no-op)."
+        },
+        {
+          "type": "string",
+          "description": "Shortcut: a single shell cmd."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/Cmd"
+          },
+          "type": "array",
+          "description": "Shortcut: a list of cmds (strings or objects)."
+        },
+        {
+          "$ref": "#/$defs/TaskObject"
+        }
+      ],
+      "description": "A task definition. Short forms: null (no-op), a single cmd string, or a list of cmds. Full form: an object — see TaskObject."
+    },
+    "TaskObject": {
+      "properties": {
+        "cmds": {
+          "items": {
+            "$ref": "#/$defs/Cmd"
+          },
+          "type": "array"
+        },
+        "deps": {
+          "items": {
+            "$ref": "#/$defs/Dep"
+          },
+          "type": "array"
+        },
+        "label": {
+          "type": "string"
+        },
+        "desc": {
+          "type": "string"
+        },
+        "prompt": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "A single confirmation message."
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "A sequence of confirmation messages, each requiring its own y/N."
+            }
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "requires": {
+          "$ref": "#/$defs/Requires"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "File glob; prefix with '!' to exclude matches."
+              },
+              {
+                "properties": {
+                  "exclude": {
+                    "type": "string",
+                    "description": "Glob to exclude from the enclosing pattern set."
+                  }
+                },
+                "type": "object",
+                "description": "Object form with an exclude: key — equivalent to a '!'-prefixed string."
+              }
+            ],
+            "description": "File glob for sources:/generates:. String form (with optional '!' prefix for negation) or {exclude: 'path'} object.",
+            "examples": [
+              "src/**/*.go",
+              "!src/**/*_test.go",
+              {
+                "exclude": "./generated.txt"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "generates": {
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "File glob; prefix with '!' to exclude matches."
+              },
+              {
+                "properties": {
+                  "exclude": {
+                    "type": "string",
+                    "description": "Glob to exclude from the enclosing pattern set."
+                  }
+                },
+                "type": "object",
+                "description": "Object form with an exclude: key — equivalent to a '!'-prefixed string."
+              }
+            ],
+            "description": "File glob for sources:/generates:. String form (with optional '!' prefix for negation) or {exclude: 'path'} object.",
+            "examples": [
+              "src/**/*.go",
+              "!src/**/*_test.go",
+              {
+                "exclude": "./generated.txt"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "status": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "preconditions": {
+          "items": {
+            "$ref": "#/$defs/Precondition"
+          },
+          "type": "array"
+        },
+        "dir": {
+          "type": "string"
+        },
+        "set": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "shopt": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "vars": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "env": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "object"
+        },
+        "dotenv": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "silent": {
+          "type": "boolean"
+        },
+        "interactive": {
+          "type": "boolean"
+        },
+        "internal": {
+          "type": "boolean"
+        },
+        "method": {
+          "type": "string"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "ignore_error": {
+          "type": "boolean"
+        },
+        "run": {
+          "type": "string"
+        },
+        "platforms": {
+          "items": {
+            "type": "string",
+            "description": "OS/arch gate, e.g. 'linux', 'amd64', or 'linux/amd64'. Task/cmd silently skips on non-matching hosts.",
+            "examples": [
+              "linux",
+              "darwin/arm64",
+              "windows/amd64"
+            ]
+          },
+          "type": "array"
+        },
+        "if": {
+          "type": "string"
+        },
+        "watch": {
+          "type": "boolean"
+        },
+        "failfast": {
+          "type": "boolean"
+        },
+        "timestamps": {
+          "oneOf": [
+            {
+              "type": "boolean",
+              "description": "true uses the default ISO 8601 UTC millisecond format; false disables timestamps (useful at task scope to opt out of a global-on setting)."
+            },
+            {
+              "type": "string",
+              "description": "A strftime-style format string, e.g. \"[%H:%M:%S]\". See SPEC §Output Timestamps for the supported directive subset."
+            }
+          ],
+          "examples": [
+            true,
+            "[%Y-%m-%d %H:%M:%S]"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Var": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "description": "Literal list value (e.g. [1, 2, 3] or ['a', 'b'])."
+        },
+        {
+          "properties": {
+            "sh": {
+              "type": "string",
+              "description": "Shell command whose stdout becomes the variable's value."
+            },
+            "ref": {
+              "type": "string",
+              "description": "Reference another variable's value."
+            },
+            "value": {
+              "description": "Explicit value (any type)."
+            },
+            "map": {
+              "description": "Structured map value."
+            },
+            "export": {
+              "type": "boolean",
+              "description": "If false, the var is visible in rite templating but NOT exported to the cmd shell environ. Defaults to true."
+            }
+          },
+          "type": "object",
+          "description": "Variable with dynamic value (sh:), cross-reference (ref:), explicit value (value:), or structured map (map:). Add export: false to prevent exporting to subprocess env."
+        }
+      ]
+    },
+    "VarsWithValidation": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Variable name; equivalent to {name: 'VAR'}."
+        },
+        {
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Variable name to require."
+            },
+            "enum": {
+              "oneOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "description": "Literal list of allowed values."
+                },
+                {
+                  "properties": {
+                    "ref": {
+                      "type": "string",
+                      "description": "Reference another variable (must resolve to a list)."
+                    }
+                  },
+                  "type": "object",
+                  "description": "Dynamic enum — pull allowed values from another variable."
+                }
+              ],
+              "description": "Allowed values. Literal list or {ref: '.VAR'} reference."
+            }
+          },
+          "type": "object",
+          "description": "Full form; name the variable and optionally enumerate allowed values."
+        }
+      ],
+      "description": "A required variable. String shorthand (name only) or object form (name + optional enum)."
+    }
+  },
+  "title": "Ritefile",
+  "description": "JSON Schema for rite Ritefiles. rite is a task runner with first-in-wins variable precedence (shell env \u003e CLI \u003e Ritefile defaults), a hard fork of go-task/task. See https://clintmod.github.io/rite/ for documentation."
+}

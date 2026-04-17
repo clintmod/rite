@@ -13,6 +13,8 @@ for archaeological reference only; they do not describe rite behavior.
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-04-17
+
 ## [1.0.6] - 2026-04-16
 
 Patch: three migrate/lint gaps closed and per-binary-version schema snapshots published.

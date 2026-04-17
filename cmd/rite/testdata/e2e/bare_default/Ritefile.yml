@@ -1,0 +1,9 @@
+version: '3'
+tasks:
+  default:
+    cmds:
+      - echo default-task-ran
+  other:
+    desc: Other task
+    cmds:
+      - echo other

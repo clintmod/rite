@@ -80,28 +80,27 @@ func (e *Executor) ListTasks(o ListOptions) (bool, error) {
 	}
 	if len(tasks) == 0 {
 		if o.ListOnlyTasksWithDescriptions {
-			e.Logger.Outf(logger.Yellow, "rite: No tasks with description available. Try --list-all to list all tasks\n")
+			e.Logger.UnstampedOutf(logger.Yellow, "rite: No tasks with description available. Try --list-all to list all tasks\n")
 		} else if o.ListAllTasks {
-			e.Logger.Outf(logger.Yellow, "rite: No tasks available\n")
+			e.Logger.UnstampedOutf(logger.Yellow, "rite: No tasks available\n")
 		}
 		return false, nil
 	}
-	e.Logger.Outf(logger.Default, "rite: Available tasks for this project:\n")
+	e.Logger.UnstampedOutf(logger.Default, "rite: Available tasks for this project:\n")
 
-	// Format in tab-separated columns with a tab stop of 8. The tabwriter
-	// wraps `e.Logger.Stdout` (not `e.Stdout`) so its output goes through
-	// the same writer the preceding `Outf` line did — when top-level
-	// `timestamps:` is on, the logger's Stdout is a TimestampWriter, and
-	// routing through it keeps every rite-emitted line timestamped and
-	// keeps ANSI color bytes that the previous call buffered (fatih/color
-	// emits a trailing `\x1b[0m` reset with no newline, which the
-	// TimestampWriter holds until the next line lands) from leaking into
-	// an untimestamped side channel. Writing to `e.Stdout` directly —
-	// which is deliberately unwrapped so per-task `timestamps:` overrides
-	// can rewrite cmd output — splits the list across two writers, drops
-	// the buffered reset, and skips the timestamp on every row but the
-	// header. See issue #145.
-	w := tabwriter.NewWriter(e.Logger.Stdout, 0, 8, 6, ' ', 0)
+	// `rite -l` is CLI metadata — like `--help` or `--version` — not
+	// task-execution output. It should NOT carry the global run-time
+	// timestamp even under top-level `timestamps: true`. Route every byte
+	// (header above + every row below + the tabwriter's own padding) at
+	// the un-stamped writer the Logger preserved pre-wrap; that keeps the
+	// header and rows on the same writer (avoiding the #145 split-writer
+	// bug where the tabwriter bypassed the logger entirely) while
+	// bypassing the TimestampWriter (avoiding the #148 regression, where
+	// #145 "fixed" #145 by stamping metadata that doesn't want stamping).
+	// See issues #145 (split-writer / buffered ANSI reset loss) and #148
+	// (meta-output shouldn't be stamped at all).
+	unstamped := e.Logger.UnstampedStdout()
+	w := tabwriter.NewWriter(unstamped, 0, 8, 6, ' ', 0)
 	for _, task := range tasks {
 		e.Logger.FOutf(w, logger.Yellow, "* ")
 		e.Logger.FOutf(w, logger.Green, task.Task)

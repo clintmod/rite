@@ -1,3 +1,10 @@
+// Package summary prints human-readable metadata about a task for the
+// `rite --summary <task>` flag.
+//
+// All writes here go through Logger.UnstampedOutf — the summary output is
+// CLI metadata (same tier as `--help` / `--version` / `rite -l`), not
+// task-execution output, and must bypass the global TimestampWriter wrap
+// applied under top-level `timestamps: true`. See issue #148.
 package summary
 
 import (
@@ -24,8 +31,8 @@ func PrintSpaceBetweenSummaries(l *logger.Logger, i int) {
 		return
 	}
 
-	l.Outf(logger.Default, "\n")
-	l.Outf(logger.Default, "\n")
+	l.UnstampedOutf(logger.Default, "\n")
+	l.UnstampedOutf(logger.Default, "\n")
 }
 
 func PrintTask(l *logger.Logger, t *ast.Task) {
@@ -58,26 +65,26 @@ func printTaskSummary(l *logger.Logger, t *ast.Task) {
 	for i, line := range lines {
 		notLastLine := i+1 < len(lines)
 		if notLastLine || line != "" {
-			l.Outf(logger.Default, "%s\n", line)
+			l.UnstampedOutf(logger.Default, "%s\n", line)
 		}
 	}
 }
 
 func printTaskName(l *logger.Logger, t *ast.Task) {
-	l.Outf(logger.Default, "rite: ")
-	l.Outf(logger.Green, "%s\n", t.Name())
-	l.Outf(logger.Default, "\n")
+	l.UnstampedOutf(logger.Default, "rite: ")
+	l.UnstampedOutf(logger.Green, "%s\n", t.Name())
+	l.UnstampedOutf(logger.Default, "\n")
 }
 
 func printTaskAliases(l *logger.Logger, t *ast.Task) {
 	if len(t.Aliases) == 0 {
 		return
 	}
-	l.Outf(logger.Default, "\n")
-	l.Outf(logger.Default, "aliases:\n")
+	l.UnstampedOutf(logger.Default, "\n")
+	l.UnstampedOutf(logger.Default, "aliases:\n")
 	for _, alias := range t.Aliases {
-		l.Outf(logger.Default, " - ")
-		l.Outf(logger.Cyan, "%s\n", alias)
+		l.UnstampedOutf(logger.Default, " - ")
+		l.UnstampedOutf(logger.Cyan, "%s\n", alias)
 	}
 }
 
@@ -86,11 +93,11 @@ func hasDescription(t *ast.Task) bool {
 }
 
 func printTaskDescription(l *logger.Logger, t *ast.Task) {
-	l.Outf(logger.Default, "%s\n", t.Desc)
+	l.UnstampedOutf(logger.Default, "%s\n", t.Desc)
 }
 
 func printNoDescriptionOrSummary(l *logger.Logger) {
-	l.Outf(logger.Default, "(task does not have description or summary)\n")
+	l.UnstampedOutf(logger.Default, "(task does not have description or summary)\n")
 }
 
 func printTaskDependencies(l *logger.Logger, t *ast.Task) {
@@ -98,11 +105,11 @@ func printTaskDependencies(l *logger.Logger, t *ast.Task) {
 		return
 	}
 
-	l.Outf(logger.Default, "\n")
-	l.Outf(logger.Default, "dependencies:\n")
+	l.UnstampedOutf(logger.Default, "\n")
+	l.UnstampedOutf(logger.Default, "dependencies:\n")
 
 	for _, d := range t.Deps {
-		l.Outf(logger.Default, " - %s\n", d.Task)
+		l.UnstampedOutf(logger.Default, " - %s\n", d.Task)
 	}
 }
 
@@ -111,15 +118,15 @@ func printTaskCommands(l *logger.Logger, t *ast.Task) {
 		return
 	}
 
-	l.Outf(logger.Default, "\n")
-	l.Outf(logger.Default, "commands:\n")
+	l.UnstampedOutf(logger.Default, "\n")
+	l.UnstampedOutf(logger.Default, "commands:\n")
 	for _, c := range t.Cmds {
 		isCommand := c.Cmd != ""
-		l.Outf(logger.Default, " - ")
+		l.UnstampedOutf(logger.Default, " - ")
 		if isCommand {
-			l.Outf(logger.Yellow, "%s\n", c.Cmd)
+			l.UnstampedOutf(logger.Yellow, "%s\n", c.Cmd)
 		} else {
-			l.Outf(logger.Green, "Task: %s\n", c.Task)
+			l.UnstampedOutf(logger.Green, "Task: %s\n", c.Task)
 		}
 	}
 }
@@ -150,14 +157,14 @@ func printTaskVars(l *logger.Logger, t *ast.Task) {
 		return
 	}
 
-	l.Outf(logger.Default, "\n")
-	l.Outf(logger.Default, "vars:\n")
+	l.UnstampedOutf(logger.Default, "\n")
+	l.UnstampedOutf(logger.Default, "vars:\n")
 
 	for key, value := range t.Vars.All() {
 		// Only display variables that are not from OS environment or Ritefile env
 		if !isEnvVar(key, osEnvVars) && !taskfileEnvVars[key] {
 			formattedValue := formatVarValue(value)
-			l.Outf(logger.Yellow, "  %s: %s\n", key, formattedValue)
+			l.UnstampedOutf(logger.Yellow, "  %s: %s\n", key, formattedValue)
 		}
 	}
 }
@@ -181,14 +188,14 @@ func printTaskEnv(l *logger.Logger, t *ast.Task) {
 		return
 	}
 
-	l.Outf(logger.Default, "\n")
-	l.Outf(logger.Default, "env:\n")
+	l.UnstampedOutf(logger.Default, "\n")
+	l.UnstampedOutf(logger.Default, "env:\n")
 
 	for key, value := range t.Env.All() {
 		// Only display variables that are not from OS environment
 		if !isEnvVar(key, envVars) {
 			formattedValue := formatVarValue(value)
-			l.Outf(logger.Yellow, "  %s: %s\n", key, formattedValue)
+			l.UnstampedOutf(logger.Yellow, "  %s: %s\n", key, formattedValue)
 		}
 	}
 }
@@ -242,23 +249,23 @@ func printTaskRequires(l *logger.Logger, t *ast.Task) {
 		return
 	}
 
-	l.Outf(logger.Default, "\n")
-	l.Outf(logger.Default, "requires:\n")
-	l.Outf(logger.Default, "  vars:\n")
+	l.UnstampedOutf(logger.Default, "\n")
+	l.UnstampedOutf(logger.Default, "requires:\n")
+	l.UnstampedOutf(logger.Default, "  vars:\n")
 
 	for _, v := range t.Requires.Vars {
 		if v.Enum != nil && len(v.Enum.Value) > 0 {
-			l.Outf(logger.Yellow, "    - %s:\n", v.Name)
-			l.Outf(logger.Yellow, "        enum:\n")
+			l.UnstampedOutf(logger.Yellow, "    - %s:\n", v.Name)
+			l.UnstampedOutf(logger.Yellow, "        enum:\n")
 			for _, enumValue := range v.Enum.Value {
-				l.Outf(logger.Yellow, "          - %s\n", enumValue)
+				l.UnstampedOutf(logger.Yellow, "          - %s\n", enumValue)
 			}
 		} else if v.Enum != nil && v.Enum.Ref != "" {
-			l.Outf(logger.Yellow, "    - %s:\n", v.Name)
-			l.Outf(logger.Yellow, "        enum:\n")
-			l.Outf(logger.Yellow, "          ref: %s\n", v.Enum.Ref)
+			l.UnstampedOutf(logger.Yellow, "    - %s:\n", v.Name)
+			l.UnstampedOutf(logger.Yellow, "        enum:\n")
+			l.UnstampedOutf(logger.Yellow, "          ref: %s\n", v.Enum.Ref)
 		} else {
-			l.Outf(logger.Yellow, "    - %s\n", v.Name)
+			l.UnstampedOutf(logger.Yellow, "    - %s\n", v.Name)
 		}
 	}
 }

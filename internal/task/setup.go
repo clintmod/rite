@@ -170,6 +170,13 @@ func (e *Executor) setupTimestamps() error {
 	// would force every cmd line through the global layout and make the
 	// per-task override unreachable.
 	if e.Logger != nil {
+		// Preserve the pre-wrap writers on the Logger so CLI-meta paths
+		// (task list, summary, help) can route bytes around the
+		// TimestampWriter. Capturing them here, unconditionally, means
+		// UnstampedOutf is safe to call even when timestamps are off: it
+		// simply points at the same writer Outf would.
+		e.Logger.RawStdout = e.Logger.Stdout
+		e.Logger.RawStderr = e.Logger.Stderr
 		loggerOut, loggerErr, closer := tc.wrapLoggerWriters(e.Logger.Stdout, e.Logger.Stderr)
 		e.Logger.Stdout = loggerOut
 		e.Logger.Stderr = loggerErr

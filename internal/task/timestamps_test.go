@@ -276,27 +276,32 @@ func TestTimestampsInternalSubcallStillStampsOnce(t *testing.T) {
 	assert.Contains(t, lines[1], "beta")
 }
 
-// TestTimestampsListTasksStampsEveryLineWithColor is the regression test for
-// issue #145. Before the fix, `rite -l` (ListTasks) built a tabwriter on top
-// of `e.Stdout` — the *unwrapped* writer — so the header "rite: Available
-// tasks for this project:" went through the TimestampWriter but every task
-// row bypassed it. Two visible symptoms in the user's `cat -v` dump:
+// TestTimestampsListTasksIsNeverStamped captures the post-#148 rule: the
+// `rite -l` listing is CLI metadata — on the same tier as `--help` /
+// `--version` — and must NOT carry the global run-time timestamp even under
+// top-level `timestamps: true`.
 //
-//  1. Only the first line carried a `[timestamp]` prefix.
-//  2. The second line was missing the leading `\x1b[0m` reset that
-//     fatih/color had buffered at the end of the previous write — because
-//     the bytes landed on a different writer, the TimestampWriter's buffered
-//     tail was never drained in-order with the tabwriter output.
+// History:
 //
-// The fix points the tabwriter at `e.Logger.Stdout` (which *is* wrapped when
-// global timestamps are on), so every line the list printer emits — header
-// plus every task row — goes through the same TimestampWriter and comes out
-// stamped with ANSI bytes intact.
+//  1. #145 reported that with `timestamps: true`, only the header line of
+//     `rite -l` was stamped; every task row bypassed the TimestampWriter
+//     because the tabwriter was pointed at `e.Stdout` (unwrapped) while the
+//     header went through `e.Logger.Outf` (wrapped). The v1.0.7 fix routed
+//     both through `e.Logger.Stdout` so every line came out stamped.
 //
-// This test asserts both symptoms: every non-empty line in the captured
-// output carries the default ISO-8601 prefix (symptom 1), and ANSI escape
-// bytes round-trip (symptom 2 — the raw bytes are present in the buffer).
-func TestTimestampsListTasksStampsEveryLineWithColor(t *testing.T) {
+//  2. #148 flagged that fix: `rite -l` output is metadata, not task
+//     output. Stamping *any* of it is wrong. The real fix (this test)
+//     routes both header AND rows through the Logger's pre-wrap
+//     (un-stamped) writer, so the listing is clean under any global
+//     timestamp setting.
+//
+// This test asserts BOTH halves:
+//   - No line in the listing carries a timestamp prefix (the #148 invariant).
+//   - Colored ANSI bytes still round-trip into the output buffer (the
+//     load-bearing part of the #145 invariant that we MUST not lose: the
+//     header and rows share one writer, so fatih/color's buffered reset
+//     never lands on a side channel).
+func TestTimestampsListTasksIsNeverStamped(t *testing.T) {
 	// Not t.Parallel: fatih/color reads BOTH the package-level `NoColor`
 	// flag AND the `NO_COLOR` env var at every `color.New()` call (via its
 	// `noColorIsSet()` helper), and the task-test harness sets
@@ -322,31 +327,61 @@ func TestTimestampsListTasksStampsEveryLineWithColor(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, found)
 
-	// Symptom 1: every non-empty line in the list output must carry the
-	// default ISO-8601 timestamp prefix, not just the header.
+	// #148 invariant: no line in the listing carries a timestamp prefix,
+	// even though the fixture sets `timestamps: true` at the top level.
 	lines := nonEmptyLines(stdout.String())
 	require.GreaterOrEqual(t, len(lines), 3, "expected header + 2 task rows, got %d lines: %q", len(lines), stdout.String())
 	for i, line := range lines {
-		assert.Regexp(t, timestampRe, line, "line %d not stamped: %q", i, line)
+		assert.NotRegexp(t, timestampRe, line, "line %d stamped under timestamps:true — `rite -l` is metadata, not task output: %q", i, line)
 	}
-	// Header content sanity.
+	// Header content sanity — still the same text, just un-stamped.
 	assert.Contains(t, lines[0], "rite: Available tasks for this project:")
-	// Task rows present.
+	// Task rows still present.
 	joined := strings.Join(lines[1:], "\n")
 	assert.Contains(t, joined, "hello")
 	assert.Contains(t, joined, "world")
 
-	// Symptom 2: the ANSI-colored task-row bytes have to come *after* a
-	// timestamp on the same line, proving the colored bytes were routed
-	// through the TimestampWriter rather than bypassing it. The bullet is
-	// yellow (`\x1b[33m`) and the task name is green (`\x1b[32m`); both
-	// must appear *on* a timestamped line, not as a naked row that
-	// escaped the wrap.
+	// #145 ANSI round-trip invariant we cannot lose: colored bytes must
+	// appear in the output. The bullet is yellow (`\x1b[33m`), the task
+	// name is green (`\x1b[32m`), and fatih/color's reset (`\x1b[0m`)
+	// must land in-order alongside them. If the header and rows drifted
+	// across two writers, fatih/color's buffered reset at end-of-previous-
+	// write would get orphaned; asserting all three bytes on the task
+	// rows catches the regression without re-requiring a stamp.
 	for _, line := range lines[1:] {
-		assert.Contains(t, line, "\x1b[33m", "task-row line missing yellow bullet ANSI — likely bypassed TimestampWriter: %q", line)
+		assert.Contains(t, line, "\x1b[33m", "task-row line missing yellow bullet ANSI — split-writer regression? %q", line)
 		assert.Contains(t, line, "\x1b[32m", "task-row line missing green task-name ANSI: %q", line)
 		assert.Contains(t, line, "\x1b[0m", "task-row line missing reset ANSI: %q", line)
 	}
+}
+
+// TestTimestampsListTasksNoStampingWhenTimestampsOff is the
+// timestamps-disabled control case: `rite -l` must also come out un-stamped
+// when the Ritefile doesn't set `timestamps:` at all. This is the trivial
+// path (there's no wrapper to bypass), but pinning it down guards against
+// a future refactor routing the list output through some always-stamping
+// sink.
+func TestTimestampsListTasksNoStampingWhenTimestampsOff(t *testing.T) {
+	t.Parallel()
+
+	var stdout bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir("testdata/timestamps-list-off"),
+		task.WithStdout(&stdout),
+		task.WithStderr(&bytes.Buffer{}),
+	)
+	require.NoError(t, e.Setup())
+
+	found, err := e.ListTasks(task.ListOptions{ListOnlyTasksWithDescriptions: true})
+	require.NoError(t, err)
+	require.True(t, found)
+
+	lines := nonEmptyLines(stdout.String())
+	require.GreaterOrEqual(t, len(lines), 2)
+	for i, line := range lines {
+		assert.NotRegexp(t, timestampRe, line, "line %d unexpectedly stamped (timestamps off): %q", i, line)
+	}
+	assert.Contains(t, lines[0], "rite: Available tasks for this project:")
 }
 
 func firstNonEmptyLine(s string) string {

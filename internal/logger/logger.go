@@ -129,20 +129,86 @@ func envColor(name string, defaultColor color.Attribute) []color.Attribute {
 
 // Logger is just a wrapper that prints stuff to STDOUT or STDERR,
 // with optional color.
+//
+// Stdout / Stderr are the "rite logger" sinks: when global timestamps are on
+// (CLI `--timestamps` or top-level `timestamps:`), these are wrapped with a
+// TimestampWriter by setupTimestamps(), so every Outf / Errf line comes out
+// stamped.
+//
+// RawStdout / RawStderr are the un-stamped writers the Logger was born with.
+// They point at the Executor's original Stdout / Stderr (usually os.Stdout /
+// os.Stderr or a test buffer) regardless of global-timestamp state. CLI-meta
+// output — task lists, task summaries, the `--help` text, `--version`, etc.
+// — should write through these, not through Stdout / Stderr. A timestamp on
+// `rite -l` or `rite --summary foo` treats the listing itself as
+// task-execution output, which it isn't — the listing is metadata *about*
+// the Ritefile, on the same conceptual tier as `--help`.
+//
+// If RawStdout / RawStderr are left nil (e.g. a caller that constructs a
+// Logger directly and bypasses setupTimestamps), UnstampedOutf / Errf fall
+// back to Stdout / Stderr so no call site has to nil-check.
 type Logger struct {
 	Stdin      io.Reader
 	Stdout     io.Writer
 	Stderr     io.Writer
+	RawStdout  io.Writer
+	RawStderr  io.Writer
 	Verbose    bool
 	Color      bool
 	AssumeYes  bool
 	AssumeTerm bool // Used for testing
 }
 
+// rawStdout returns the un-stamped stdout writer, falling back to Stdout if
+// no raw writer was registered (direct Logger construction, older tests).
+func (l *Logger) rawStdout() io.Writer {
+	if l.RawStdout != nil {
+		return l.RawStdout
+	}
+	return l.Stdout
+}
+
+// rawStderr mirrors rawStdout for stderr.
+func (l *Logger) rawStderr() io.Writer {
+	if l.RawStderr != nil {
+		return l.RawStderr
+	}
+	return l.Stderr
+}
+
 // Outf prints stuff to STDOUT.
 func (l *Logger) Outf(color Color, s string, args ...any) {
 	l.FOutf(l.Stdout, color, s, args...)
 }
+
+// UnstampedOutf prints to the un-stamped stdout writer — i.e. the writer
+// that bypasses the global TimestampWriter wrap applied by setupTimestamps.
+// Use this for CLI-meta output (task lists, summaries, help text) that is
+// not task-execution output and therefore shouldn't carry run-time
+// timestamps even under top-level `timestamps: true`.
+func (l *Logger) UnstampedOutf(color Color, s string, args ...any) {
+	l.FOutf(l.rawStdout(), color, s, args...)
+}
+
+// UnstampedErrf mirrors UnstampedOutf on stderr.
+func (l *Logger) UnstampedErrf(color Color, s string, args ...any) {
+	if len(args) == 0 {
+		s, args = "%s", []any{s}
+	}
+	if !l.Color {
+		color = None
+	}
+	print := color()
+	print(l.rawStderr(), s, args...)
+}
+
+// UnstampedStdout returns the un-stamped stdout writer so callers that need
+// to pass a writer to external helpers (tabwriter, json encoder, etc.) can
+// route bytes around the TimestampWriter.
+func (l *Logger) UnstampedStdout() io.Writer { return l.rawStdout() }
+
+// UnstampedStderr mirrors UnstampedStdout on stderr.
+func (l *Logger) UnstampedStderr() io.Writer { return l.rawStderr() }
 
 // FOutf prints stuff to the given writer.
 func (l *Logger) FOutf(w io.Writer, color Color, s string, args ...any) {

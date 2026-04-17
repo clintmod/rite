@@ -158,6 +158,14 @@ func run() error {
 	if err := e.Setup(); err != nil {
 		return err
 	}
+	// Flush any buffered content on the Logger's TimestampWriter at
+	// end-of-run. Post-#151 the SGR-passthrough carve-out handles the
+	// common fatih/color reset case inline, but this is belt-and-
+	// suspenders for any genuine unterminated partial (e.g. a
+	// user-emitted progress indicator written via the Logger): without
+	// this closer, those bytes are silently dropped on exit because
+	// drainLocked only flushes on newline.
+	defer e.Close()
 
 	listOptions := task.NewListOptions(
 		flags.List,

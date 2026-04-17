@@ -225,6 +225,166 @@ func TestTimestampSinkConcurrentWritesProduceMonotonicTimestamps(t *testing.T) {
 	}
 }
 
+// TestTimestampWriterTrailingSGRPassthroughNoNewline locks in the #151
+// carve-out: a write that is *only* a complete ANSI SGR escape (e.g.
+// `\x1b[0m`) must come out inline, with no timestamp prefix and no
+// appended newline, so it can sit at the head of whatever writes next.
+// fatih/color emits its reset as exactly this shape (Write("\x1b[0m")
+// with no newline), and before #151 we silently buffered and dropped it.
+func TestTimestampWriterTrailingSGRPassthroughNoNewline(t *testing.T) {
+	t.Parallel()
+
+	in := time.Date(2026, 4, 17, 14, 0, 0, 0, time.UTC)
+	var b bytes.Buffer
+	sink := output.NewTimestampSink(&b, ast.DefaultTimestampLayout, fixedClock(in), nil)
+	w := output.NewTimestampWriter(sink)
+
+	_, err := w.Write([]byte("\x1b[0m"))
+	require.NoError(t, err)
+
+	// Must appear immediately — no buffering — and carry no prefix or
+	// newline.
+	assert.Equal(t, "\x1b[0m", b.String())
+
+	// Close is a no-op now because the passthrough already drained.
+	require.NoError(t, w.Close())
+	assert.Equal(t, "\x1b[0m", b.String())
+}
+
+// TestTimestampWriterSplitSGRFromFatihColor simulates fatih/color's exact
+// three-write sequence: open-SGR, text-with-newline, close-SGR. The
+// expected stream puts the open-SGR inline before the first timestamped
+// line (so the color applies to the whole stamped line) and the close-
+// SGR inline before whatever writes next.
+func TestTimestampWriterSplitSGRFromFatihColor(t *testing.T) {
+	t.Parallel()
+
+	in := time.Date(2026, 4, 17, 14, 0, 0, 0, time.UTC)
+	var b bytes.Buffer
+	sink := output.NewTimestampSink(&b, ast.DefaultTimestampLayout, fixedClock(in), nil)
+	w := output.NewTimestampWriter(sink)
+
+	// The three writes fatih/color emits for one colored Fprintf.
+	_, err := w.Write([]byte("\x1b[32m"))
+	require.NoError(t, err)
+	_, err = w.Write([]byte("rite: [hello] echo hi\n"))
+	require.NoError(t, err)
+	_, err = w.Write([]byte("\x1b[0m"))
+	require.NoError(t, err)
+
+	assert.Equal(t,
+		"\x1b[32m[2026-04-17T14:00:00.000Z] rite: [hello] echo hi\n\x1b[0m",
+		b.String())
+}
+
+// TestTimestampWriterBufferedSGRNotEmittedMidLine checks that an SGR run
+// *in the middle* of a partial line (non-SGR bytes before the trailing
+// SGR) is NOT passed through inline — the tail-run must be the entire
+// buffered content. Otherwise we'd tear apart `partial-\x1b[0m` into
+// `partial-` (buffered) + raw-reset (emitted), which would lose ordering
+// against the text once it eventually gets a newline.
+func TestTimestampWriterBufferedSGRNotEmittedMidLine(t *testing.T) {
+	t.Parallel()
+
+	in := time.Date(2026, 4, 17, 14, 0, 0, 0, time.UTC)
+	var b bytes.Buffer
+	sink := output.NewTimestampSink(&b, ast.DefaultTimestampLayout, fixedClock(in), nil)
+	w := output.NewTimestampWriter(sink)
+
+	// Write text, then a reset, with no newline between. The whole
+	// thing is still a partial line — nothing should come out yet.
+	_, err := w.Write([]byte("partial\x1b[0m"))
+	require.NoError(t, err)
+	assert.Empty(t, b.String())
+
+	// Now the newline — the text + reset together drain as one stamped
+	// line, preserving order.
+	_, err = w.Write([]byte("\n"))
+	require.NoError(t, err)
+	assert.Equal(t,
+		"[2026-04-17T14:00:00.000Z] partial\x1b[0m\n",
+		b.String())
+}
+
+// TestTimestampWriterIncompleteSGRStaysBuffered guards against emitting a
+// half-written escape. A lone `\x1b[` with no final byte is incomplete;
+// writing the final byte later must complete the escape and then pass
+// it through, without any emission in between.
+func TestTimestampWriterIncompleteSGRStaysBuffered(t *testing.T) {
+	t.Parallel()
+
+	in := time.Date(2026, 4, 17, 14, 0, 0, 0, time.UTC)
+	var b bytes.Buffer
+	sink := output.NewTimestampSink(&b, ast.DefaultTimestampLayout, fixedClock(in), nil)
+	w := output.NewTimestampWriter(sink)
+
+	// First write: just `ESC[`, no parameter or final byte. Incomplete.
+	_, err := w.Write([]byte("\x1b["))
+	require.NoError(t, err)
+	assert.Empty(t, b.String(), "incomplete CSI must not be emitted")
+
+	// Second write completes the CSI. Now the whole `\x1b[0m` is pure
+	// SGR and should pass through inline.
+	_, err = w.Write([]byte("0m"))
+	require.NoError(t, err)
+	assert.Equal(t, "\x1b[0m", b.String())
+}
+
+// TestTimestampWriterSGRPassthroughHoldsSinkMutex confirms the
+// passthrough grabs the sink mutex — otherwise racing lines on a
+// sharedMu sink could interleave ANSI bytes inside a timestamped line
+// on the other FD. We drive this by pointing two sinks at one buffer
+// through one mutex and racing line writes against SGR writes; every
+// line in the output must be either a complete timestamped line or an
+// SGR sequence, never a hybrid.
+func TestTimestampWriterSGRPassthroughHoldsSinkMutex(t *testing.T) {
+	t.Parallel()
+
+	in := time.Date(2026, 4, 17, 14, 0, 0, 0, time.UTC)
+	var buf safeBuffer
+	mu := &sync.Mutex{}
+	lineSink := output.NewTimestampSink(&buf, ast.DefaultTimestampLayout, fixedClock(in), mu)
+	sgrSink := output.NewTimestampSink(&buf, ast.DefaultTimestampLayout, fixedClock(in), mu)
+	lineW := output.NewTimestampWriter(lineSink)
+	sgrW := output.NewTimestampWriter(sgrSink)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(2)
+		go func(i int) {
+			defer wg.Done()
+			_, _ = fmt.Fprintf(lineW, "line-%02d\n", i)
+		}(i)
+		go func() {
+			defer wg.Done()
+			_, _ = sgrW.Write([]byte("\x1b[0m"))
+		}()
+	}
+	wg.Wait()
+	require.NoError(t, lineW.Close())
+	require.NoError(t, sgrW.Close())
+
+	// Split on newline: every non-empty line must be a timestamped
+	// `line-NN`, possibly prefixed by one or more SGR escapes, and
+	// possibly followed by trailing SGR escapes. What must NOT happen
+	// is an SGR sequence appearing in the *middle* of the timestamp
+	// itself or mid-text — that would indicate a torn write.
+	re := regexp.MustCompile(`^(\x1b\[[0-9;]*m)*\[2026-04-17T14:00:00\.000Z\] line-\d{2}(\x1b\[[0-9;]*m)*$`)
+	sgrOnlyRe := regexp.MustCompile(`^(\x1b\[[0-9;]*m)+$`)
+	for _, line := range strings.Split(strings.TrimRight(buf.String(), "\n"), "\n") {
+		if line == "" {
+			continue
+		}
+		if re.MatchString(line) {
+			continue
+		}
+		if sgrOnlyRe.MatchString(line) {
+			continue
+		}
+		t.Fatalf("unexpected hybrid line: %q", line)
+	}
+}
+
 func TestStrftimeToGoLayoutCoverage(t *testing.T) {
 	t.Parallel()
 	cases := map[string]string{

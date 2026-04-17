@@ -132,6 +132,20 @@ func (tc *timestampContext) wrapLoggerWriters(stdout, stderr io.Writer) (io.Writ
 	}
 }
 
+// Close flushes any buffered content in the Executor's timestamp-wrapped
+// logger writers. Safe to call multiple times and safe to call when
+// timestamps were never wired (the closer is a no-op by default). The CLI
+// calls this via defer after Setup() so a genuinely unterminated partial
+// line on the Logger's stream — for example a user-emitted progress bar,
+// or post-#151 any non-SGR remnant — gets flushed on exit instead of
+// silently dropped.
+func (e *Executor) Close() {
+	if e.tsCloseLoggers != nil {
+		e.tsCloseLoggers()
+		e.tsCloseLoggers = func() {}
+	}
+}
+
 // wrapCmdWriters wraps a pair of cmd writers with TimestampWriters if the
 // effective layout is non-empty. The returned closer must be called after
 // the cmd finishes so any partial trailing line flushes.
